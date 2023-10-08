@@ -3,13 +3,27 @@ package com.example.pekomon.material3demo
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.Button
+import androidx.compose.material3.Divider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.dp
 import com.example.pekomon.material3demo.ui.theme.Material3DemoTheme
 
 class MainActivity : ComponentActivity() {
@@ -31,7 +45,40 @@ class MainActivity : ComponentActivity() {
 
 @Composable
 fun MainView() {
-    Buttons()
+    var contentId by remember { mutableStateOf(0) }
+    Column {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            Button(
+                onClick = { contentId = 0 }
+            ) {
+                Text(text = "Buttons")
+            }
+            Button(
+                onClick = { contentId = 1 }
+            ) {
+                Text(text = "Texts")
+            }
+        }
+        Divider()
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .verticalScroll(rememberScrollState())
+                .padding(16.dp)
+        ) {
+            if (contentId == 0) {
+                Buttons()
+            } else {
+                Text(text = "Oops, no content yet")
+            }
+        }
+
+    }
 }
 
 
