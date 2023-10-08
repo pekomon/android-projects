@@ -18,6 +18,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -45,7 +46,7 @@ class MainActivity : ComponentActivity() {
 
 @Composable
 fun MainView() {
-    var contentId by remember { mutableStateOf(0) }
+    var contentId by remember { mutableIntStateOf(0) }
     Column {
         Row(
             modifier = Modifier
@@ -67,12 +68,13 @@ fun MainView() {
         Divider()
         Column(
             modifier = Modifier
-                .fillMaxSize()
-                .verticalScroll(rememberScrollState())
                 .padding(16.dp)
         ) {
             if (contentId == 0) {
                 Buttons()
+            }
+            if (contentId == 1) {
+                Texts()
             } else {
                 Text(text = "Oops, no content yet")
             }
