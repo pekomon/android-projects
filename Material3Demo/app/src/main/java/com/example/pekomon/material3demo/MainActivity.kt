@@ -64,6 +64,11 @@ fun MainView() {
             ) {
                 Text(text = "Texts")
             }
+            Button(
+                onClick = { contentId = 2 }
+            ) {
+                Text(text = "Selections")
+            }
         }
         Divider()
         Column(
@@ -75,7 +80,10 @@ fun MainView() {
             }
             if (contentId == 1) {
                 Texts()
-            } else {
+            }
+            if (contentId == 2) {
+                Selections()
+            }else {
                 Text(text = "Oops, no content yet")
             }
         }
