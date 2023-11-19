@@ -5,12 +5,15 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.Divider
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TriStateCheckbox
 import androidx.compose.runtime.Composable
@@ -37,9 +40,11 @@ fun Selections() {
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding()
+                .padding(16.dp)
         ) {
             CheckBoxes()
+            Spacer(modifier = Modifier.height(32.dp))
+            SwitchComponent()
         }
     }
 }
@@ -121,5 +126,29 @@ private fun CheckBoxes() {
             )
             Text(text = info.text)
         }
+    }
+}
+
+@Composable
+private fun SwitchComponent() {
+    var switch by remember {
+        mutableStateOf(
+            ToggleableInfo(
+                checked = false,
+                text = "Use Dark mode"
+            )
+        )
+    }
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        Text(text = switch.text)
+        Spacer(modifier = Modifier.weight(1f))
+        Switch(
+            checked = switch.checked,
+            onCheckedChange = {
+                switch = switch.copy(
+                    checked = it
+                )
+            }
+        )
     }
 }
