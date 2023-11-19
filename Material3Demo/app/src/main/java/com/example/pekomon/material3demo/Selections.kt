@@ -1,6 +1,5 @@
 package com.example.pekomon.material3demo
 
-import android.widget.CheckBox
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -15,8 +14,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.Checkbox
-import androidx.compose.material3.Divider
 import androidx.compose.material3.Icon
+import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TriStateCheckbox
@@ -49,6 +48,8 @@ fun Selections() {
             CheckBoxes()
             Spacer(modifier = Modifier.height(32.dp))
             SwitchComponent()
+            Spacer(modifier = Modifier.height(32.dp))
+            RadioButtons()
         }
     }
 }
@@ -160,5 +161,55 @@ private fun SwitchComponent() {
                 )
             }
         )
+    }
+}
+
+@Composable
+private fun RadioButtons() {
+    val radioButtons = remember {
+        mutableStateListOf(
+            ToggleableInfo(
+                checked = true,
+                text = "Images"
+            ),
+            ToggleableInfo(
+                checked = false,
+                text = "Audio"
+            ),
+            ToggleableInfo(
+                checked = false,
+                text = "Video"
+            )
+        )
+    }
+
+
+
+    radioButtons.forEachIndexed { index, info ->
+        Row(
+            verticalAlignment = CenterVertically,
+            modifier = Modifier
+                .clickable {
+                    radioButtons.replaceAll {
+                        it.copy(
+                            checked = it.text == info.text
+                        )
+                    }
+                }
+                .padding(end = 16.dp)
+
+        ) {
+            RadioButton(
+                selected = info.checked,
+                onClick = {
+                    radioButtons.replaceAll {
+                        it.copy(
+                            checked = it.text == info.text
+                        )
+                    }
+                },
+            )
+            Text(text = info.text)
+        }
     }
 }
