@@ -35,6 +35,16 @@ local.properties
 .idea/runConfigurations
 !.idea/runConfigurations/app.xml
 
+####
+
+### VisualStudioCode ###
+.vscode/*      # Maybe .vscode/**/* instead - see comments
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+
+####
 
 # Created by https://www.toptal.com/developers/gitignore/api/macos,androidstudio
 # Edit at https://www.toptal.com/developers/gitignore?templates=macos,androidstudio

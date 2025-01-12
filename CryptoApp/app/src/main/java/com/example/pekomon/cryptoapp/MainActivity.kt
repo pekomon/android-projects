@@ -4,13 +4,14 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
+import androidx.compose.foundation.layout.*
+import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.pekomon.cryptoapp.ui.CryptoViewModel
 import com.example.pekomon.cryptoapp.ui.theme.CryptoAppTheme
 
 class MainActivity : ComponentActivity() {
@@ -20,10 +21,7 @@ class MainActivity : ComponentActivity() {
         setContent {
             CryptoAppTheme {
                 Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-                    Greeting(
-                        name = "Android",
-                        modifier = Modifier.padding(innerPadding)
-                    )
+                    CryptoScreen(modifier = Modifier.padding(innerPadding))
                 }
             }
         }
@@ -31,17 +29,66 @@ class MainActivity : ComponentActivity() {
 }
 
 @Composable
-fun Greeting(name: String, modifier: Modifier = Modifier) {
-    Text(
-        text = "Hello $name!",
-        modifier = modifier
-    )
+fun CryptoScreen(
+    modifier: Modifier = Modifier,
+    viewModel: CryptoViewModel = viewModel()
+) {
+    Column(
+        modifier = modifier.padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp)
+    ) {
+        Text(
+            text = "Cryptocurrency Prices",
+            style = MaterialTheme.typography.headlineMedium
+        )
+        
+        when {
+            viewModel.isLoading -> {
+                CircularProgressIndicator(
+                    modifier = Modifier.align(Alignment.CenterHorizontally)
+                )
+            }
+            viewModel.error != null -> {
+                Text(
+                    text = viewModel.error ?: "",
+                    color = MaterialTheme.colorScheme.error
+                )
+            }
+            else -> {
+                viewModel.prices.forEach { (crypto, price) ->
+                    CryptoPrice(name = crypto, price = price)
+                }
+            }
+        }
+        
+        Button(
+            onClick = { viewModel.fetchPrices() },
+            modifier = Modifier.align(Alignment.CenterHorizontally)
+        ) {
+            Text("Refresh Prices")
+        }
+    }
 }
 
-@Preview(showBackground = true)
 @Composable
-fun GreetingPreview() {
-    CryptoAppTheme {
-        Greeting("Android")
+fun CryptoPrice(name: String, price: Double) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+    ) {
+        Row(
+            modifier = Modifier
+                .padding(16.dp)
+                .fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Text(
+                text = name.replaceFirstChar { it.uppercase() },
+                style = MaterialTheme.typography.titleMedium
+            )
+            Text(
+                text = "€%.2f".format(price),
+                style = MaterialTheme.typography.titleMedium
+            )
+        }
     }
 }
