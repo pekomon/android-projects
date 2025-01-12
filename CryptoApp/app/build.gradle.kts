@@ -6,7 +6,7 @@ plugins {
 
 android {
     namespace = "com.example.pekomon.cryptoapp"
-    compileSdk = 34
+    compileSdk = 35
 
     defaultConfig {
         applicationId = "com.example.pekomon.cryptoapp"
