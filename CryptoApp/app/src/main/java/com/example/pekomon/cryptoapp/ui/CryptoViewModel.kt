@@ -30,7 +30,18 @@ class CryptoViewModel : ViewModel() {
     )
     
     init {
-        fetchPrices()
+        // Fetch prices immediately when ViewModel is created
+        viewModelScope.launch {
+            try {
+                val prices = repository.getCryptoPrices()
+                cryptos = prices.map { (id, price) ->
+                    val (name, symbol) = cryptoDetails[id] ?: Pair(id.capitalize(), id.uppercase())
+                    CryptoInfo(id, name, symbol, price)
+                }
+            } catch (e: Exception) {
+                error = "Error fetching prices: ${e.message}"
+            }
+        }
     }
     
     fun fetchPrices() {

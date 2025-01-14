@@ -26,6 +26,7 @@ import com.example.pekomon.cryptoapp.ui.navigation.Screen
 import com.example.pekomon.cryptoapp.ui.theme.CryptoAppTheme
 import com.example.pekomon.cryptoapp.R
 import com.example.pekomon.cryptoapp.data.CryptoInfo
+import com.example.pekomon.cryptoapp.ui.SplashScreen
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -43,52 +44,59 @@ class MainActivity : ComponentActivity() {
 fun CryptoApp() {
     val navController = rememberNavController()
     val viewModel: CryptoViewModel = viewModel()
+    var showSplash by remember { mutableStateOf(true) }
     
-    Scaffold(
-        modifier = Modifier.fillMaxSize(),
-        bottomBar = {
-            NavigationBar {
-                val navBackStackEntry by navController.currentBackStackEntryAsState()
-                val currentRoute = navBackStackEntry?.destination?.route
-                
-                val items = listOf(
-                    Screen.Home to Icons.Default.Home,
-                    Screen.Favorites to Icons.Default.Favorite,
-                    Screen.Settings to Icons.Default.Settings
-                )
-                
-                items.forEach { (screen, icon) ->
-                    NavigationBarItem(
-                        icon = { Icon(icon, contentDescription = screen.title) },
-                        label = { Text(screen.title) },
-                        selected = currentRoute == screen.route,
-                        onClick = {
-                            navController.navigate(screen.route) {
-                                popUpTo(navController.graph.startDestinationId) {
-                                    saveState = true
-                                }
-                                launchSingleTop = true
-                                restoreState = true
-                            }
-                        }
+    if (showSplash) {
+        SplashScreen(
+            onSplashFinished = { showSplash = false }
+        )
+    } else {
+        Scaffold(
+            modifier = Modifier.fillMaxSize(),
+            bottomBar = {
+                NavigationBar {
+                    val navBackStackEntry by navController.currentBackStackEntryAsState()
+                    val currentRoute = navBackStackEntry?.destination?.route
+                    
+                    val items = listOf(
+                        Screen.Home to Icons.Default.Home,
+                        Screen.Favorites to Icons.Default.Favorite,
+                        Screen.Settings to Icons.Default.Settings
                     )
+                    
+                    items.forEach { (screen, icon) ->
+                        NavigationBarItem(
+                            icon = { Icon(icon, contentDescription = screen.title) },
+                            label = { Text(screen.title) },
+                            selected = currentRoute == screen.route,
+                            onClick = {
+                                navController.navigate(screen.route) {
+                                    popUpTo(navController.graph.startDestinationId) {
+                                        saveState = true
+                                    }
+                                    launchSingleTop = true
+                                    restoreState = true
+                                }
+                            }
+                        )
+                    }
                 }
             }
-        }
-    ) { innerPadding ->
-        NavHost(
-            navController = navController,
-            startDestination = Screen.Home.route,
-            modifier = Modifier.padding(innerPadding)
-        ) {
-            composable(Screen.Home.route) {
-                HomeScreen(viewModel = viewModel)
-            }
-            composable(Screen.Favorites.route) {
-                FavoritesScreen(viewModel = viewModel)
-            }
-            composable(Screen.Settings.route) {
-                SettingsScreen()
+        ) { innerPadding ->
+            NavHost(
+                navController = navController,
+                startDestination = Screen.Home.route,
+                modifier = Modifier.padding(innerPadding)
+            ) {
+                composable(Screen.Home.route) {
+                    HomeScreen(viewModel = viewModel)
+                }
+                composable(Screen.Favorites.route) {
+                    FavoritesScreen(viewModel = viewModel)
+                }
+                composable(Screen.Settings.route) {
+                    SettingsScreen()
+                }
             }
         }
     }
