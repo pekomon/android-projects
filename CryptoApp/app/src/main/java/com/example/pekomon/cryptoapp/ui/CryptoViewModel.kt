@@ -19,6 +19,8 @@ class CryptoViewModel : ViewModel() {
     
     var error by mutableStateOf<String?>(null)
         private set
+        
+    private var favorites by mutableStateOf<Set<String>>(emptySet())
     
     init {
         fetchPrices()
@@ -36,4 +38,14 @@ class CryptoViewModel : ViewModel() {
             isLoading = false
         }
     }
+    
+    fun toggleFavorite(cryptoId: String) {
+        favorites = if (cryptoId in favorites) {
+            favorites - cryptoId
+        } else {
+            favorites + cryptoId
+        }
+    }
+    
+    fun isFavorite(cryptoId: String): Boolean = cryptoId in favorites
 } 

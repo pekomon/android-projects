@@ -4,15 +4,27 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.currentBackStackEntryAsState
+import androidx.navigation.compose.rememberNavController
 import com.example.pekomon.cryptoapp.ui.CryptoViewModel
+import com.example.pekomon.cryptoapp.ui.navigation.Screen
 import com.example.pekomon.cryptoapp.ui.theme.CryptoAppTheme
+import com.example.pekomon.cryptoapp.R
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -20,18 +32,71 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             CryptoAppTheme {
-                Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-                    CryptoScreen(modifier = Modifier.padding(innerPadding))
-                }
+                CryptoApp()
             }
         }
     }
 }
 
 @Composable
-fun CryptoScreen(
-    modifier: Modifier = Modifier,
-    viewModel: CryptoViewModel = viewModel()
+fun CryptoApp() {
+    val navController = rememberNavController()
+    val viewModel: CryptoViewModel = viewModel()
+    
+    Scaffold(
+        modifier = Modifier.fillMaxSize(),
+        bottomBar = {
+            NavigationBar {
+                val navBackStackEntry by navController.currentBackStackEntryAsState()
+                val currentRoute = navBackStackEntry?.destination?.route
+                
+                val items = listOf(
+                    Screen.Home to Icons.Default.Home,
+                    Screen.Favorites to Icons.Default.Favorite,
+                    Screen.Settings to Icons.Default.Settings
+                )
+                
+                items.forEach { (screen, icon) ->
+                    NavigationBarItem(
+                        icon = { Icon(icon, contentDescription = screen.title) },
+                        label = { Text(screen.title) },
+                        selected = currentRoute == screen.route,
+                        onClick = {
+                            navController.navigate(screen.route) {
+                                popUpTo(navController.graph.startDestinationId) {
+                                    saveState = true
+                                }
+                                launchSingleTop = true
+                                restoreState = true
+                            }
+                        }
+                    )
+                }
+            }
+        }
+    ) { innerPadding ->
+        NavHost(
+            navController = navController,
+            startDestination = Screen.Home.route,
+            modifier = Modifier.padding(innerPadding)
+        ) {
+            composable(Screen.Home.route) {
+                HomeScreen(viewModel = viewModel)
+            }
+            composable(Screen.Favorites.route) {
+                FavoritesScreen(viewModel = viewModel)
+            }
+            composable(Screen.Settings.route) {
+                SettingsScreen()
+            }
+        }
+    }
+}
+
+@Composable
+fun HomeScreen(
+    viewModel: CryptoViewModel,
+    modifier: Modifier = Modifier
 ) {
     Column(
         modifier = modifier.padding(16.dp),
@@ -56,7 +121,12 @@ fun CryptoScreen(
             }
             else -> {
                 viewModel.prices.forEach { (crypto, price) ->
-                    CryptoPrice(name = crypto, price = price)
+                    CryptoPrice(
+                        name = crypto, 
+                        price = price,
+                        isFavorite = viewModel.isFavorite(crypto),
+                        onFavoriteClick = { viewModel.toggleFavorite(crypto) }
+                    )
                 }
             }
         }
@@ -71,24 +141,116 @@ fun CryptoScreen(
 }
 
 @Composable
-fun CryptoPrice(name: String, price: Double) {
+fun FavoritesScreen(
+    viewModel: CryptoViewModel,
+    modifier: Modifier = Modifier
+) {
+    Column(
+        modifier = modifier.padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp)
+    ) {
+        Text(
+            text = "Favorite Cryptocurrencies",
+            style = MaterialTheme.typography.headlineMedium
+        )
+        
+        when {
+            viewModel.isLoading -> {
+                CircularProgressIndicator(
+                    modifier = Modifier.align(Alignment.CenterHorizontally)
+                )
+            }
+            viewModel.error != null -> {
+                Text(
+                    text = viewModel.error ?: "",
+                    color = MaterialTheme.colorScheme.error
+                )
+            }
+            else -> {
+                val favorites = viewModel.prices.filter { (crypto, _) -> 
+                    viewModel.isFavorite(crypto)
+                }
+                
+                if (favorites.isEmpty()) {
+                    Text(
+                        text = "No favorites yet",
+                        modifier = Modifier.align(Alignment.CenterHorizontally)
+                    )
+                } else {
+                    favorites.forEach { (crypto, price) ->
+                        CryptoPrice(
+                            name = crypto,
+                            price = price,
+                            isFavorite = true,
+                            onFavoriteClick = { viewModel.toggleFavorite(crypto) }
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun SettingsScreen(modifier: Modifier = Modifier) {
+    Column(
+        modifier = modifier
+            .fillMaxSize()
+            .padding(16.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
+    ) {
+        Image(
+            painter = painterResource(id = R.drawable.ic_construction),
+            contentDescription = "Under Construction",
+            modifier = Modifier.size(120.dp)
+        )
+        Spacer(modifier = Modifier.height(16.dp))
+        Text(
+            text = "Under Construction",
+            style = MaterialTheme.typography.headlineMedium
+        )
+    }
+}
+
+@Composable
+fun CryptoPrice(
+    name: String,
+    price: Double,
+    isFavorite: Boolean,
+    onFavoriteClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
     Card(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = modifier.fillMaxWidth(),
     ) {
         Row(
             modifier = Modifier
                 .padding(16.dp)
                 .fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
                 text = name.replaceFirstChar { it.uppercase() },
                 style = MaterialTheme.typography.titleMedium
             )
-            Text(
-                text = "€%.2f".format(price),
-                style = MaterialTheme.typography.titleMedium
-            )
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "€%.2f".format(price),
+                    style = MaterialTheme.typography.titleMedium
+                )
+                IconButton(onClick = onFavoriteClick) {
+                    Icon(
+                        imageVector = if (isFavorite) Icons.Default.Favorite else Icons.Default.Favorite,
+                        contentDescription = if (isFavorite) "Remove from favorites" else "Add to favorites",
+                        tint = if (isFavorite) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
+                    )
+                }
+            }
         }
     }
 }
