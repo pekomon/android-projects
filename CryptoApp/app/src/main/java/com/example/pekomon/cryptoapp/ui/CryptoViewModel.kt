@@ -6,12 +6,13 @@ import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.pekomon.cryptoapp.data.CryptoRepository
+import com.example.pekomon.cryptoapp.data.CryptoInfo
 import kotlinx.coroutines.launch
 
 class CryptoViewModel : ViewModel() {
     private val repository = CryptoRepository()
     
-    var prices by mutableStateOf<Map<String, Double>>(emptyMap())
+    var cryptos by mutableStateOf<List<CryptoInfo>>(emptyList())
         private set
     
     var isLoading by mutableStateOf(false)
@@ -22,6 +23,12 @@ class CryptoViewModel : ViewModel() {
         
     private var favorites by mutableStateOf<Set<String>>(emptySet())
     
+    private val cryptoDetails = mapOf(
+        "bitcoin" to Pair("Bitcoin", "BTC"),
+        "ethereum" to Pair("Ethereum", "ETH"),
+        "dogecoin" to Pair("Dogecoin", "DOGE")
+    )
+    
     init {
         fetchPrices()
     }
@@ -31,7 +38,11 @@ class CryptoViewModel : ViewModel() {
             isLoading = true
             error = null
             try {
-                prices = repository.getCryptoPrices()
+                val prices = repository.getCryptoPrices()
+                cryptos = prices.map { (id, price) ->
+                    val (name, symbol) = cryptoDetails[id] ?: Pair(id.capitalize(), id.uppercase())
+                    CryptoInfo(id, name, symbol, price)
+                }
             } catch (e: Exception) {
                 error = "Error fetching prices: ${e.message}"
             }

@@ -25,6 +25,7 @@ import com.example.pekomon.cryptoapp.ui.CryptoViewModel
 import com.example.pekomon.cryptoapp.ui.navigation.Screen
 import com.example.pekomon.cryptoapp.ui.theme.CryptoAppTheme
 import com.example.pekomon.cryptoapp.R
+import com.example.pekomon.cryptoapp.data.CryptoInfo
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -120,12 +121,11 @@ fun HomeScreen(
                 )
             }
             else -> {
-                viewModel.prices.forEach { (crypto, price) ->
+                viewModel.cryptos.forEach { crypto ->
                     CryptoPrice(
-                        name = crypto, 
-                        price = price,
-                        isFavorite = viewModel.isFavorite(crypto),
-                        onFavoriteClick = { viewModel.toggleFavorite(crypto) }
+                        crypto = crypto,
+                        isFavorite = viewModel.isFavorite(crypto.id),
+                        onFavoriteClick = { viewModel.toggleFavorite(crypto.id) }
                     )
                 }
             }
@@ -167,8 +167,8 @@ fun FavoritesScreen(
                 )
             }
             else -> {
-                val favorites = viewModel.prices.filter { (crypto, _) -> 
-                    viewModel.isFavorite(crypto)
+                val favorites = viewModel.cryptos.filter { crypto -> 
+                    viewModel.isFavorite(crypto.id)
                 }
                 
                 if (favorites.isEmpty()) {
@@ -177,12 +177,11 @@ fun FavoritesScreen(
                         modifier = Modifier.align(Alignment.CenterHorizontally)
                     )
                 } else {
-                    favorites.forEach { (crypto, price) ->
+                    favorites.forEach { crypto ->
                         CryptoPrice(
-                            name = crypto,
-                            price = price,
+                            crypto = crypto,
                             isFavorite = true,
-                            onFavoriteClick = { viewModel.toggleFavorite(crypto) }
+                            onFavoriteClick = { viewModel.toggleFavorite(crypto.id) }
                         )
                     }
                 }
@@ -215,8 +214,7 @@ fun SettingsScreen(modifier: Modifier = Modifier) {
 
 @Composable
 fun CryptoPrice(
-    name: String,
-    price: Double,
+    crypto: CryptoInfo,
     isFavorite: Boolean,
     onFavoriteClick: () -> Unit,
     modifier: Modifier = Modifier
@@ -231,16 +229,23 @@ fun CryptoPrice(
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Text(
-                text = name.replaceFirstChar { it.uppercase() },
-                style = MaterialTheme.typography.titleMedium
-            )
+            Column {
+                Text(
+                    text = crypto.name,
+                    style = MaterialTheme.typography.titleMedium
+                )
+                Text(
+                    text = crypto.symbol,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+                )
+            }
             Row(
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = "€%.2f".format(price),
+                    text = "€%.2f".format(crypto.price),
                     style = MaterialTheme.typography.titleMedium
                 )
                 IconButton(onClick = onFavoriteClick) {
