@@ -7,6 +7,7 @@ import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.Sort
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Settings
@@ -113,15 +114,30 @@ fun HomeScreen(
         modifier = modifier.padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
+        Text(
+            text = "Cryptocurrency Prices",
+            style = MaterialTheme.typography.headlineMedium,
+            modifier = Modifier.fillMaxWidth()
+        )
+        
+        OutlinedButton(
+            onClick = { /* Avaa lajitteluvalikon */ },
+            modifier = Modifier.fillMaxWidth()
         ) {
-            Text(
-                text = "Cryptocurrency Prices",
-                style = MaterialTheme.typography.headlineMedium
-            )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "Sort by: ${viewModel.currentSortOption.displayName}",
+                    style = MaterialTheme.typography.bodyLarge
+                )
+                Icon(
+                    imageVector = Icons.AutoMirrored.Filled.Sort,
+                    contentDescription = "Sort"
+                )
+            }
             SortMenu(
                 currentSort = viewModel.currentSortOption,
                 onSortSelected = { viewModel.updateSortOption(it) }
@@ -169,16 +185,30 @@ fun FavoritesScreen(
         modifier = modifier.padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
+        Text(
+            text = "Favorite Cryptocurrencies",
+            style = MaterialTheme.typography.headlineMedium,
+            modifier = Modifier.fillMaxWidth()
+        )
+        
+        OutlinedButton(
+            onClick = { /* Avaa lajitteluvalikon */ },
+            modifier = Modifier.fillMaxWidth()
         ) {
-            Text(
-                text = "Favorite Cryptocurrencies",
-                style = MaterialTheme.typography.headlineMedium,
-                overflow = TextOverflow.Ellipsis,
-            )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "Sort by: ${viewModel.currentSortOption.displayName}",
+                    style = MaterialTheme.typography.bodyLarge
+                )
+                Icon(
+                    imageVector = Icons.AutoMirrored.Filled.Sort,
+                    contentDescription = "Sort"
+                )
+            }
             SortMenu(
                 currentSort = viewModel.currentSortOption,
                 onSortSelected = { viewModel.updateSortOption(it) }
