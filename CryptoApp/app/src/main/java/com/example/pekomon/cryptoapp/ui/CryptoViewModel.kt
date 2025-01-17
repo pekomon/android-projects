@@ -8,6 +8,7 @@ import androidx.lifecycle.viewModelScope
 import com.example.pekomon.cryptoapp.data.CryptoRepository
 import com.example.pekomon.cryptoapp.data.CryptoInfo
 import com.example.pekomon.cryptoapp.data.SortOption
+import com.example.pekomon.cryptoapp.data.Currency
 import kotlinx.coroutines.launch
 
 class CryptoViewModel : ViewModel() {
@@ -31,6 +32,9 @@ class CryptoViewModel : ViewModel() {
     )
     
     var currentSortOption by mutableStateOf(SortOption.NAME_ASC)
+    
+    var selectedCurrency by mutableStateOf(Currency.EUR)
+        private set
     
     val sortedCryptos: List<CryptoInfo>
         get() = when (currentSortOption) {
@@ -62,7 +66,7 @@ class CryptoViewModel : ViewModel() {
             isLoading = true
             error = null
             try {
-                val prices = repository.getCryptoPrices()
+                val prices = repository.getCryptoPrices(selectedCurrency.code)
                 cryptos = prices.map { (id, price) ->
                     val (name, symbol) = cryptoDetails[id] ?: Pair(id.capitalize(), id.uppercase())
                     CryptoInfo(id, name, symbol, price)
@@ -86,5 +90,10 @@ class CryptoViewModel : ViewModel() {
     
     fun updateSortOption(option: SortOption) {
         currentSortOption = option
+    }
+    
+    fun updateCurrency(currency: Currency) {
+        selectedCurrency = currency
+        fetchPrices() // Päivitetään hinnat uudella valuutalla
     }
 } 

@@ -4,19 +4,18 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.selection.selectable
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Sort
 import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.NavHost
@@ -26,10 +25,10 @@ import androidx.navigation.compose.rememberNavController
 import com.example.pekomon.cryptoapp.ui.CryptoViewModel
 import com.example.pekomon.cryptoapp.ui.navigation.Screen
 import com.example.pekomon.cryptoapp.ui.theme.CryptoAppTheme
-import com.example.pekomon.cryptoapp.R
 import com.example.pekomon.cryptoapp.data.CryptoInfo
 import com.example.pekomon.cryptoapp.ui.SplashScreen
 import com.example.pekomon.cryptoapp.ui.components.SortMenu
+import com.example.pekomon.cryptoapp.data.Currency
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -98,7 +97,7 @@ fun CryptoApp() {
                     FavoritesScreen(viewModel = viewModel)
                 }
                 composable(Screen.Settings.route) {
-                    SettingsScreen()
+                    SettingsScreen(viewModel = viewModel)
                 }
             }
         }
@@ -161,7 +160,8 @@ fun HomeScreen(
                     CryptoPrice(
                         crypto = crypto,
                         isFavorite = viewModel.isFavorite(crypto.id),
-                        onFavoriteClick = { viewModel.toggleFavorite(crypto.id) }
+                        onFavoriteClick = { viewModel.toggleFavorite(crypto.id) },
+                        viewModel = viewModel
                     )
                 }
             }
@@ -242,7 +242,8 @@ fun FavoritesScreen(
                         CryptoPrice(
                             crypto = crypto,
                             isFavorite = true,
-                            onFavoriteClick = { viewModel.toggleFavorite(crypto.id) }
+                            onFavoriteClick = { viewModel.toggleFavorite(crypto.id) },
+                            viewModel = viewModel
                         )
                     }
                 }
@@ -252,24 +253,57 @@ fun FavoritesScreen(
 }
 
 @Composable
-fun SettingsScreen(modifier: Modifier = Modifier) {
+fun SettingsScreen(
+    viewModel: CryptoViewModel,
+    modifier: Modifier = Modifier
+) {
     Column(
         modifier = modifier
             .fillMaxSize()
             .padding(16.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
+        verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        Image(
-            painter = painterResource(id = R.drawable.ic_construction),
-            contentDescription = "Under Construction",
-            modifier = Modifier.size(120.dp)
-        )
-        Spacer(modifier = Modifier.height(16.dp))
         Text(
-            text = "Under Construction",
+            text = "Settings",
             style = MaterialTheme.typography.headlineMedium
         )
+        
+        Card(
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Column(
+                modifier = Modifier.padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Text(
+                    text = "Currency",
+                    style = MaterialTheme.typography.titleMedium
+                )
+                
+                Currency.entries.forEach { currency ->
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .selectable(
+                                selected = currency == viewModel.selectedCurrency,
+                                onClick = { viewModel.updateCurrency(currency) }
+                            )
+                            .padding(8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        RadioButton(
+                            selected = currency == viewModel.selectedCurrency,
+                            onClick = { viewModel.updateCurrency(currency) }
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = "${currency.name} (${currency.symbol})",
+                            style = MaterialTheme.typography.bodyLarge
+                        )
+                    }
+                }
+            }
+        }
     }
 }
 
@@ -278,6 +312,7 @@ fun CryptoPrice(
     crypto: CryptoInfo,
     isFavorite: Boolean,
     onFavoriteClick: () -> Unit,
+    viewModel: CryptoViewModel,
     modifier: Modifier = Modifier
 ) {
     Card(
@@ -306,12 +341,12 @@ fun CryptoPrice(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = "€%.2f".format(crypto.price),
+                    text = "${viewModel.selectedCurrency.symbol}%.2f".format(crypto.price),
                     style = MaterialTheme.typography.titleMedium
                 )
                 IconButton(onClick = onFavoriteClick) {
                     Icon(
-                        imageVector = if (isFavorite) Icons.Default.Favorite else Icons.Default.Favorite,
+                        imageVector = if (isFavorite) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
                         contentDescription = if (isFavorite) "Remove from favorites" else "Add to favorites",
                         tint = if (isFavorite) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
                     )

@@ -10,11 +10,11 @@ class CryptoRepository {
         .build()
         .create(CoinGeckoApi::class.java)
 
-    suspend fun getCryptoPrices(): Map<String, Double> {
+    suspend fun getCryptoPrices(currency: String = "eur"): Map<String, Double> {
         val response = api.getPrice(
             ids = "bitcoin,ethereum,dogecoin",
-            vsCurrencies = "eur"
+            vsCurrencies = currency
         )
-        return response.mapValues { it.value["eur"] ?: 0.0 }
+        return response.mapValues { it.value[currency] ?: 0.0 }
     }
 } 
