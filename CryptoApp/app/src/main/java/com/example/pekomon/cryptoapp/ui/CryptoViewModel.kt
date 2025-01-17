@@ -7,6 +7,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.pekomon.cryptoapp.data.CryptoRepository
 import com.example.pekomon.cryptoapp.data.CryptoInfo
+import com.example.pekomon.cryptoapp.data.SortOption
 import kotlinx.coroutines.launch
 
 class CryptoViewModel : ViewModel() {
@@ -28,6 +29,18 @@ class CryptoViewModel : ViewModel() {
         "ethereum" to Pair("Ethereum", "ETH"),
         "dogecoin" to Pair("Dogecoin", "DOGE")
     )
+    
+    var currentSortOption by mutableStateOf(SortOption.NAME_ASC)
+    
+    val sortedCryptos: List<CryptoInfo>
+        get() = when (currentSortOption) {
+            SortOption.NAME_ASC -> cryptos.sortedBy { it.name }
+            SortOption.NAME_DESC -> cryptos.sortedByDescending { it.name }
+            SortOption.SYMBOL_ASC -> cryptos.sortedBy { it.symbol }
+            SortOption.SYMBOL_DESC -> cryptos.sortedByDescending { it.symbol }
+            SortOption.PRICE_ASC -> cryptos.sortedBy { it.price }
+            SortOption.PRICE_DESC -> cryptos.sortedByDescending { it.price }
+        }
     
     init {
         // Fetch prices immediately when ViewModel is created
@@ -70,4 +83,8 @@ class CryptoViewModel : ViewModel() {
     }
     
     fun isFavorite(cryptoId: String): Boolean = cryptoId in favorites
+    
+    fun updateSortOption(option: SortOption) {
+        currentSortOption = option
+    }
 } 

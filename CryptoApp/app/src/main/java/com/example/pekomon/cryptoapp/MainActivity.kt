@@ -15,6 +15,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.NavHost
@@ -27,6 +28,7 @@ import com.example.pekomon.cryptoapp.ui.theme.CryptoAppTheme
 import com.example.pekomon.cryptoapp.R
 import com.example.pekomon.cryptoapp.data.CryptoInfo
 import com.example.pekomon.cryptoapp.ui.SplashScreen
+import com.example.pekomon.cryptoapp.ui.components.SortMenu
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -111,10 +113,20 @@ fun HomeScreen(
         modifier = modifier.padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        Text(
-            text = "Cryptocurrency Prices",
-            style = MaterialTheme.typography.headlineMedium
-        )
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = "Cryptocurrency Prices",
+                style = MaterialTheme.typography.headlineMedium
+            )
+            SortMenu(
+                currentSort = viewModel.currentSortOption,
+                onSortSelected = { viewModel.updateSortOption(it) }
+            )
+        }
         
         when {
             viewModel.isLoading -> {
@@ -129,7 +141,7 @@ fun HomeScreen(
                 )
             }
             else -> {
-                viewModel.cryptos.forEach { crypto ->
+                viewModel.sortedCryptos.forEach { crypto ->
                     CryptoPrice(
                         crypto = crypto,
                         isFavorite = viewModel.isFavorite(crypto.id),
@@ -157,10 +169,21 @@ fun FavoritesScreen(
         modifier = modifier.padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        Text(
-            text = "Favorite Cryptocurrencies",
-            style = MaterialTheme.typography.headlineMedium
-        )
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = "Favorite Cryptocurrencies",
+                style = MaterialTheme.typography.headlineMedium,
+                overflow = TextOverflow.Ellipsis,
+            )
+            SortMenu(
+                currentSort = viewModel.currentSortOption,
+                onSortSelected = { viewModel.updateSortOption(it) }
+            )
+        }
         
         when {
             viewModel.isLoading -> {
@@ -175,7 +198,7 @@ fun FavoritesScreen(
                 )
             }
             else -> {
-                val favorites = viewModel.cryptos.filter { crypto -> 
+                val favorites = viewModel.sortedCryptos.filter { crypto -> 
                     viewModel.isFavorite(crypto.id)
                 }
                 
