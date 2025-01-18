@@ -35,6 +35,8 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import com.example.pekomon.cryptoapp.data.PreferencesRepository
 import com.example.pekomon.cryptoapp.ui.components.CryptoSelector
+import com.google.accompanist.swiperefresh.SwipeRefresh
+import com.google.accompanist.swiperefresh.rememberSwipeRefreshState
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -132,29 +134,20 @@ fun HomeScreen(
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         Text(
-            text = "Cryptocurrency Prices",
+            text = "Cryptocurrencies",
             style = MaterialTheme.typography.headlineMedium,
             modifier = Modifier.fillMaxWidth()
         )
         
-        OutlinedButton(
-            onClick = { /* Avaa lajitteluvalikon */ },
-            modifier = Modifier.fillMaxWidth()
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = "Sort by: ${viewModel.currentSortOption.displayName}",
-                    style = MaterialTheme.typography.bodyLarge
-                )
-                Icon(
-                    imageVector = Icons.AutoMirrored.Filled.Sort,
-                    contentDescription = "Sort"
-                )
-            }
+            Text(
+                text = "Sort by: ${viewModel.currentSortOption.displayName}",
+                style = MaterialTheme.typography.bodyLarge
+            )
             SortMenu(
                 currentSort = viewModel.currentSortOption,
                 onSortSelected = { viewModel.updateSortOption(it) }
@@ -174,27 +167,25 @@ fun HomeScreen(
                 )
             }
             else -> {
-                LazyColumn(
-                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                SwipeRefresh(
+                    state = rememberSwipeRefreshState(viewModel.isLoading),
+                    onRefresh = { viewModel.fetchPrices() },
                     modifier = Modifier.weight(1f)
                 ) {
-                    items(viewModel.sortedCryptos) { crypto ->
-                        CryptoPrice(
-                            crypto = crypto,
-                            isFavorite = viewModel.isFavorite(crypto.id),
-                            onFavoriteClick = { viewModel.toggleFavorite(crypto.id) },
-                            viewModel = viewModel
-                        )
+                    LazyColumn(
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        items(viewModel.sortedCryptos) { crypto ->
+                            CryptoPrice(
+                                crypto = crypto,
+                                isFavorite = viewModel.isFavorite(crypto.id),
+                                onFavoriteClick = { viewModel.toggleFavorite(crypto.id) },
+                                viewModel = viewModel
+                            )
+                        }
                     }
                 }
             }
-        }
-        
-        Button(
-            onClick = { viewModel.fetchPrices() },
-            modifier = Modifier.align(Alignment.CenterHorizontally)
-        ) {
-            Text("Refresh Prices")
         }
     }
 }
