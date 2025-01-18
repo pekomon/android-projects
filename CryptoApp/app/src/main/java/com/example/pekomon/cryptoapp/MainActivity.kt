@@ -29,13 +29,27 @@ import com.example.pekomon.cryptoapp.data.CryptoInfo
 import com.example.pekomon.cryptoapp.ui.SplashScreen
 import com.example.pekomon.cryptoapp.ui.components.SortMenu
 import com.example.pekomon.cryptoapp.data.Currency
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
+import com.example.pekomon.cryptoapp.data.PreferencesRepository
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+        
+        val preferencesRepository = PreferencesRepository(applicationContext)
+        
         setContent {
             CryptoAppTheme {
+                val viewModel: CryptoViewModel = viewModel(
+                    factory = object : ViewModelProvider.Factory {
+                        override fun <T : ViewModel> create(modelClass: Class<T>): T {
+                            return CryptoViewModel(preferencesRepository) as T
+                        }
+                    }
+                )
+                
                 CryptoApp()
             }
         }

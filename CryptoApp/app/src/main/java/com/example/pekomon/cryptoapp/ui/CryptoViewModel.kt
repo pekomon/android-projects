@@ -9,9 +9,13 @@ import com.example.pekomon.cryptoapp.data.CryptoRepository
 import com.example.pekomon.cryptoapp.data.CryptoInfo
 import com.example.pekomon.cryptoapp.data.SortOption
 import com.example.pekomon.cryptoapp.data.Currency
+import com.example.pekomon.cryptoapp.data.PreferencesRepository
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.flow.collect
 
-class CryptoViewModel : ViewModel() {
+class CryptoViewModel(
+    private val preferencesRepository: PreferencesRepository
+) : ViewModel() {
     private val repository = CryptoRepository()
     
     var cryptos by mutableStateOf<List<CryptoInfo>>(emptyList())
@@ -23,7 +27,8 @@ class CryptoViewModel : ViewModel() {
     var error by mutableStateOf<String?>(null)
         private set
         
-    private var favorites by mutableStateOf<Set<String>>(emptySet())
+    var favorites by mutableStateOf<Set<String>>(emptySet())
+        private set
     
     private val cryptoDetails = mapOf(
         "bitcoin" to Pair("Bitcoin", "BTC"),
@@ -32,9 +37,60 @@ class CryptoViewModel : ViewModel() {
     )
     
     var currentSortOption by mutableStateOf(SortOption.NAME_ASC)
+        private set
     
     var selectedCurrency by mutableStateOf(Currency.EUR)
         private set
+    
+    init {
+        viewModelScope.launch {
+            // Lataa tallennetut asetukset
+            preferencesRepository.selectedCurrency.collect { currency ->
+                selectedCurrency = currency
+            }
+        }
+        
+        viewModelScope.launch {
+            preferencesRepository.sortOption.collect { option ->
+                currentSortOption = option
+            }
+        }
+        
+        viewModelScope.launch {
+            preferencesRepository.favorites.collect { savedFavorites ->
+                favorites = savedFavorites
+            }
+        }
+        
+        fetchPrices()
+    }
+    
+    fun updateSortOption(option: SortOption) {
+        viewModelScope.launch {
+            preferencesRepository.updateSortOption(option)
+            currentSortOption = option
+        }
+    }
+    
+    fun updateCurrency(currency: Currency) {
+        viewModelScope.launch {
+            preferencesRepository.updateSelectedCurrency(currency)
+            selectedCurrency = currency
+            fetchPrices()
+        }
+    }
+    
+    fun toggleFavorite(cryptoId: String) {
+        val newFavorites = if (cryptoId in favorites) {
+            favorites - cryptoId
+        } else {
+            favorites + cryptoId
+        }
+        viewModelScope.launch {
+            preferencesRepository.updateFavorites(newFavorites)
+            favorites = newFavorites
+        }
+    }
     
     val sortedCryptos: List<CryptoInfo>
         get() = when (currentSortOption) {
@@ -45,21 +101,6 @@ class CryptoViewModel : ViewModel() {
             SortOption.PRICE_ASC -> cryptos.sortedBy { it.price }
             SortOption.PRICE_DESC -> cryptos.sortedByDescending { it.price }
         }
-    
-    init {
-        // Fetch prices immediately when ViewModel is created
-        viewModelScope.launch {
-            try {
-                val prices = repository.getCryptoPrices()
-                cryptos = prices.map { (id, price) ->
-                    val (name, symbol) = cryptoDetails[id] ?: Pair(id.capitalize(), id.uppercase())
-                    CryptoInfo(id, name, symbol, price)
-                }
-            } catch (e: Exception) {
-                error = "Error fetching prices: ${e.message}"
-            }
-        }
-    }
     
     fun fetchPrices() {
         viewModelScope.launch {
@@ -78,22 +119,5 @@ class CryptoViewModel : ViewModel() {
         }
     }
     
-    fun toggleFavorite(cryptoId: String) {
-        favorites = if (cryptoId in favorites) {
-            favorites - cryptoId
-        } else {
-            favorites + cryptoId
-        }
-    }
-    
     fun isFavorite(cryptoId: String): Boolean = cryptoId in favorites
-    
-    fun updateSortOption(option: SortOption) {
-        currentSortOption = option
-    }
-    
-    fun updateCurrency(currency: Currency) {
-        selectedCurrency = currency
-        fetchPrices() // Päivitetään hinnat uudella valuutalla
-    }
 } 
