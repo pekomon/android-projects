@@ -3,6 +3,7 @@ package com.example.pekomon.cryptoapp.ui
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
@@ -17,52 +18,44 @@ import kotlinx.coroutines.delay
 
 @Composable
 fun SplashScreen(
-    onSplashFinished: () -> Unit,
-    modifier: Modifier = Modifier
+    viewModel: CryptoViewModel,
+    onSplashFinished: () -> Unit
 ) {
-    var startAnimation by remember { mutableStateOf(false) }
-    val scale by animateFloatAsState(
-        targetValue = if (startAnimation) 1f else 0f,
-        animationSpec = tween(durationMillis = 1000),
-        label = "scale"
+    var progress by remember { mutableStateOf(0f) }
+    val animatedProgress by animateFloatAsState(
+        targetValue = progress,
+        animationSpec = tween(durationMillis = 2000),
+        finishedListener = { onSplashFinished() }
     )
     
-    val rotation by animateFloatAsState(
-        targetValue = if (startAnimation) 360f else 0f,
-        animationSpec = tween(durationMillis = 1000),
-        label = "rotation"
-    )
-
-    LaunchedEffect(key1 = true) {
-        startAnimation = true
-        delay(2500) // Splash screen duration
-        onSplashFinished()
+    LaunchedEffect(Unit) {
+        // Aloita datan lataus
+        viewModel.initialize()
+        // Käynnistä animaatio
+        progress = 1f
     }
-
-    Column(
-        modifier = modifier
+    
+    Box(
+        modifier = Modifier
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.primary),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
+        contentAlignment = Alignment.Center
     ) {
-        Text(
-            text = "₿",
-            fontSize = 100.sp,
-            color = Color.White,
-            modifier = Modifier
-                .scale(scale)
-                .wrapContentSize()
-        )
-        
-        Spacer(modifier = Modifier.height(16.dp))
-        
-        Text(
-            text = "CryptoApp",
-            color = Color.White,
-            fontSize = 32.sp,
-            fontWeight = FontWeight.Bold,
-            modifier = Modifier.scale(scale)
-        )
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            Text(
+                text = "CryptoApp",
+                style = MaterialTheme.typography.headlineLarge,
+                color = MaterialTheme.colorScheme.onPrimary
+            )
+            
+            CircularProgressIndicator(
+                progress = animatedProgress,
+                modifier = Modifier.size(64.dp),
+                color = MaterialTheme.colorScheme.onPrimary
+            )
+        }
     }
 } 

@@ -17,6 +17,7 @@ class PreferencesRepository(private val context: Context) {
         val SELECTED_CURRENCY = stringPreferencesKey("selected_currency")
         val SORT_OPTION = stringPreferencesKey("sort_option")
         val FAVORITES = stringSetPreferencesKey("favorites")
+        val SELECTED_CRYPTOS = stringSetPreferencesKey("selected_cryptos")
     }
     
     val selectedCurrency: Flow<Currency> = context.dataStore.data
@@ -57,6 +58,18 @@ class PreferencesRepository(private val context: Context) {
             preferences[PreferencesKeys.FAVORITES] ?: emptySet()
         }
     
+    val selectedCryptos: Flow<Set<String>> = context.dataStore.data
+        .catch { exception ->
+            if (exception is IOException) {
+                emit(emptyPreferences())
+            } else {
+                throw exception
+            }
+        }
+        .map { preferences ->
+            preferences[PreferencesKeys.SELECTED_CRYPTOS] ?: emptySet()
+        }
+    
     suspend fun updateSelectedCurrency(currency: Currency) {
         context.dataStore.edit { preferences ->
             preferences[PreferencesKeys.SELECTED_CURRENCY] = currency.name
@@ -72,6 +85,12 @@ class PreferencesRepository(private val context: Context) {
     suspend fun updateFavorites(favorites: Set<String>) {
         context.dataStore.edit { preferences ->
             preferences[PreferencesKeys.FAVORITES] = favorites
+        }
+    }
+    
+    suspend fun updateSelectedCryptos(cryptos: Set<String>) {
+        context.dataStore.edit { preferences ->
+            preferences[PreferencesKeys.SELECTED_CRYPTOS] = cryptos
         }
     }
 } 

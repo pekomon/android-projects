@@ -4,17 +4,30 @@ import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 
 class CryptoRepository {
-    private val api = Retrofit.Builder()
-        .baseUrl("https://api.coingecko.com/api/v3/")
-        .addConverterFactory(GsonConverterFactory.create())
-        .build()
-        .create(CoinGeckoApi::class.java)
-
-    suspend fun getCryptoPrices(currency: String = "eur"): Map<String, Double> {
-        val response = api.getPrice(
-            ids = "bitcoin,ethereum,dogecoin",
-            vsCurrencies = currency
-        )
-        return response.mapValues { it.value[currency] ?: 0.0 }
+    private val api = CoinGeckoApi.create()
+    
+    suspend fun getAllAvailableCryptos(): List<CryptoListItem> {
+        return api.getCoinsList()
     }
-} 
+    
+    suspend fun getCryptoPrices(coinIds: List<String>, currency: String): Map<String, Double> {
+        return try {
+            val response = api.getSimplePrices(
+                ids = coinIds.joinToString(","),
+                vsCurrencies = currency
+            )
+            response.mapValues { (_, prices) -> 
+                prices[currency] ?: 0.0 
+            }
+        } catch (e: Exception) {
+            emptyMap()
+        }
+    }
+}
+
+data class CryptoListItem(
+    val id: String,
+    val symbol: String,
+    val name: String,
+    val marketCapRank: Int?
+) 

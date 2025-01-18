@@ -5,6 +5,8 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Sort
@@ -32,6 +34,7 @@ import com.example.pekomon.cryptoapp.data.Currency
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import com.example.pekomon.cryptoapp.data.PreferencesRepository
+import com.example.pekomon.cryptoapp.ui.components.CryptoSelector
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -64,6 +67,7 @@ fun CryptoApp() {
     
     if (showSplash) {
         SplashScreen(
+            viewModel = viewModel,
             onSplashFinished = { showSplash = false }
         )
     } else {
@@ -170,13 +174,18 @@ fun HomeScreen(
                 )
             }
             else -> {
-                viewModel.sortedCryptos.forEach { crypto ->
-                    CryptoPrice(
-                        crypto = crypto,
-                        isFavorite = viewModel.isFavorite(crypto.id),
-                        onFavoriteClick = { viewModel.toggleFavorite(crypto.id) },
-                        viewModel = viewModel
-                    )
+                LazyColumn(
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                    modifier = Modifier.weight(1f)
+                ) {
+                    items(viewModel.sortedCryptos) { crypto ->
+                        CryptoPrice(
+                            crypto = crypto,
+                            isFavorite = viewModel.isFavorite(crypto.id),
+                            onFavoriteClick = { viewModel.toggleFavorite(crypto.id) },
+                            viewModel = viewModel
+                        )
+                    }
                 }
             }
         }
@@ -252,13 +261,18 @@ fun FavoritesScreen(
                         modifier = Modifier.align(Alignment.CenterHorizontally)
                     )
                 } else {
-                    favorites.forEach { crypto ->
-                        CryptoPrice(
-                            crypto = crypto,
-                            isFavorite = true,
-                            onFavoriteClick = { viewModel.toggleFavorite(crypto.id) },
-                            viewModel = viewModel
-                        )
+                    LazyColumn(
+                        verticalArrangement = Arrangement.spacedBy(8.dp),
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        items(favorites) { crypto ->
+                            CryptoPrice(
+                                crypto = crypto,
+                                isFavorite = true,
+                                onFavoriteClick = { viewModel.toggleFavorite(crypto.id) },
+                                viewModel = viewModel
+                            )
+                        }
                     }
                 }
             }
@@ -271,6 +285,27 @@ fun SettingsScreen(
     viewModel: CryptoViewModel,
     modifier: Modifier = Modifier
 ) {
+    var showCryptoSelector by remember { mutableStateOf(false) }
+    
+    if (showCryptoSelector) {
+        AlertDialog(
+            onDismissRequest = { showCryptoSelector = false },
+            title = { Text("Select cryptocurrencies") },
+            text = {
+                CryptoSelector(
+                    availableCryptos = viewModel.availableCryptos,
+                    selectedCryptos = viewModel.selectedCryptos,
+                    onSelectionChanged = { viewModel.updateSelectedCryptos(it) }
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = { showCryptoSelector = false }) {
+                    Text("Done")
+                }
+            }
+        )
+    }
+    
     Column(
         modifier = modifier
             .fillMaxSize()
@@ -318,6 +353,19 @@ fun SettingsScreen(
                 }
             }
         }
+        
+        OutlinedButton(
+            onClick = { showCryptoSelector = true },
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Text("Select displayed cryptocurrencies")
+        }
+        
+        Text(
+            text = "${viewModel.selectedCryptos.size} cryptocurrencies selected",
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+        )
     }
 }
 
