@@ -12,6 +12,7 @@ import com.example.pekomon.cryptoapp.data.SortOption
 import com.example.pekomon.cryptoapp.data.Currency
 import com.example.pekomon.cryptoapp.data.PreferencesRepository
 import com.example.pekomon.cryptoapp.data.CryptoListItem
+import com.example.pekomon.cryptoapp.data.UserCrypto
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.first
@@ -35,7 +36,7 @@ class CryptoViewModel(
     
     var availableCryptos by mutableStateOf<List<CryptoListItem>>(emptyList())
         private set
-        
+    
     var selectedCryptos by mutableStateOf<Set<String>>(emptySet())
         private set
     
@@ -75,6 +76,25 @@ class CryptoViewModel(
         "ethereum-classic",
         "hedera"
     )
+    
+    var userCryptos by mutableStateOf<List<UserCrypto>>(emptyList())
+        private set
+    
+    val totalPortfolioValue: Double
+        get() = userCryptos.sumOf { userCrypto ->
+            val price = getCryptoInfo(userCrypto.cryptoId)?.currentPrice ?: 0.0
+            price * userCrypto.amount
+        }
+    
+    private var cryptoInfoMap = mutableMapOf<String, CryptoInfo>()
+    
+    init {
+        viewModelScope.launch {
+            preferencesRepository.userCryptos.collect { cryptos ->
+                userCryptos = cryptos
+            }
+        }
+    }
     
     suspend fun initialize() {
         if (isInitialized) return
@@ -138,14 +158,14 @@ class CryptoViewModel(
         }
     }
     
-    val sortedCryptos: List<CryptoInfo>
+    val sortedCryptos: List<CryptoListItem>
         get() = when (currentSortOption) {
-            SortOption.NAME_ASC -> cryptos.sortedBy { it.name }
-            SortOption.NAME_DESC -> cryptos.sortedByDescending { it.name }
-            SortOption.SYMBOL_ASC -> cryptos.sortedBy { it.symbol }
-            SortOption.SYMBOL_DESC -> cryptos.sortedByDescending { it.symbol }
-            SortOption.PRICE_ASC -> cryptos.sortedBy { it.price }
-            SortOption.PRICE_DESC -> cryptos.sortedByDescending { it.price }
+            SortOption.NAME_ASC -> availableCryptos.sortedBy { it.name }
+            SortOption.NAME_DESC -> availableCryptos.sortedByDescending { it.name }
+            SortOption.SYMBOL_ASC -> availableCryptos.sortedBy { it.symbol }
+            SortOption.SYMBOL_DESC -> availableCryptos.sortedByDescending { it.symbol }
+            SortOption.PRICE_ASC -> availableCryptos.sortedBy { getCryptoInfo(it.id)?.currentPrice ?: 0.0 }
+            SortOption.PRICE_DESC -> availableCryptos.sortedByDescending { getCryptoInfo(it.id)?.currentPrice ?: 0.0 }
         }
     
     fun fetchPrices() {
@@ -153,19 +173,16 @@ class CryptoViewModel(
             isLoading = true
             error = null
             try {
-                // Haetaan hinnat valituille ja suosikeille
                 val cryptosToFetch = (selectedCryptos + favorites).toList()
                 val prices = repository.getCryptoPrices(cryptosToFetch, selectedCurrency.code)
                 
-                cryptos = prices.map { (id, price) ->
-                    val crypto = availableCryptos.find { it.id == id }
+                cryptoInfoMap = prices.mapValues { (id, price) ->
                     CryptoInfo(
                         id = id,
-                        name = crypto?.name ?: id.capitalize(),
-                        symbol = crypto?.symbol?.uppercase() ?: id.uppercase(),
-                        price = price
+                        currentPrice = price,
+                        priceChangePercentage = 0.0  // Tämä pitäisi hakea API:sta
                     )
-                }
+                }.toMutableMap()
             } catch (e: Exception) {
                 error = "Error fetching prices: ${e.message}"
             }
@@ -192,4 +209,29 @@ class CryptoViewModel(
             fetchPrices()
         }
     }
+    
+    fun addUserCrypto(cryptoId: String, amount: Double) {
+        viewModelScope.launch {
+            val newCryptos = userCryptos + UserCrypto(cryptoId, amount)
+            preferencesRepository.updateUserCryptos(newCryptos)
+        }
+    }
+    
+    fun updateUserCrypto(cryptoId: String, amount: Double) {
+        viewModelScope.launch {
+            val newCryptos = userCryptos.map { 
+                if (it.cryptoId == cryptoId) UserCrypto(cryptoId, amount) else it 
+            }
+            preferencesRepository.updateUserCryptos(newCryptos)
+        }
+    }
+    
+    fun removeUserCrypto(cryptoId: String) {
+        viewModelScope.launch {
+            val newCryptos = userCryptos.filter { it.cryptoId != cryptoId }
+            preferencesRepository.updateUserCryptos(newCryptos)
+        }
+    }
+    
+    fun getCryptoInfo(id: String): CryptoInfo? = cryptoInfoMap[id]
 } 

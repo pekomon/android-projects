@@ -1,5 +1,6 @@
 package com.example.pekomon.cryptoapp
 
+import HomeScreen
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -10,6 +11,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Sort
+import androidx.compose.material.icons.filled.AccountBalance
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.Home
@@ -37,6 +39,12 @@ import com.example.pekomon.cryptoapp.data.PreferencesRepository
 import com.example.pekomon.cryptoapp.ui.components.CryptoSelector
 import com.google.accompanist.swiperefresh.SwipeRefresh
 import com.google.accompanist.swiperefresh.rememberSwipeRefreshState
+import com.example.pekomon.cryptoapp.ui.screens.PortfolioScreen
+import com.example.pekomon.cryptoapp.data.CryptoListItem
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -83,6 +91,7 @@ fun CryptoApp() {
                     val items = listOf(
                         Screen.Home to Icons.Default.Home,
                         Screen.Favorites to Icons.Default.Favorite,
+                        Screen.Portfolio to Icons.Default.AccountBalance,
                         Screen.Settings to Icons.Default.Settings
                     )
                     
@@ -116,6 +125,9 @@ fun CryptoApp() {
                 composable(Screen.Favorites.route) {
                     FavoritesScreen(viewModel = viewModel)
                 }
+                composable(Screen.Portfolio.route) {
+                    PortfolioScreen(viewModel = viewModel)
+                }
                 composable(Screen.Settings.route) {
                     SettingsScreen(viewModel = viewModel)
                 }
@@ -125,7 +137,7 @@ fun CryptoApp() {
 }
 
 @Composable
-fun HomeScreen(
+fun HomeScreenx(
     viewModel: CryptoViewModel,
     modifier: Modifier = Modifier
 ) {
@@ -195,6 +207,8 @@ fun FavoritesScreen(
     viewModel: CryptoViewModel,
     modifier: Modifier = Modifier
 ) {
+    var showSortMenu by remember { mutableStateOf(false) }
+    
     Column(
         modifier = modifier.padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
@@ -206,7 +220,7 @@ fun FavoritesScreen(
         )
         
         OutlinedButton(
-            onClick = { /* Avaa lajitteluvalikon */ },
+            onClick = { showSortMenu = true },
             modifier = Modifier.fillMaxWidth()
         ) {
             Row(
@@ -223,9 +237,15 @@ fun FavoritesScreen(
                     contentDescription = "Sort"
                 )
             }
+        }
+        
+        if (showSortMenu) {
             SortMenu(
                 currentSort = viewModel.currentSortOption,
-                onSortSelected = { viewModel.updateSortOption(it) }
+                onSortSelected = { 
+                    viewModel.updateSortOption(it)
+                    showSortMenu = false
+                }
             )
         }
         
@@ -362,12 +382,14 @@ fun SettingsScreen(
 
 @Composable
 fun CryptoPrice(
-    crypto: CryptoInfo,
+    crypto: CryptoListItem,
     isFavorite: Boolean,
     onFavoriteClick: () -> Unit,
     viewModel: CryptoViewModel,
     modifier: Modifier = Modifier
 ) {
+    val cryptoInfo = viewModel.getCryptoInfo(crypto.id)
+    
     Card(
         modifier = modifier.fillMaxWidth(),
     ) {
@@ -384,7 +406,7 @@ fun CryptoPrice(
                     style = MaterialTheme.typography.titleMedium
                 )
                 Text(
-                    text = crypto.symbol,
+                    text = crypto.symbol.uppercase(),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
                 )
@@ -394,7 +416,7 @@ fun CryptoPrice(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = "${viewModel.selectedCurrency.symbol}%.2f".format(crypto.price),
+                    text = "${viewModel.selectedCurrency.symbol}${cryptoInfo?.currentPrice ?: 0.0}",
                     style = MaterialTheme.typography.titleMedium
                 )
                 IconButton(onClick = onFavoriteClick) {

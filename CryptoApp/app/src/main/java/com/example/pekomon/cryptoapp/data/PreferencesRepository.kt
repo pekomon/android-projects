@@ -8,6 +8,8 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.map
 import java.io.IOException
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.encodeToString
 
 private val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "settings")
 
@@ -18,6 +20,7 @@ class PreferencesRepository(private val context: Context) {
         val SORT_OPTION = stringPreferencesKey("sort_option")
         val FAVORITES = stringSetPreferencesKey("favorites")
         val SELECTED_CRYPTOS = stringSetPreferencesKey("selected_cryptos")
+        val USER_CRYPTOS = stringPreferencesKey("user_cryptos")
     }
     
     val selectedCurrency: Flow<Currency> = context.dataStore.data
@@ -70,6 +73,19 @@ class PreferencesRepository(private val context: Context) {
             preferences[PreferencesKeys.SELECTED_CRYPTOS] ?: emptySet()
         }
     
+    val userCryptos: Flow<List<UserCrypto>> = context.dataStore.data
+        .catch { exception ->
+            if (exception is IOException) {
+                emit(emptyPreferences())
+            } else {
+                throw exception
+            }
+        }
+        .map { preferences ->
+            val cryptosJson = preferences[PreferencesKeys.USER_CRYPTOS] ?: "[]"
+            Json.decodeFromString<List<UserCrypto>>(cryptosJson)
+        }
+    
     suspend fun updateSelectedCurrency(currency: Currency) {
         context.dataStore.edit { preferences ->
             preferences[PreferencesKeys.SELECTED_CURRENCY] = currency.name
@@ -91,6 +107,12 @@ class PreferencesRepository(private val context: Context) {
     suspend fun updateSelectedCryptos(cryptos: Set<String>) {
         context.dataStore.edit { preferences ->
             preferences[PreferencesKeys.SELECTED_CRYPTOS] = cryptos
+        }
+    }
+    
+    suspend fun updateUserCryptos(cryptos: List<UserCrypto>) {
+        context.dataStore.edit { preferences ->
+            preferences[PreferencesKeys.USER_CRYPTOS] = Json.encodeToString(cryptos)
         }
     }
 } 

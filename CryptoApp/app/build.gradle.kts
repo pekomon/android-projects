@@ -2,6 +2,7 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
+    kotlin("plugin.serialization") version "1.9.0"
 }
 
 android {
@@ -76,4 +77,7 @@ dependencies {
 
     // Swipe-to-refresh
     implementation("com.google.accompanist:accompanist-swiperefresh:0.27.0")
+
+    // Lisää kotlinx.serialization riippuvuus
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.5.1")
 }
