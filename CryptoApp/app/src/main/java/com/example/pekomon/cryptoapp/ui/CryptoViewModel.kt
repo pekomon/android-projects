@@ -46,7 +46,7 @@ class CryptoViewModel(
         "dogecoin" to Pair("Dogecoin", "DOGE")
     )
     
-    var currentSortOption by mutableStateOf(SortOption.NAME_ASC)
+    var currentSortOption by mutableStateOf(SortOption.DEFAULT)
         private set
     
     var selectedCurrency by mutableStateOf(Currency.EUR)
@@ -132,10 +132,7 @@ class CryptoViewModel(
     }
     
     fun updateSortOption(option: SortOption) {
-        viewModelScope.launch {
-            preferencesRepository.updateSortOption(option)
-            currentSortOption = option
-        }
+        currentSortOption = option
     }
     
     fun updateCurrency(currency: Currency) {
