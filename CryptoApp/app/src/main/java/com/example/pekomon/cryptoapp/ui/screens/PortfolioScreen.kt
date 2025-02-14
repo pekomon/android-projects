@@ -27,6 +27,7 @@ import androidx.compose.ui.unit.dp
 import com.example.pekomon.cryptoapp.data.Currency
 import com.example.pekomon.cryptoapp.data.UserCrypto
 import com.example.pekomon.cryptoapp.ui.CryptoViewModel
+import com.example.pekomon.cryptoapp.ui.components.CommonCard
 import com.example.pekomon.cryptoapp.ui.components.QuickAddDialog
 
 @Composable
@@ -111,7 +112,7 @@ private fun PortfolioItem(
     onEdit: () -> Unit,
     onDelete: () -> Unit
 ) {
-    Card(
+    CommonCard(
         modifier = Modifier.fillMaxWidth()
     ) {
         Row(

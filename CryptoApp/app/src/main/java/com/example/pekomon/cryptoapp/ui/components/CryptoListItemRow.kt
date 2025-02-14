@@ -26,12 +26,9 @@ fun CryptoListItemRow(
     onQuickAdd: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    Card(
-        modifier = modifier.fillMaxWidth(),
-        onClick = {
-            Log.d("CryptoListItemRow", "Card clicked for ${crypto.name}")
-            onQuickAdd()
-        }
+    CommonCard(
+        onClick = onQuickAdd,
+        modifier = modifier
     ) {
         Row(
             modifier = Modifier

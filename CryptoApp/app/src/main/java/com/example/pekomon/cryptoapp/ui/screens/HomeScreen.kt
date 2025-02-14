@@ -24,6 +24,7 @@ import com.example.pekomon.cryptoapp.ui.CryptoViewModel
 import com.example.pekomon.cryptoapp.ui.components.CryptoList
 import com.example.pekomon.cryptoapp.ui.components.CryptoListItemRow
 import com.example.pekomon.cryptoapp.ui.components.QuickAddDialog
+import com.example.pekomon.cryptoapp.ui.components.ScreenHeader
 import com.example.pekomon.cryptoapp.ui.components.SortMenu
 import com.google.accompanist.swiperefresh.SwipeRefresh
 import com.google.accompanist.swiperefresh.rememberSwipeRefreshState
@@ -39,11 +40,7 @@ fun HomeScreen(
         modifier = modifier.padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        Text(
-            text = "Cryptocurrencies",
-            style = MaterialTheme.typography.headlineMedium,
-            modifier = Modifier.fillMaxWidth()
-        )
+        ScreenHeader(title = "Cryptocurrencies")
         
         Row(
             modifier = Modifier.fillMaxWidth(),
