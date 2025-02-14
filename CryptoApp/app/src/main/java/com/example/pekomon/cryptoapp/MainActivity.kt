@@ -10,7 +10,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.Sort
 import androidx.compose.material.icons.filled.AccountBalance
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
@@ -29,7 +28,6 @@ import androidx.navigation.compose.rememberNavController
 import com.example.pekomon.cryptoapp.ui.CryptoViewModel
 import com.example.pekomon.cryptoapp.ui.navigation.Screen
 import com.example.pekomon.cryptoapp.ui.theme.CryptoAppTheme
-import com.example.pekomon.cryptoapp.data.CryptoInfo
 import com.example.pekomon.cryptoapp.ui.SplashScreen
 import com.example.pekomon.cryptoapp.ui.components.SortMenu
 import com.example.pekomon.cryptoapp.data.Currency
@@ -45,6 +43,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import com.example.pekomon.cryptoapp.ui.screens.FavoritesScreen
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -191,95 +190,6 @@ fun HomeScreenx(
                             CryptoPrice(
                                 crypto = crypto,
                                 isFavorite = viewModel.isFavorite(crypto.id),
-                                onFavoriteClick = { viewModel.toggleFavorite(crypto.id) },
-                                viewModel = viewModel
-                            )
-                        }
-                    }
-                }
-            }
-        }
-    }
-}
-
-@Composable
-fun FavoritesScreen(
-    viewModel: CryptoViewModel,
-    modifier: Modifier = Modifier
-) {
-    var showSortMenu by remember { mutableStateOf(false) }
-    
-    Column(
-        modifier = modifier.padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
-    ) {
-        Text(
-            text = "Favorite Cryptocurrencies",
-            style = MaterialTheme.typography.headlineMedium,
-            modifier = Modifier.fillMaxWidth()
-        )
-        
-        OutlinedButton(
-            onClick = { showSortMenu = true },
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = "Sort by: ${viewModel.currentSortOption.displayName}",
-                    style = MaterialTheme.typography.bodyLarge
-                )
-                Icon(
-                    imageVector = Icons.AutoMirrored.Filled.Sort,
-                    contentDescription = "Sort"
-                )
-            }
-        }
-        
-        if (showSortMenu) {
-            SortMenu(
-                currentSort = viewModel.currentSortOption,
-                onSortSelected = { 
-                    viewModel.updateSortOption(it)
-                    showSortMenu = false
-                }
-            )
-        }
-        
-        when {
-            viewModel.isLoading -> {
-                CircularProgressIndicator(
-                    modifier = Modifier.align(Alignment.CenterHorizontally)
-                )
-            }
-            viewModel.error != null -> {
-                Text(
-                    text = viewModel.error ?: "",
-                    color = MaterialTheme.colorScheme.error
-                )
-            }
-            else -> {
-                val favorites = viewModel.sortedCryptos.filter { crypto -> 
-                    viewModel.isFavorite(crypto.id)
-                }
-                
-                if (favorites.isEmpty()) {
-                    Text(
-                        text = "No favorites yet",
-                        modifier = Modifier.align(Alignment.CenterHorizontally)
-                    )
-                } else {
-                    LazyColumn(
-                        verticalArrangement = Arrangement.spacedBy(8.dp),
-                        modifier = Modifier.weight(1f)
-                    ) {
-                        items(favorites) { crypto ->
-                            CryptoPrice(
-                                crypto = crypto,
-                                isFavorite = true,
                                 onFavoriteClick = { viewModel.toggleFavorite(crypto.id) },
                                 viewModel = viewModel
                             )

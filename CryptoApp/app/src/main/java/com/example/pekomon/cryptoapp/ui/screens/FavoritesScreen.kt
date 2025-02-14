@@ -1,15 +1,16 @@
-import android.util.Log
+package com.example.pekomon.cryptoapp.ui.screens
+
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.Sort
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -22,41 +23,56 @@ import androidx.compose.ui.unit.dp
 import com.example.pekomon.cryptoapp.data.CryptoListItem
 import com.example.pekomon.cryptoapp.ui.CryptoViewModel
 import com.example.pekomon.cryptoapp.ui.components.CryptoList
-import com.example.pekomon.cryptoapp.ui.components.CryptoListItemRow
 import com.example.pekomon.cryptoapp.ui.components.QuickAddDialog
 import com.example.pekomon.cryptoapp.ui.components.SortMenu
 import com.google.accompanist.swiperefresh.SwipeRefresh
 import com.google.accompanist.swiperefresh.rememberSwipeRefreshState
 
 @Composable
-fun HomeScreen(
+fun FavoritesScreen(
     viewModel: CryptoViewModel,
     modifier: Modifier = Modifier
 ) {
     var quickAddCrypto by remember { mutableStateOf<CryptoListItem?>(null) }
+    var showSortMenu by remember { mutableStateOf(false) }
     
     Column(
         modifier = modifier.padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         Text(
-            text = "Cryptocurrencies",
+            text = "Favorite Cryptocurrencies",
             style = MaterialTheme.typography.headlineMedium,
             modifier = Modifier.fillMaxWidth()
         )
         
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
+        OutlinedButton(
+            onClick = { showSortMenu = true },
+            modifier = Modifier.fillMaxWidth()
         ) {
-            Text(
-                text = "Sort by: ${viewModel.currentSortOption.displayName}",
-                style = MaterialTheme.typography.bodyLarge
-            )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "Sort by: ${viewModel.currentSortOption.displayName}",
+                    style = MaterialTheme.typography.bodyLarge
+                )
+                Icon(
+                    imageVector = Icons.AutoMirrored.Filled.Sort,
+                    contentDescription = "Sort"
+                )
+            }
+        }
+        
+        if (showSortMenu) {
             SortMenu(
                 currentSort = viewModel.currentSortOption,
-                onSortSelected = { viewModel.updateSortOption(it) }
+                onSortSelected = { 
+                    viewModel.updateSortOption(it)
+                    showSortMenu = false
+                }
             )
         }
 
@@ -73,16 +89,29 @@ fun HomeScreen(
                 )
             }
             else -> {
-                SwipeRefresh(
-                    state = rememberSwipeRefreshState(viewModel.isLoading),
-                    onRefresh = { viewModel.fetchPrices() },
-                    modifier = Modifier.weight(1f)
-                ) {
-                    CryptoList(
-                        cryptos = viewModel.sortedCryptos,
-                        viewModel = viewModel,
-                        onQuickAdd = { crypto -> quickAddCrypto = crypto }
+                val favorites = viewModel.sortedCryptos.filter { crypto -> 
+                    viewModel.isFavorite(crypto.id)
+                }
+                
+                if (favorites.isEmpty()) {
+                    Text(
+                        text = "No favorites yet",
+                        modifier = Modifier.align(Alignment.CenterHorizontally)
                     )
+                } else {
+                    SwipeRefresh(
+                        state = rememberSwipeRefreshState(viewModel.isLoading),
+                        onRefresh = { viewModel.fetchPrices() },
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        CryptoList(
+                            cryptos = favorites,
+                            viewModel = viewModel,
+                            onQuickAdd = { crypto -> 
+                                quickAddCrypto = crypto
+                            }
+                        )
+                    }
                 }
             }
         }
