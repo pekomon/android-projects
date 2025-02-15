@@ -73,7 +73,7 @@ fun PortfolioScreen(
             verticalArrangement = Arrangement.spacedBy(8.dp),
             modifier = Modifier.weight(1f)
         ) {
-            items(viewModel.userCryptos) { userCrypto ->
+            items(viewModel.getCombinedUserCryptos()) { userCrypto ->
                 val crypto = viewModel.availableCryptos.find { it.id == userCrypto.cryptoId }
                 val cryptoInfo = viewModel.getCryptoInfo(userCrypto.cryptoId)
                 

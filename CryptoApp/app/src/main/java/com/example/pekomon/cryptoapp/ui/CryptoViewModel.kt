@@ -259,4 +259,18 @@ class CryptoViewModel(
     }
     
     fun getCryptoInfo(id: String): CryptoInfo? = cryptoInfoMap[id]
+    
+    fun getCombinedUserCryptos(): List<UserCrypto> {
+        return userCryptos
+            .groupBy { it.cryptoId }
+            .map { (cryptoId, cryptos) ->
+                UserCrypto(
+                    cryptoId = cryptoId,
+                    amount = cryptos.sumOf { it.amount },
+                    purchasePrice = cryptos.sumOf { it.purchasePrice * it.amount } / cryptos.sumOf { it.amount },
+                    purchaseDateTime = cryptos.minOf { it.purchaseDateTime },
+                    transactions = cryptos.flatMap { it.transactions }
+                )
+            }
+    }
 } 
