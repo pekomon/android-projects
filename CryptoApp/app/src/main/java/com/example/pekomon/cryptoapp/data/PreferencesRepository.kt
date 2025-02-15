@@ -10,6 +10,7 @@ import kotlinx.coroutines.flow.map
 import java.io.IOException
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.encodeToString
+import android.util.Log
 
 private val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "settings")
 
@@ -75,15 +76,18 @@ class PreferencesRepository(private val context: Context) {
     
     val userCryptos: Flow<List<UserCrypto>> = context.dataStore.data
         .catch { exception ->
-            if (exception is IOException) {
-                emit(emptyPreferences())
-            } else {
-                throw exception
-            }
+            Log.e("PreferencesRepository", "Error reading user cryptos", exception)
+            emit(emptyPreferences())
         }
         .map { preferences ->
-            val cryptosJson = preferences[PreferencesKeys.USER_CRYPTOS] ?: "[]"
-            Json.decodeFromString<List<UserCrypto>>(cryptosJson)
+            try {
+                val json = preferences[PreferencesKeys.USER_CRYPTOS] ?: "[]"
+                Log.d("PreferencesRepository", "Reading user cryptos: $json")
+                Json.decodeFromString<List<UserCrypto>>(json)
+            } catch (e: Exception) {
+                Log.e("PreferencesRepository", "Error deserializing user cryptos", e)
+                emptyList()
+            }
         }
     
     suspend fun updateSelectedCurrency(currency: Currency) {
@@ -111,8 +115,14 @@ class PreferencesRepository(private val context: Context) {
     }
     
     suspend fun updateUserCryptos(cryptos: List<UserCrypto>) {
-        context.dataStore.edit { preferences ->
-            preferences[PreferencesKeys.USER_CRYPTOS] = Json.encodeToString(cryptos)
+        try {
+            val json = Json.encodeToString(cryptos)
+            Log.d("PreferencesRepository", "Saving user cryptos: $json")
+            context.dataStore.edit { preferences ->
+                preferences[PreferencesKeys.USER_CRYPTOS] = json
+            }
+        } catch (e: Exception) {
+            Log.e("PreferencesRepository", "Error saving user cryptos", e)
         }
     }
 } 

@@ -13,9 +13,12 @@ import com.example.pekomon.cryptoapp.data.Currency
 import com.example.pekomon.cryptoapp.data.PreferencesRepository
 import com.example.pekomon.cryptoapp.data.CryptoListItem
 import com.example.pekomon.cryptoapp.data.UserCrypto
+import com.example.pekomon.cryptoapp.data.Transaction
+import com.example.pekomon.cryptoapp.data.TransactionType
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.first
+import java.time.LocalDateTime
 
 class CryptoViewModel(
     private val preferencesRepository: PreferencesRepository
@@ -207,19 +210,44 @@ class CryptoViewModel(
         }
     }
     
-    fun addUserCrypto(cryptoId: String, amount: Double) {
+    fun addUserCrypto(
+        cryptoId: String,
+        amount: Double,
+        price: Double,
+        dateTime: LocalDateTime
+    ) {
         viewModelScope.launch {
-            val newCryptos = userCryptos + UserCrypto(cryptoId, amount)
+            val transaction = Transaction(
+                type = TransactionType.BUY,
+                amount = amount,
+                price = price,
+                dateTime = dateTime
+            )
+            
+            val newCrypto = UserCrypto(
+                cryptoId = cryptoId,
+                amount = amount,
+                purchasePrice = price,
+                purchaseDateTime = dateTime,
+                transactions = listOf(transaction)
+            )
+            
+            val newCryptos = userCryptos + newCrypto
             preferencesRepository.updateUserCryptos(newCryptos)
         }
     }
     
     fun updateUserCrypto(cryptoId: String, amount: Double) {
         viewModelScope.launch {
-            val newCryptos = userCryptos.map { 
-                if (it.cryptoId == cryptoId) UserCrypto(cryptoId, amount) else it 
+            val existingCrypto = userCryptos.find { it.cryptoId == cryptoId }
+            if (existingCrypto != null) {
+                val newCryptos = userCryptos.map { 
+                    if (it.cryptoId == cryptoId) {
+                        it.copy(amount = amount)
+                    } else it 
+                }
+                preferencesRepository.updateUserCryptos(newCryptos)
             }
-            preferencesRepository.updateUserCryptos(newCryptos)
         }
     }
     

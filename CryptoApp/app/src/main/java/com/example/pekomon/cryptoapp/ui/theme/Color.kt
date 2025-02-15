@@ -14,3 +14,9 @@ val PositiveGreen = Color(0xFF4CAF50)
 val NegativeRed = Color(0xFFE57373)
 val SubtleText = Color(0x99000000) // Light mode
 val SubtleTextDark = Color(0x99FFFFFF) // Dark mode
+
+// Lisätään uudet värit
+val PositiveGreenLight = Color(0xFF4CAF50)
+val PositiveGreenDark = Color(0xFF81C784)
+val NegativeRedLight = Color(0xFFE57373)
+val NegativeRedDark = Color(0xFFEF9A9A)

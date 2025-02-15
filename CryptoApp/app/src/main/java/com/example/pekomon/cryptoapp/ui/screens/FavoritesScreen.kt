@@ -118,11 +118,14 @@ fun FavoritesScreen(
     }
     
     quickAddCrypto?.let { crypto ->
+        val currentPrice = viewModel.getCryptoInfo(crypto.id)?.currentPrice ?: 0.0
         QuickAddDialog(
             cryptoName = crypto.name,
+            currentPrice = currentPrice,
+            currency = viewModel.selectedCurrency,
             onDismiss = { quickAddCrypto = null },
-            onConfirm = { amount ->
-                viewModel.addUserCrypto(crypto.id, amount)
+            onConfirm = { amount, price, dateTime ->
+                viewModel.addUserCrypto(crypto.id, amount, price, dateTime)
                 quickAddCrypto = null
             }
         )

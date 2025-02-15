@@ -12,25 +12,28 @@ import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.graphics.Color
+import androidx.compose.material3.ColorScheme
 
 private val DarkColorScheme = darkColorScheme(
-    primary = Purple80,
+    primary = PositiveGreenDark,
     secondary = PurpleGrey80,
     tertiary = Pink80,
     surface = Color(0xFF1C1B1F),
     background = Color(0xFF121212),
     onSurface = Color(0xFFFFFBFE),
-    onBackground = Color(0xFFFFFBFE)
+    onBackground = Color(0xFFFFFBFE),
+    error = NegativeRedDark
 )
 
 private val LightColorScheme = lightColorScheme(
-    primary = Purple40,
+    primary = PositiveGreenLight,
     secondary = PurpleGrey40,
     tertiary = Pink40,
     surface = Color(0xFFFFFBFE),
     background = Color(0xFFF5F5F5),
     onSurface = Color(0xFF1C1B1F),
-    onBackground = Color(0xFF1C1B1F)
+    onBackground = Color(0xFF1C1B1F),
+    error = NegativeRedLight
 
     /* Other default colors to override
     background = Color(0xFFFFFBFE),
@@ -67,3 +70,9 @@ fun CryptoAppTheme(
         content = content
     )
 }
+
+val ColorScheme.positiveGreen: Color
+    get() = Color(0xFF4CAF50)
+
+val ColorScheme.negativeRed: Color
+    get() = Color(0xFFE57373)
