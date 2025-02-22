@@ -1,0 +1,37 @@
+*.iml
+.gradle
+/local.properties
+/.idea/caches
+/.idea/libraries
+/.idea/modules.xml
+/.idea/workspace.xml
+/.idea/navEditor.xml
+/.idea/assetWizardSettings.xml
+.DS_Store
+/build
+/captures
+.externalNativeBuild
+.cxx
+local.properties
+
+# Android/IntelliJ
+.idea/
+*.iml
+*.hprof
+
+# Gradle
+.gradle/
+local.properties
+**/build/
+**/captures/
+**/outputs/
+**/intermediates/
+
+# MacOS
+.DS_Store
+
+# Kotlin/Jetpack Compose
+*.kotlin_module
+
+# Logs
+*.log
