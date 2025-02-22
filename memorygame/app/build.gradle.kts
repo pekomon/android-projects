@@ -1,3 +1,4 @@
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
@@ -57,7 +58,7 @@ dependencies {
     implementation(libs.androidx.material)
     implementation(libs.ui.tooling.preview)
     implementation(libs.androidx.lifecycle.runtime.ktx.v262)
-
+    implementation(libs.androidx.lifecycle.viewmodel.compose)
     implementation("com.google.dagger:hilt-android:2.51.1")
     kapt("com.google.dagger:hilt-android-compiler:2.51.1")
 
