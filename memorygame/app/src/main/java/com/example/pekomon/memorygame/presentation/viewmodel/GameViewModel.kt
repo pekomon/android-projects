@@ -16,14 +16,19 @@ import javax.inject.Inject
 class GameViewModel @Inject constructor(
     private val cardRepository: CardRepository
 ) : ViewModel() {
-    private val _cards = MutableStateFlow(
-        cardRepository.getCards()
-    )
+    private val _cards = MutableStateFlow(cardRepository.getCards())
     val cards = _cards.asStateFlow()
 
     private var selectedCards = mutableListOf<Card>()
 
+    private var _moves = MutableStateFlow(0)
+    val moves = _moves.asStateFlow()
+
+    private val _score = MutableStateFlow(0)
+    val score = _score.asStateFlow()
+
     fun flipCard(cardId: Int) {
+        // Prevent flipping a card that is already flipped or has a match
         if (selectedCards.size >= 2) return
 
         _cards.update { currentCards ->
@@ -36,12 +41,14 @@ class GameViewModel @Inject constructor(
         }
 
         if (selectedCards.size == 2) {
+            _moves.value++
             checkForMatch()
         }
     }
 
     private fun checkForMatch() {
         if (selectedCards[0].imageRes == selectedCards[1].imageRes) {
+            _score.value += 10
             selectedCards.clear()
         } else {
             viewModelScope.launch {
