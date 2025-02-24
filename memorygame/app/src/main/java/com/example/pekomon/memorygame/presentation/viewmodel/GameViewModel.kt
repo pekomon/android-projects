@@ -27,9 +27,12 @@ class GameViewModel @Inject constructor(
     private val _score = MutableStateFlow(0)
     val score = _score.asStateFlow()
 
+    private val _isGameWon = MutableStateFlow(false)
+    val isGameWon = _isGameWon.asStateFlow()
+
     fun flipCard(cardId: Int) {
-        // Prevent flipping a card that is already flipped or has a match
-        if (selectedCards.size >= 2) return
+        // Prevent flipping a card that is already flipped or has a match or Game is won
+        if (selectedCards.size >= 2 || _isGameWon.value) return
 
         _cards.update { currentCards ->
             currentCards.map { card ->
@@ -63,6 +66,22 @@ class GameViewModel @Inject constructor(
                 }
                 selectedCards.clear()
             }
+
+            checkIfGameWon()
         }
+    }
+
+    private fun checkIfGameWon() {
+        if (_cards.value.all { it.isFlipped }) {
+            _isGameWon.value = true
+        }
+    }
+
+    fun restartGame() {
+        _cards.value = cardRepository.getCards()
+        _moves.value = 0
+        _score.value = 0
+        _isGameWon.value = false
+        selectedCards.clear()
     }
 }
