@@ -32,14 +32,15 @@ class GameViewModel @Inject constructor(
 
     fun flipCard(cardId: Int) {
         // Prevent flipping a card that is already flipped or has a match or Game is won
-        if (selectedCards.size >= 2 || _isGameWon.value) return
+        if (selectedCards.size >= 2 || _isGameWon.value) {
+            return
+        }
 
         _cards.update { currentCards ->
             currentCards.map { card ->
                 if (card.id == cardId && !card.isFlipped) {
                     card.copy(isFlipped = true).also { selectedCards.add(it) }
                 } else card
-
             }
         }
 
@@ -66,9 +67,8 @@ class GameViewModel @Inject constructor(
                 }
                 selectedCards.clear()
             }
-
-            checkIfGameWon()
         }
+        checkIfGameWon()
     }
 
     private fun checkIfGameWon() {
