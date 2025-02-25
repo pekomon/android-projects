@@ -27,6 +27,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.pekomon.memorygame.R
+import com.example.pekomon.memorygame.presentation.ui.component.AnimatedMemoryCard
 import com.example.pekomon.memorygame.presentation.viewmodel.GameViewModel
 
 @Composable
@@ -73,23 +74,10 @@ fun GameScreen(
                 modifier = Modifier.padding(16.dp)
             ) {
                 items(cards) { card ->
-                    Card(modifier = Modifier
-                        .size(80.dp)
-                        .padding(4.dp),
+                    AnimatedMemoryCard(
+                        card = card,
                         onClick = { viewModel.flipCard(card.id) }
-                    ) {
-                        if (card.isFlipped) {
-                            Image(
-                                painter = painterResource(id = card.imageRes),
-                                contentDescription = "Memory card",
-                            )
-                        } else {
-                            Image(
-                                painter = painterResource(id = R.drawable.card_back),
-                                contentDescription = "Card upside down",
-                            )
-                        }
-                    }
+                    )
                 }
             }
         }
