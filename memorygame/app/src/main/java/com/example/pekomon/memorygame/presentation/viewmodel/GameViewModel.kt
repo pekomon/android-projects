@@ -1,5 +1,6 @@
 package com.example.pekomon.memorygame.presentation.viewmodel
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.pekomon.memorygame.domain.model.Card
@@ -29,6 +30,19 @@ class GameViewModel @Inject constructor(
 
     private val _isGameWon = MutableStateFlow(false)
     val isGameWon = _isGameWon.asStateFlow()
+
+    private val _bestScore = MutableStateFlow<Int?>(null)
+    val bestScore = _bestScore.asStateFlow()
+
+    init {
+        loadBestScore()
+    }
+
+    private fun loadBestScore() {
+        viewModelScope.launch {
+            _bestScore.value = cardRepository.getBestScore()
+        }
+    }
 
     fun flipCard(cardId: Int) {
         // Prevent flipping a card that is already flipped or has a match or Game is won
@@ -74,6 +88,14 @@ class GameViewModel @Inject constructor(
     private fun checkIfGameWon() {
         if (_cards.value.all { it.isFlipped }) {
             _isGameWon.value = true
+            viewModelScope.launch {
+                val best = bestScore.value
+                if (best == null || _score.value < best) {
+                    cardRepository.saveBestScore(_score.value)
+                    _bestScore.value = _score.value
+                    Log.d("GameViewModel", "New best score: ${_bestScore.value}")
+                }
+            }
         }
     }
 
