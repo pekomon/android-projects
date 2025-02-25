@@ -4,4 +4,6 @@ import com.example.pekomon.memorygame.domain.model.Card
 
 interface CardRepository {
     fun getCards(): List<Card>
+    suspend fun getBestScore(): Int?
+    suspend fun saveBestScore(score: Int)
 }
