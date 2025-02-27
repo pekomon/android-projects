@@ -117,4 +117,17 @@ class GameViewModel @Inject constructor(
         _isGameWon.value = false
         selectedCards.clear()
     }
+
+    fun startBackgroundMusic() {
+        soundManager.startBackgroundMusic()
+    }
+
+    fun releaseSoundManager() {
+        soundManager.release()
+    }
+
+    override fun onCleared() {
+        super.onCleared()
+        releaseSoundManager()
+    }
 }
