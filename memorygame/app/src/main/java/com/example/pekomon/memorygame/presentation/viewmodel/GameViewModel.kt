@@ -5,6 +5,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.pekomon.memorygame.domain.model.Card
 import com.example.pekomon.memorygame.domain.repository.CardRepository
+import com.example.pekomon.memorygame.util.SoundManager
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -15,7 +16,8 @@ import javax.inject.Inject
 
 @HiltViewModel
 class GameViewModel @Inject constructor(
-    private val cardRepository: CardRepository
+    private val cardRepository: CardRepository,
+    private val soundManager: SoundManager
 ) : ViewModel() {
     private val _cards = MutableStateFlow(cardRepository.getCards())
     val cards = _cards.asStateFlow()
@@ -57,6 +59,9 @@ class GameViewModel @Inject constructor(
                 } else card
             }
         }
+        if (selectedCards.size == 1) {
+            soundManager.playFlipSound()
+        }
 
         if (selectedCards.size == 2) {
             _moves.value++
@@ -68,7 +73,9 @@ class GameViewModel @Inject constructor(
         if (selectedCards[0].imageRes == selectedCards[1].imageRes) {
             _score.value += 10
             selectedCards.clear()
+            soundManager.playPairSound()
         } else {
+            //soundManager.playFlipSound()
             viewModelScope.launch {
                 delay(800)
                 _cards.update { currentCards ->
@@ -87,8 +94,10 @@ class GameViewModel @Inject constructor(
 
     private fun checkIfGameWon() {
         if (_cards.value.all { it.isFlipped }) {
+            soundManager.playWinSound()
             _isGameWon.value = true
             viewModelScope.launch {
+
                 val best = bestScore.value
                 if (best == null || _score.value < best) {
                     cardRepository.saveBestScore(_score.value)
@@ -96,6 +105,8 @@ class GameViewModel @Inject constructor(
                     Log.d("GameViewModel", "New best score: ${_bestScore.value}")
                 }
             }
+        } else {
+            soundManager.playFlipSound()
         }
     }
 
