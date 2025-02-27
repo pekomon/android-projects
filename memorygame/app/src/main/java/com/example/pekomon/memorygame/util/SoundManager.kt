@@ -20,17 +20,21 @@ class SoundManager @Inject constructor(
     private var winMediaPlayer: MediaPlayer? = null
     private var bgMediaPlayer: MediaPlayer? = null
 
+    private var musicVolume = 0.5f
+    private var effectsVolume = 0.5f
+
     fun playFlipSound() {
-        soundPool.play(flipSoundId, 1f, 1f, 1, 0, 1f)
+        soundPool.play(flipSoundId, effectsVolume, effectsVolume, 1, 0, 1f)
     }
 
     fun playPairSound() {
-        soundPool.play(matchSoundId, 1f, 1f, 1, 0, 1f)
+        soundPool.play(matchSoundId, effectsVolume, effectsVolume, 1, 0, 1f)
     }
 
     fun playWinSound() {
-        winMediaPlayer = MediaPlayer.create(context, R.raw.game_win).apply {
+        winMediaPlayer = MediaPlayer.create(context, winSoundId).apply {
             setOnCompletionListener { it.release() }
+            setVolume(effectsVolume, effectsVolume)
             start()
         }
     }
@@ -39,13 +43,13 @@ class SoundManager @Inject constructor(
         if (bgMediaPlayer == null) {
             bgMediaPlayer = MediaPlayer.create(context, R.raw.background_music).apply {
                 isLooping = true
-                setVolume(0.5f, 0.5f) // Adjust volume as needed
+                setVolume(musicVolume, musicVolume)
                 start()
             }
         }
     }
 
-    fun stopBackgroundMusic() {
+    private fun stopBackgroundMusic() {
         bgMediaPlayer?.stop()
         bgMediaPlayer?.release()
         bgMediaPlayer = null
@@ -55,5 +59,22 @@ class SoundManager @Inject constructor(
         soundPool.release()
         winMediaPlayer?.release()
         stopBackgroundMusic()
+    }
+
+    fun pauseBackgroundMusic() {
+        bgMediaPlayer?.pause()
+    }
+
+    fun resumeBackgroundMusic() {
+        bgMediaPlayer?.start()
+    }
+
+    fun setMusicVolume(volume: Float) {
+        musicVolume = volume
+        bgMediaPlayer?.setVolume(volume, volume)
+    }
+
+    fun setEffectsVolume(volume: Float) {
+        effectsVolume = volume
     }
 }
