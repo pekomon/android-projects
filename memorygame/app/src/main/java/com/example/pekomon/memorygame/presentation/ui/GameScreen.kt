@@ -26,6 +26,9 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.pekomon.memorygame.presentation.ui.component.AnimatedMemoryCard
 import com.example.pekomon.memorygame.presentation.viewmodel.GameViewModel
@@ -34,6 +37,8 @@ import com.example.pekomon.memorygame.presentation.viewmodel.GameViewModel
 fun GameScreen(
     viewModel: GameViewModel = viewModel()
 ) {
+    val lifecycleOwner = LocalLifecycleOwner.current
+
     val cards by viewModel.cards.collectAsState()
     val moves by viewModel.moves.collectAsState()
     val score by viewModel.score.collectAsState()
@@ -49,6 +54,20 @@ fun GameScreen(
     DisposableEffect(Unit) {
         onDispose {
             viewModel.releaseSoundManager()
+        }
+    }
+
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            when (event) {
+                Lifecycle.Event.ON_RESUME -> viewModel.startBackgroundMusic()
+                Lifecycle.Event.ON_PAUSE -> viewModel.pauseBackgroundMusic()
+                else -> {}
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose {
+            lifecycleOwner.lifecycle.removeObserver(observer)
         }
     }
 

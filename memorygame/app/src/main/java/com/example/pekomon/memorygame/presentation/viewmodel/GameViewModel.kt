@@ -121,6 +121,9 @@ class GameViewModel @Inject constructor(
     fun startBackgroundMusic() {
         soundManager.startBackgroundMusic()
     }
+    fun pauseBackgroundMusic() {
+        soundManager.pauseBackgroundMusic()
+    }
 
     fun releaseSoundManager() {
         soundManager.release()

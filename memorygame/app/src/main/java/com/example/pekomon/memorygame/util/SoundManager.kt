@@ -84,4 +84,12 @@ class SoundManager @Inject constructor(
         winMediaPlayer?.release()
         stopBackgroundMusic()
     }
+
+    fun pauseBackgroundMusic() {
+        bgMediaPlayer?.pause()
+    }
+
+    fun resumeBackgroundMusic() {
+        bgMediaPlayer?.start()
+    }
 }
