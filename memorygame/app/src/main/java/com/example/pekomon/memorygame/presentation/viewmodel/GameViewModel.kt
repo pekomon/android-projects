@@ -130,4 +130,15 @@ class GameViewModel @Inject constructor(
         super.onCleared()
         releaseSoundManager()
     }
+
+    fun getVolumes(): Pair<Float, Float> {
+        return Pair(soundManager.effectsVolume, soundManager.musicVolume)
+    }
+
+    fun setEffectsVolume(effectsVolume: Float) {
+        soundManager.effectsVolume = effectsVolume
+    }
+    fun setMusicVolume(musicVolume: Float) {
+        soundManager.musicVolume = musicVolume
+    }
 }

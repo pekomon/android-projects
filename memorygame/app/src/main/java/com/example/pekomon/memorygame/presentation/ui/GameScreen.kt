@@ -1,6 +1,5 @@
 package com.example.pekomon.memorygame.presentation.ui
 
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -18,6 +17,9 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -38,6 +40,8 @@ fun GameScreen(
     val isGameWon by viewModel.isGameWon.collectAsState()
     val bestScore by viewModel.bestScore.collectAsState()
 
+    var showSettingsDialog by remember { mutableStateOf(false) }
+
     LaunchedEffect(Unit) {
         viewModel.startBackgroundMusic()
     }
@@ -49,10 +53,27 @@ fun GameScreen(
     }
 
     Column(
-        modifier = Modifier.fillMaxSize(),
+        modifier = Modifier.fillMaxSize().padding(16.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
+        Button(
+            onClick = { showSettingsDialog = true }
+        ) {
+            Text(text = "Settings")
+        }
+
+        if (showSettingsDialog) {
+            val volumes = viewModel.getVolumes()
+            SettingsDialog(
+                initialEffectVolume = volumes.first,
+                initialMusicVolume = volumes.second,
+                onEffectVolumeChanged = { viewModel.setEffectsVolume(it) },
+                onMusicVolumeChanged = { viewModel.setMusicVolume(it) },
+                onDismiss = { showSettingsDialog = false}
+            )
+        }
+
         if (isGameWon) {
             Text(
                 text = "\uD83C\uDF89 You Win! \uD83C\uDF89\"",

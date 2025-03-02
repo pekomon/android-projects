@@ -20,14 +20,26 @@ class SoundManager @Inject constructor(
     private var winMediaPlayer: MediaPlayer? = null
     private var bgMediaPlayer: MediaPlayer? = null
 
-    private var musicVolume = 0.5f
-    private var effectsVolume = 0.5f
+    // TODO: Have a smarter way but...
+    var musicVolume = 0.5f
+        set(value) {
+            field = value
+            bgMediaPlayer?.setVolume(value, value)
+        }
+    var effectsVolume = 0.5f
+        set(value) {
+            field = value
+            winMediaPlayer?.setVolume(value, value)
+        }
 
     fun playFlipSound() {
+        Log.d("zzz", "playFlipSound effectsVolume: $effectsVolume")
         soundPool.play(flipSoundId, effectsVolume, effectsVolume, 1, 0, 1f)
     }
 
     fun playPairSound() {
+        Log.d("zzz", "playFlipSound playPairSound: $effectsVolume")
+
         soundPool.play(matchSoundId, effectsVolume, effectsVolume, 1, 0, 1f)
     }
 
@@ -71,22 +83,5 @@ class SoundManager @Inject constructor(
         soundPool.release()
         winMediaPlayer?.release()
         stopBackgroundMusic()
-    }
-
-    fun pauseBackgroundMusic() {
-        bgMediaPlayer?.pause()
-    }
-
-    fun resumeBackgroundMusic() {
-        bgMediaPlayer?.start()
-    }
-
-    fun setMusicVolume(volume: Float) {
-        musicVolume = volume
-        bgMediaPlayer?.setVolume(volume, volume)
-    }
-
-    fun setEffectsVolume(volume: Float) {
-        effectsVolume = volume
     }
 }
