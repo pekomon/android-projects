@@ -33,6 +33,8 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.pekomon.memorygame.presentation.ui.component.AnimatedMemoryCard
 import com.example.pekomon.memorygame.presentation.viewmodel.GameViewModel
 
+const val WIN_MESSAGE = "🎉 You Win! 🎉"
+
 @Composable
 fun GameScreen(
     viewModel: GameViewModel = viewModel()
@@ -95,7 +97,7 @@ fun GameScreen(
 
         if (isGameWon) {
             Text(
-                text = "\uD83C\uDF89 You Win! \uD83C\uDF89\"",
+                text = WIN_MESSAGE,
                 fontSize = 30.sp,
                 fontWeight = FontWeight.Bold,
                 color = Color.Green
