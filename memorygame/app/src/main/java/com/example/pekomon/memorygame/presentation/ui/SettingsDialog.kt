@@ -12,6 +12,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -50,8 +51,10 @@ fun SettingsDialog(
                 value = musicVolume,
                 onValueChange = {
                     musicVolume = it
+                    onMusicVolumeChanged(it)
                 },
                 valueRange = 0f..1f,
+                modifier = Modifier.testTag("musicSlider"),
             )
             Button(
 
