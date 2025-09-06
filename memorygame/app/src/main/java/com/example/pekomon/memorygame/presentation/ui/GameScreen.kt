@@ -129,7 +129,10 @@ fun GameScreen(
                 columns = GridCells.Fixed(4),
                 modifier = Modifier.padding(16.dp)
             ) {
-                items(cards) { card ->
+                items(
+                    items = cards,
+                    key = { card -> card.id }
+                ) { card ->
                     AnimatedMemoryCard(
                         card = card,
                         onClick = { viewModel.flipCard(card.id) }
