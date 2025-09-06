@@ -43,4 +43,4 @@ jobs:
         uses: actions/upload-artifact@v3
         with:
           name: memorygame-debug-apk
-          path: app/build/outputs/apk/debug/app-debug.apk
+          path: memorygame/app/build/outputs/apk/debug/app-debug.apk
