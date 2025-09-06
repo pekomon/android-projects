@@ -113,8 +113,8 @@ class GameViewModelTest {
     fun onCleared_releasesSoundManager() {
         val repo = FakeCardRepository()
         val soundManager = mock(SoundManager::class.java)
-        val vm = GameViewModel(repo, soundManager)
-        vm.clear()
+        val vm = TestGameViewModel(repo, soundManager)
+        vm.triggerOnCleared()
         verify(soundManager).release()
     }
 
@@ -144,6 +144,15 @@ class GameViewModelTest {
         override suspend fun saveBestScore(score: Int) {
             savedScore = score
             bestScore = score
+        }
+    }
+
+    private class TestGameViewModel(
+        repo: CardRepository,
+        soundManager: SoundManager
+    ) : GameViewModel(repo, soundManager) {
+        fun triggerOnCleared() {
+            onCleared()
         }
     }
 }
