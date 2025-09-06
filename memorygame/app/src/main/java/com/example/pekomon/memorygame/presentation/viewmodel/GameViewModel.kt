@@ -52,14 +52,16 @@ class GameViewModel @Inject constructor(
             return
         }
 
+        var flipped = false
         _cards.update { currentCards ->
             currentCards.map { card ->
                 if (card.id == cardId && !card.isFlipped) {
+                    flipped = true
                     card.copy(isFlipped = true).also { selectedCards.add(it) }
                 } else card
             }
         }
-        if (selectedCards.size == 1) {
+        if (flipped) {
             soundManager.playFlipSound()
         }
 
@@ -105,8 +107,6 @@ class GameViewModel @Inject constructor(
                     Log.d("GameViewModel", "New best score: ${_bestScore.value}")
                 }
             }
-        } else {
-            soundManager.playFlipSound()
         }
     }
 

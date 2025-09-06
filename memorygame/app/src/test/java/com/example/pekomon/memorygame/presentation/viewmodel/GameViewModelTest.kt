@@ -11,7 +11,9 @@ import kotlinx.coroutines.test.runTest
 import org.junit.Assert.*
 import org.junit.Rule
 import org.junit.Test
+import org.mockito.Mockito.inOrder
 import org.mockito.Mockito.mock
+import org.mockito.Mockito.verifyNoMoreInteractions
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class GameViewModelTest {
@@ -59,6 +61,22 @@ class GameViewModelTest {
         assertEquals(0, vm.moves.value)
         assertFalse(vm.isGameWon.value)
         assertTrue(vm.cards.value.all { !it.isFlipped })
+    }
+
+    @Test
+    fun flipTwoMatchingCards_noExtraFlipSoundAfterMatch() = runTest(dispatcherRule.dispatcher.scheduler) {
+        val repo = FakeCardRepository()
+        val soundManager = mock(SoundManager::class.java)
+        val vm = GameViewModel(repo, soundManager)
+
+        vm.flipCard(1)
+        vm.flipCard(2)
+
+        val order = inOrder(soundManager)
+        order.verify(soundManager).playFlipSound()
+        order.verify(soundManager).playFlipSound()
+        order.verify(soundManager).playPairSound()
+        verifyNoMoreInteractions(soundManager)
     }
 
     private class FakeCardRepository : CardRepository {
