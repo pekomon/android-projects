@@ -67,8 +67,8 @@ dependencies {
 
     testImplementation(libs.junit)
     testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.8.0")
-    testImplementation("org.mockito:mockito-core:5.12.0")
-    testImplementation("org.mockito:mockito-inline:5.12.0")
+    testImplementation("org.mockito:mockito-android:5.5.0")
+    testImplementation("org.mockito:mockito-inline:5.5.0")
     testImplementation(libs.androidx.ui.test.junit4)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
