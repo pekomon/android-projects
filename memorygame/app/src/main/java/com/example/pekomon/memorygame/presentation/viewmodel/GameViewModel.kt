@@ -125,13 +125,9 @@ class GameViewModel @Inject constructor(
         soundManager.pauseBackgroundMusic()
     }
 
-    fun releaseSoundManager() {
-        soundManager.release()
-    }
-
     override fun onCleared() {
         super.onCleared()
-        releaseSoundManager()
+        soundManager.release()
     }
 
     fun getVolumes(): Pair<Float, Float> {

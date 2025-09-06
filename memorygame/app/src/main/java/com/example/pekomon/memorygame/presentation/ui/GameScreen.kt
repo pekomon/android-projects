@@ -53,12 +53,6 @@ fun GameScreen(
         viewModel.startBackgroundMusic()
     }
 
-    DisposableEffect(Unit) {
-        onDispose {
-            viewModel.releaseSoundManager()
-        }
-    }
-
     DisposableEffect(lifecycleOwner) {
         val observer = LifecycleEventObserver { _, event ->
             when (event) {
