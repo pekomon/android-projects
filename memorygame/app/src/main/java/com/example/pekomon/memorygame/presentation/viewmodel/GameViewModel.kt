@@ -101,7 +101,7 @@ class GameViewModel @Inject constructor(
             viewModelScope.launch {
 
                 val best = bestScore.value
-                if (best == null || _score.value < best) {
+                if (best == null || _score.value > best) {
                     cardRepository.saveBestScore(_score.value)
                     _bestScore.value = _score.value
                     Log.d("GameViewModel", "New best score: ${_bestScore.value}")

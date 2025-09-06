@@ -79,6 +79,23 @@ class GameViewModelTest {
         verifyNoMoreInteractions(soundManager)
     }
 
+    @Test
+    fun winningWithHigherScore_updatesBestScore() = runTest(dispatcherRule.dispatcher.scheduler) {
+        val repo = FakeBestScoreRepository(initialBest = 10)
+        val soundManager = mock(SoundManager::class.java)
+        val vm = GameViewModel(repo, soundManager)
+
+        vm.flipCard(1)
+        vm.flipCard(2)
+        vm.flipCard(3)
+        vm.flipCard(4)
+        advanceUntilIdle()
+
+        assertEquals(20, vm.score.value)
+        assertEquals(20, vm.bestScore.value)
+        assertEquals(20, repo.savedScore)
+    }
+
     private class FakeCardRepository : CardRepository {
         private val initialCards = listOf(
             Card(1, 1),
@@ -89,5 +106,22 @@ class GameViewModelTest {
         override fun getCards(): List<Card> = initialCards.map { it.copy() }
         override suspend fun getBestScore(): Int? = null
         override suspend fun saveBestScore(score: Int) {}
+    }
+
+    private class FakeBestScoreRepository(initialBest: Int?) : CardRepository {
+        private val initialCards = listOf(
+            Card(1, 1),
+            Card(2, 1),
+            Card(3, 2),
+            Card(4, 2)
+        )
+        var bestScore = initialBest
+        var savedScore: Int? = null
+        override fun getCards(): List<Card> = initialCards.map { it.copy() }
+        override suspend fun getBestScore(): Int? = bestScore
+        override suspend fun saveBestScore(score: Int) {
+            savedScore = score
+            bestScore = score
+        }
     }
 }
