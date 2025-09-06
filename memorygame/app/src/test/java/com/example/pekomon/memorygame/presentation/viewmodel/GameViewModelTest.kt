@@ -13,6 +13,7 @@ import org.junit.Rule
 import org.junit.Test
 import org.mockito.Mockito.inOrder
 import org.mockito.Mockito.mock
+import org.mockito.Mockito.verify
 import org.mockito.Mockito.verifyNoMoreInteractions
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -94,6 +95,15 @@ class GameViewModelTest {
         assertEquals(20, vm.score.value)
         assertEquals(20, vm.bestScore.value)
         assertEquals(20, repo.savedScore)
+    }
+
+    @Test
+    fun onCleared_releasesSoundManager() {
+        val repo = FakeCardRepository()
+        val soundManager = mock(SoundManager::class.java)
+        val vm = GameViewModel(repo, soundManager)
+        vm.clear()
+        verify(soundManager).release()
     }
 
     private class FakeCardRepository : CardRepository {
