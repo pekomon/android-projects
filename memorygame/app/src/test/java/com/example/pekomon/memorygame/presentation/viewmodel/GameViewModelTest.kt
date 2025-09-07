@@ -53,6 +53,18 @@ class GameViewModelTest {
     }
 
     @Test
+    fun lastNonMatchingPair_doesNotTriggerWin() = runTest(dispatcherRule.dispatcher.scheduler) {
+        val vm = createViewModel()
+        vm.flipCard(1)
+        vm.flipCard(2)
+        vm.flipCard(3)
+        vm.flipCard(4)
+        advanceTimeBy(800)
+        advanceUntilIdle()
+        assertFalse(vm.isGameWon.value)
+    }
+
+    @Test
     fun restartGame_resetsAllCounters() = runTest(dispatcherRule.dispatcher.scheduler) {
         val vm = createViewModel()
         vm.flipCard(1)
@@ -103,8 +115,8 @@ class GameViewModelTest {
     fun onCleared_releasesSoundManager() {
         val repo = FakeCardRepository()
         val soundManager = mock(SoundManager::class.java)
-        val vm = GameViewModel(repo, soundManager)
-        vm.clear()
+        val vm = TestGameViewModel(repo, soundManager)
+        vm.triggerOnCleared()
         verify(soundManager).release()
     }
     */
