@@ -7,25 +7,27 @@ import androidx.compose.ui.test.performSemanticsAction
 import org.junit.Assert.assertEquals
 import org.junit.Rule
 import org.junit.Test
+import org.junit.Ignore
 
 class SettingsDialogTest {
     @get:Rule
     val composeRule = createComposeRule()
 
-//     @Test
-//     fun musicSliderCallsCallbackOnChange() {
-//         var volume = -1f
-//         composeRule.setContent {
-//             SettingsDialog(
-//                 initialEffectVolume = 0f,
-//                 initialMusicVolume = 0f,
-//                 onEffectVolumeChanged = {},
-//                 onMusicVolumeChanged = { volume = it },
-//                 onDismiss = {}
-//             )
-//         }
-//         composeRule.onNodeWithTag("musicSlider")
-//             .performSemanticsAction(SemanticsActions.SetProgress) { it(0.7f) }
-//         assertEquals(0.7f, volume, 0.0001f)
-//     }
+    @Ignore("Slider semantics cause failure on CI; see issue #30")
+    @Test
+    fun musicSliderCallsCallbackOnChange() {
+        var volume = -1f
+        composeRule.setContent {
+            SettingsDialog(
+                initialEffectVolume = 0f,
+                initialMusicVolume = 0f,
+                onEffectVolumeChanged = {},
+                onMusicVolumeChanged = { volume = it },
+                onDismiss = {}
+            )
+        }
+        composeRule.onNodeWithTag("musicSlider")
+            .performSemanticsAction(SemanticsActions.SetProgress) { it(0.7f) }
+        assertEquals(0.7f, volume, 0.0001f)
+    }
 }
