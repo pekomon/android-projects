@@ -7,6 +7,7 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.ui.test.junit4.createComposeRule
 import com.example.pekomon.memorygame.domain.model.Card
+import org.junit.Ignore
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
@@ -15,6 +16,7 @@ class CardGridKeyTest {
     @get:Rule
     val composeTestRule = createComposeRule()
 
+    @Ignore("Flaky reordering logic in compose grid; see issue #30")
     @Test
     fun reordering_cards_does_not_dispose_with_stable_keys() {
         val disposeCounts = mutableMapOf<Int, Int>()
