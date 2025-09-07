@@ -47,7 +47,7 @@ class GameViewModel @Inject constructor(
     }
 
     fun flipCard(cardId: Int) {
-        // Prevent flipping a card that is already flipped or has a match or Game is won
+        // Prevent flipping a card that is already flipped, matched or game is won
         if (selectedCards.size >= 2 || _isGameWon.value) {
             return
         }
@@ -55,7 +55,7 @@ class GameViewModel @Inject constructor(
         var flipped = false
         _cards.update { currentCards ->
             currentCards.map { card ->
-                if (card.id == cardId && !card.isFlipped) {
+                if (card.id == cardId && !card.isFlipped && !card.isMatched) {
                     flipped = true
                     card.copy(isFlipped = true).also { selectedCards.add(it) }
                 } else card
@@ -74,6 +74,13 @@ class GameViewModel @Inject constructor(
     private fun checkForMatch() {
         if (selectedCards[0].imageRes == selectedCards[1].imageRes) {
             _score.value += 10
+            _cards.update { currentCards ->
+                currentCards.map { card ->
+                    if (selectedCards.any { it.id == card.id }) {
+                        card.copy(isMatched = true)
+                    } else card
+                }
+            }
             selectedCards.clear()
             soundManager.playPairSound()
         } else {
@@ -95,7 +102,7 @@ class GameViewModel @Inject constructor(
     }
 
     private fun checkIfGameWon() {
-        if (_cards.value.all { it.isFlipped }) {
+        if (_cards.value.all { it.isMatched }) {
             soundManager.playWinSound()
             _isGameWon.value = true
             viewModelScope.launch {
