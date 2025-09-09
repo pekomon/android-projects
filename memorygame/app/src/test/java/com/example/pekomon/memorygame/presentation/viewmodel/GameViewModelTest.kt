@@ -60,8 +60,11 @@ class GameViewModelTest {
         vm.flipCard(2)
         vm.flipCard(3)
         vm.flipCard(4)
+        // Game should not be won immediately after a mismatch
+        assertFalse(vm.isGameWon.value)
         advanceTimeBy(800)
         advanceUntilIdle()
+        // And it should remain not won after cards reset
         assertFalse(vm.isGameWon.value)
     }
 
