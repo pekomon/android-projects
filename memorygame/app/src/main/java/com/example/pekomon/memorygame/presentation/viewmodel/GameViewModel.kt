@@ -74,32 +74,33 @@ class GameViewModel @Inject constructor(
     private fun checkForMatch() {
         if (selectedCards[0].imageRes == selectedCards[1].imageRes) {
             _score.value += 10
+        _cards.update { currentCards ->
+            currentCards.map { card ->
+                if (selectedCards.any { it.id == card.id }) {
+                    card.copy(isMatched = true)
+                } else card
+            }
+        }
+        selectedCards.clear()
+        soundManager.playPairSound()
+        checkIfGameWon()
+    } else {
+        //soundManager.playFlipSound()
+        viewModelScope.launch {
+            delay(800)
             _cards.update { currentCards ->
                 currentCards.map { card ->
-                    if (selectedCards.any { it.id == card.id }) {
-                        card.copy(isMatched = true)
-                    } else card
+                   if (selectedCards.any { it.id == card.id }) {
+                       card.copy(isFlipped = false)
+                   }
+                   else card
                 }
             }
             selectedCards.clear()
-            soundManager.playPairSound()
-        } else {
-            //soundManager.playFlipSound()
-            viewModelScope.launch {
-                delay(800)
-                _cards.update { currentCards ->
-                    currentCards.map { card ->
-                       if (selectedCards.any { it.id == card.id }) {
-                           card.copy(isFlipped = false)
-                       }
-                       else card
-                    }
-                }
-                selectedCards.clear()
-            }
+            checkIfGameWon()
         }
-        checkIfGameWon()
     }
+}
 
     private fun checkIfGameWon() {
         if (_cards.value.all { it.isMatched }) {
