@@ -1,1 +1,19 @@
 .DS_Store
+
+# Android / IntelliJ
+**/.gradle/
+**/build/
+**/captures/
+**/.idea/
+**/*.iml
+**/local.properties
+**/.externalNativeBuild/
+**/.cxx/
+
+# Kotlin / Java artifacts
+**/*.class
+**/*.dex
+**/*.kotlin_module
+
+# Logs
+**/*.log
