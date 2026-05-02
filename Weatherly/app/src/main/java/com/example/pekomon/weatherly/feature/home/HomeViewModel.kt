@@ -4,7 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.example.pekomon.weatherly.core.model.WeatherDetails
-import com.example.pekomon.weatherly.data.repository.FakeWeatherRepository
+import com.example.pekomon.weatherly.data.repository.OpenMeteoWeatherRepository
 import com.example.pekomon.weatherly.domain.repository.WeatherRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -49,7 +49,7 @@ class HomeViewModel(
 
     companion object {
         fun factory(
-            weatherRepository: WeatherRepository = FakeWeatherRepository(),
+            weatherRepository: WeatherRepository = OpenMeteoWeatherRepository(),
         ): ViewModelProvider.Factory = object : ViewModelProvider.Factory {
             @Suppress("UNCHECKED_CAST")
             override fun <T : ViewModel> create(modelClass: Class<T>): T {
