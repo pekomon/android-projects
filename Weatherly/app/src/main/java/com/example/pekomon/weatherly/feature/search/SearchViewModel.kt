@@ -1,20 +1,24 @@
 package com.example.pekomon.weatherly.feature.search
 
+import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.example.pekomon.weatherly.core.model.Location
 import com.example.pekomon.weatherly.core.model.WeatherDetails
+import com.example.pekomon.weatherly.data.repository.DataStoreFavoritesRepository
 import com.example.pekomon.weatherly.data.repository.OpenMeteoLocationSearchRepository
 import com.example.pekomon.weatherly.data.repository.OpenMeteoWeatherRepository
+import com.example.pekomon.weatherly.domain.repository.FavoritesRepository
 import com.example.pekomon.weatherly.domain.repository.LocationSearchRepository
 import com.example.pekomon.weatherly.domain.repository.WeatherRepository
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.update
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 data class SearchUiState(
@@ -23,6 +27,7 @@ data class SearchUiState(
     val isLoadingSelection: Boolean = false,
     val results: List<Location> = emptyList(),
     val selectedLocationWeather: WeatherDetails? = null,
+    val favoriteLocationIds: Set<String> = emptySet(),
     val errorMessage: String? = null,
     val hasSearched: Boolean = false,
 )
@@ -30,11 +35,24 @@ data class SearchUiState(
 class SearchViewModel(
     private val locationSearchRepository: LocationSearchRepository,
     private val weatherRepository: WeatherRepository,
+    private val favoritesRepository: FavoritesRepository,
 ) : ViewModel() {
     private val _uiState = MutableStateFlow(SearchUiState())
     val uiState: StateFlow<SearchUiState> = _uiState.asStateFlow()
     private var searchJob: Job? = null
     private var searchRequestToken: Int = 0
+
+    init {
+        viewModelScope.launch {
+            favoritesRepository.favorites.collectLatest { favorites ->
+                _uiState.update { current ->
+                    current.copy(
+                        favoriteLocationIds = favorites.mapTo(linkedSetOf()) { it.id },
+                    )
+                }
+            }
+        }
+    }
 
     fun updateQuery(query: String) {
         val normalizedQuery = query.trim()
@@ -68,7 +86,17 @@ class SearchViewModel(
     fun clearQuery() {
         searchJob?.cancel()
         searchRequestToken += 1
-        _uiState.value = SearchUiState()
+        _uiState.update { current ->
+            current.copy(
+                query = "",
+                isSearching = false,
+                isLoadingSelection = false,
+                results = emptyList(),
+                selectedLocationWeather = null,
+                errorMessage = null,
+                hasSearched = false,
+            )
+        }
     }
 
     fun searchNow() {
@@ -173,17 +201,29 @@ class SearchViewModel(
         }
     }
 
+    fun toggleFavorite(location: Location) {
+        viewModelScope.launch {
+            favoritesRepository.toggleFavorite(location)
+        }
+    }
+
     companion object {
         private const val MIN_QUERY_LENGTH = 2
         private const val SEARCH_DEBOUNCE_MILLIS = 350L
 
         fun factory(
+            context: Context,
             locationSearchRepository: LocationSearchRepository = OpenMeteoLocationSearchRepository(),
             weatherRepository: WeatherRepository = OpenMeteoWeatherRepository(),
+            favoritesRepository: FavoritesRepository = DataStoreFavoritesRepository(context.applicationContext),
         ): ViewModelProvider.Factory = object : ViewModelProvider.Factory {
             @Suppress("UNCHECKED_CAST")
             override fun <T : ViewModel> create(modelClass: Class<T>): T {
-                return SearchViewModel(locationSearchRepository, weatherRepository) as T
+                return SearchViewModel(
+                    locationSearchRepository = locationSearchRepository,
+                    weatherRepository = weatherRepository,
+                    favoritesRepository = favoritesRepository,
+                ) as T
             }
         }
     }
