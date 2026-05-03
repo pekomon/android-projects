@@ -13,6 +13,8 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 data class SearchUiState(
@@ -31,45 +33,88 @@ class SearchViewModel(
 ) : ViewModel() {
     private val _uiState = MutableStateFlow(SearchUiState())
     val uiState: StateFlow<SearchUiState> = _uiState.asStateFlow()
+    private var searchJob: Job? = null
+    private var searchRequestToken: Int = 0
 
     fun updateQuery(query: String) {
+        val normalizedQuery = query.trim()
+        searchJob?.cancel()
+        searchRequestToken += 1
+
         _uiState.update { current ->
             current.copy(
                 query = query,
+                isSearching = normalizedQuery.length >= MIN_QUERY_LENGTH,
+                results = emptyList(),
+                selectedLocationWeather = null,
                 errorMessage = null,
-                hasSearched = current.hasSearched && query.trim() == current.query.trim(),
+                hasSearched = false,
             )
         }
+
+        if (normalizedQuery.length < MIN_QUERY_LENGTH) {
+            _uiState.update { current ->
+                current.copy(isSearching = false)
+            }
+            return
+        }
+
+        scheduleSearch(
+            query = normalizedQuery,
+            debounceMillis = SEARCH_DEBOUNCE_MILLIS,
+        )
     }
 
-    fun search() {
+    fun clearQuery() {
+        searchJob?.cancel()
+        searchRequestToken += 1
+        _uiState.value = SearchUiState()
+    }
+
+    fun searchNow() {
         val query = _uiState.value.query.trim()
-        if (query.length < 2) {
+        searchJob?.cancel()
+        searchRequestToken += 1
+
+        if (query.length < MIN_QUERY_LENGTH) {
             _uiState.update { current ->
                 current.copy(
                     results = emptyList(),
                     selectedLocationWeather = null,
                     hasSearched = false,
                     isSearching = false,
-                    errorMessage = "Enter at least 2 characters to search for a place.",
+                    errorMessage = "Enter at least $MIN_QUERY_LENGTH characters to search for a place.",
                 )
             }
             return
         }
 
-        _uiState.update { current ->
-            current.copy(
-                isSearching = true,
-                errorMessage = null,
-                hasSearched = true,
-                selectedLocationWeather = null,
-            )
-        }
+        scheduleSearch(query = query, debounceMillis = 0L)
+    }
 
-        viewModelScope.launch {
+    private fun scheduleSearch(
+        query: String,
+        debounceMillis: Long,
+    ) {
+        val requestToken = searchRequestToken
+        searchJob = viewModelScope.launch {
+            if (debounceMillis > 0) {
+                delay(debounceMillis)
+            }
+
+            _uiState.update { current ->
+                current.copy(
+                    isSearching = true,
+                    errorMessage = null,
+                    hasSearched = true,
+                    selectedLocationWeather = null,
+                )
+            }
+
             runCatching {
                 locationSearchRepository.searchLocations(query)
             }.onSuccess { results ->
+                if (!isCurrentSearch(requestToken, query)) return@onSuccess
                 _uiState.update { current ->
                     current.copy(
                         isSearching = false,
@@ -82,6 +127,7 @@ class SearchViewModel(
                     )
                 }
             }.onFailure { throwable ->
+                if (!isCurrentSearch(requestToken, query)) return@onFailure
                 _uiState.update { current ->
                     current.copy(
                         isSearching = false,
@@ -92,6 +138,11 @@ class SearchViewModel(
             }
         }
     }
+
+    private fun isCurrentSearch(
+        requestToken: Int,
+        query: String,
+    ): Boolean = requestToken == searchRequestToken && _uiState.value.query.trim() == query
 
     fun selectLocation(location: Location) {
         _uiState.update { current ->
@@ -123,6 +174,9 @@ class SearchViewModel(
     }
 
     companion object {
+        private const val MIN_QUERY_LENGTH = 2
+        private const val SEARCH_DEBOUNCE_MILLIS = 350L
+
         fun factory(
             locationSearchRepository: LocationSearchRepository = OpenMeteoLocationSearchRepository(),
             weatherRepository: WeatherRepository = OpenMeteoWeatherRepository(),

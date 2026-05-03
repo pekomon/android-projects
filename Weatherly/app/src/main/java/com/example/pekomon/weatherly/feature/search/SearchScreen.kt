@@ -2,7 +2,6 @@ package com.example.pekomon.weatherly.feature.search
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -16,12 +15,13 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.Close
 import androidx.compose.material.icons.outlined.Search
-import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
@@ -54,7 +54,8 @@ fun SearchRoute(
     SearchScreen(
         uiState = uiState,
         onQueryChange = viewModel::updateQuery,
-        onSearch = viewModel::search,
+        onSearch = viewModel::searchNow,
+        onClearQuery = viewModel::clearQuery,
         onLocationSelected = viewModel::selectLocation,
         modifier = Modifier.padding(contentPadding),
     )
@@ -65,6 +66,7 @@ internal fun SearchScreen(
     uiState: SearchUiState,
     onQueryChange: (String) -> Unit,
     onSearch: () -> Unit,
+    onClearQuery: () -> Unit,
     onLocationSelected: (Location) -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -96,6 +98,7 @@ internal fun SearchScreen(
                     isSearching = uiState.isSearching,
                     onQueryChange = onQueryChange,
                     onSearch = onSearch,
+                    onClearQuery = onClearQuery,
                 )
             }
             uiState.errorMessage?.let { message ->
@@ -142,6 +145,7 @@ private fun SearchInputCard(
     isSearching: Boolean,
     onQueryChange: (String) -> Unit,
     onSearch: () -> Unit,
+    onClearQuery: () -> Unit,
 ) {
     Card(
         shape = RoundedCornerShape(28.dp),
@@ -166,7 +170,25 @@ private fun SearchInputCard(
                         contentDescription = null,
                     )
                 },
-                enabled = !isSearching,
+                trailingIcon = {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        if (isSearching) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.width(18.dp),
+                                strokeWidth = 2.dp,
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                        }
+                        if (query.isNotBlank()) {
+                            IconButton(onClick = onClearQuery) {
+                                Icon(
+                                    imageVector = Icons.Outlined.Close,
+                                    contentDescription = "Clear search query",
+                                )
+                            }
+                        }
+                    }
+                },
                 keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(
                     imeAction = ImeAction.Search,
                 ),
@@ -174,30 +196,20 @@ private fun SearchInputCard(
                     onSearch = { onSearch() },
                 ),
             )
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Text(
-                    text = "Open-Meteo geocoding, no API key required.",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-                Button(
-                    onClick = onSearch,
-                    enabled = !isSearching,
-                ) {
-                    if (isSearching) {
-                        CircularProgressIndicator(
-                            modifier = Modifier.width(18.dp),
-                            strokeWidth = 2.dp,
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-                    }
-                    Text("Search")
-                }
-            }
+            Text(
+                text = if (query.length >= 2) {
+                    "Search starts automatically when you pause typing."
+                } else {
+                    "Type at least 2 characters. Press search on the keyboard to run immediately."
+                },
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Text(
+                text = "Open-Meteo geocoding, no API key required.",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
         }
     }
 }
@@ -375,6 +387,7 @@ private fun SearchScreenPreview() {
             ),
             onQueryChange = {},
             onSearch = {},
+            onClearQuery = {},
             onLocationSelected = {},
         )
     }
