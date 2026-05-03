@@ -15,7 +15,9 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.outlined.Close
+import androidx.compose.material.icons.outlined.FavoriteBorder
 import androidx.compose.material.icons.outlined.Search
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -30,6 +32,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.tooling.preview.Preview
@@ -37,8 +40,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.pekomon.weatherly.core.model.Location
-import com.example.pekomon.weatherly.core.model.WeatherCondition
-import com.example.pekomon.weatherly.core.model.WeatherDetails
+import com.example.pekomon.weatherly.core.ui.LocationWeatherSummaryCard
 import com.example.pekomon.weatherly.data.repository.currentLocation
 import com.example.pekomon.weatherly.data.repository.sampleLocations
 import com.example.pekomon.weatherly.data.repository.sampleWeatherDetails
@@ -47,7 +49,9 @@ import com.example.pekomon.weatherly.ui.theme.WeatherlyTheme
 @Composable
 fun SearchRoute(
     contentPadding: PaddingValues,
-    viewModel: SearchViewModel = viewModel(factory = SearchViewModel.factory()),
+    viewModel: SearchViewModel = viewModel(
+        factory = SearchViewModel.factory(context = LocalContext.current.applicationContext),
+    ),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
@@ -57,6 +61,7 @@ fun SearchRoute(
         onSearch = viewModel::searchNow,
         onClearQuery = viewModel::clearQuery,
         onLocationSelected = viewModel::selectLocation,
+        onToggleFavorite = viewModel::toggleFavorite,
         modifier = Modifier.padding(contentPadding),
     )
 }
@@ -68,6 +73,7 @@ internal fun SearchScreen(
     onSearch: () -> Unit,
     onClearQuery: () -> Unit,
     onLocationSelected: (Location) -> Unit,
+    onToggleFavorite: (Location) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Surface(
@@ -113,7 +119,12 @@ internal fun SearchScreen(
             }
             uiState.selectedLocationWeather?.let { weatherDetails ->
                 item {
-                    SelectedLocationWeatherCard(weatherDetails = weatherDetails)
+                    LocationWeatherSummaryCard(
+                        title = "Selected Place",
+                        weatherDetails = weatherDetails,
+                        isFavorite = weatherDetails.location.id in uiState.favoriteLocationIds,
+                        onToggleFavorite = { onToggleFavorite(weatherDetails.location) },
+                    )
                 }
             }
             if (uiState.results.isNotEmpty()) {
@@ -127,7 +138,9 @@ internal fun SearchScreen(
                 items(uiState.results, key = { it.id }) { location ->
                     SearchResultCard(
                         location = location,
+                        isFavorite = location.id in uiState.favoriteLocationIds,
                         onClick = { onLocationSelected(location) },
+                        onToggleFavorite = { onToggleFavorite(location) },
                     )
                 }
             } else if (uiState.hasSearched && !uiState.isSearching && uiState.errorMessage == null) {
@@ -254,73 +267,11 @@ private fun LoadingCard(message: String) {
 }
 
 @Composable
-private fun SelectedLocationWeatherCard(weatherDetails: WeatherDetails) {
-    val location = weatherDetails.location
-    val current = weatherDetails.currentWeather
-    val nextDaily = weatherDetails.dailyForecast.take(3)
-
-    Card(
-        shape = RoundedCornerShape(28.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.primaryContainer,
-        ),
-    ) {
-        Column(
-            modifier = Modifier.padding(20.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
-        ) {
-            Text(
-                text = "Selected Place",
-                style = MaterialTheme.typography.labelLarge,
-                color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f),
-            )
-            Text(
-                text = "${location.name}, ${location.country}",
-                style = MaterialTheme.typography.headlineSmall,
-                fontWeight = FontWeight.SemiBold,
-                color = MaterialTheme.colorScheme.onPrimaryContainer,
-            )
-            Text(
-                text = "${current.temperature.toInt()}°  •  ${conditionLabel(current.condition)}",
-                style = MaterialTheme.typography.titleLarge,
-                color = MaterialTheme.colorScheme.onPrimaryContainer,
-            )
-            Text(
-                text = "Feels like ${current.apparentTemperature.toInt()}°. Wind ${current.windSpeed.toInt()} km/h. Humidity ${current.humidityPercent}%.",
-                style = MaterialTheme.typography.bodyLarge,
-                color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.85f),
-            )
-            if (nextDaily.isNotEmpty()) {
-                Spacer(modifier = Modifier.height(4.dp))
-                Text(
-                    text = "Next 3 days",
-                    style = MaterialTheme.typography.titleMedium,
-                    color = MaterialTheme.colorScheme.onPrimaryContainer,
-                )
-                nextDaily.forEach { forecast ->
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                    ) {
-                        Text(
-                            text = forecast.date.dayOfWeek.name.lowercase().replaceFirstChar(Char::titlecase),
-                            color = MaterialTheme.colorScheme.onPrimaryContainer,
-                        )
-                        Text(
-                            text = "${forecast.minTemperature.toInt()}° / ${forecast.maxTemperature.toInt()}°",
-                            color = MaterialTheme.colorScheme.onPrimaryContainer,
-                        )
-                    }
-                }
-            }
-        }
-    }
-}
-
-@Composable
 private fun SearchResultCard(
     location: Location,
+    isFavorite: Boolean,
     onClick: () -> Unit,
+    onToggleFavorite: () -> Unit,
 ) {
     Card(
         modifier = Modifier
@@ -335,11 +286,32 @@ private fun SearchResultCard(
             modifier = Modifier.padding(18.dp),
             verticalArrangement = Arrangement.spacedBy(4.dp),
         ) {
-            Text(
-                text = location.name,
-                style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.Medium,
-            )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    text = location.name,
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Medium,
+                )
+                IconButton(onClick = onToggleFavorite) {
+                    Icon(
+                        imageVector = if (isFavorite) Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder,
+                        contentDescription = if (isFavorite) {
+                            "Remove from favorites"
+                        } else {
+                            "Add to favorites"
+                        },
+                        tint = if (isFavorite) {
+                            MaterialTheme.colorScheme.primary
+                        } else {
+                            MaterialTheme.colorScheme.onSurfaceVariant
+                        },
+                    )
+                }
+            }
             Text(
                 text = buildString {
                     location.adminRegion?.let {
@@ -360,20 +332,6 @@ private fun SearchResultCard(
     }
 }
 
-private fun conditionLabel(condition: WeatherCondition): String = when (condition) {
-    WeatherCondition.Clear -> "Clear sky"
-    WeatherCondition.MostlyClear -> "Mostly clear"
-    WeatherCondition.PartlyCloudy -> "Partly cloudy"
-    WeatherCondition.Cloudy -> "Cloudy"
-    WeatherCondition.Fog -> "Foggy"
-    WeatherCondition.Drizzle -> "Drizzle"
-    WeatherCondition.Rain -> "Rain"
-    WeatherCondition.Snow -> "Snow"
-    WeatherCondition.Thunderstorm -> "Thunderstorm"
-    WeatherCondition.Windy -> "Windy"
-    WeatherCondition.Unknown -> "Unknown conditions"
-}
-
 @Preview(showBackground = true)
 @Composable
 private fun SearchScreenPreview() {
@@ -383,12 +341,14 @@ private fun SearchScreenPreview() {
                 query = "Hel",
                 results = sampleLocations,
                 selectedLocationWeather = sampleWeatherDetails(currentLocation),
+                favoriteLocationIds = setOf(sampleLocations.first().id),
                 hasSearched = true,
             ),
             onQueryChange = {},
             onSearch = {},
             onClearQuery = {},
             onLocationSelected = {},
+            onToggleFavorite = {},
         )
     }
 }
