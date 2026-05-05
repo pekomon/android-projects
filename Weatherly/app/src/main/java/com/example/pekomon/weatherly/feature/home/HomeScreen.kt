@@ -26,19 +26,25 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.pekomon.weatherly.core.model.AppSettings
 import com.example.pekomon.weatherly.core.model.CurrentWeather
 import com.example.pekomon.weatherly.core.model.DailyForecast
 import com.example.pekomon.weatherly.core.model.HourlyForecast
 import com.example.pekomon.weatherly.core.model.Location
 import com.example.pekomon.weatherly.core.model.WeatherCondition
 import com.example.pekomon.weatherly.core.model.WeatherDetails
+import com.example.pekomon.weatherly.core.ui.formatTemperature
+import com.example.pekomon.weatherly.core.ui.formatWindSpeed
+import com.example.pekomon.weatherly.data.repository.DataStoreSettingsRepository
 import com.example.pekomon.weatherly.data.repository.currentLocation
 import com.example.pekomon.weatherly.data.repository.sampleWeatherDetails
 import com.example.pekomon.weatherly.ui.theme.WeatherlyTheme
@@ -49,10 +55,16 @@ fun HomeRoute(
     contentPadding: PaddingValues,
     viewModel: HomeViewModel = viewModel(factory = HomeViewModel.factory()),
 ) {
+    val context = LocalContext.current.applicationContext
+    val settingsRepository = remember(context) {
+        DataStoreSettingsRepository(context)
+    }
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val settings by settingsRepository.settings.collectAsStateWithLifecycle()
 
     HomeScreen(
         uiState = uiState,
+        settings = settings,
         onRetry = viewModel::refresh,
         onEnableLocation = viewModel::refresh,
         modifier = Modifier.padding(contentPadding),
@@ -62,6 +74,7 @@ fun HomeRoute(
 @Composable
 internal fun HomeScreen(
     uiState: HomeUiState,
+    settings: AppSettings,
     onRetry: () -> Unit,
     onEnableLocation: () -> Unit,
     modifier: Modifier = Modifier,
@@ -104,6 +117,7 @@ internal fun HomeScreen(
             is HomeUiState.Loaded -> {
                 LoadedHome(
                     weatherDetails = uiState.weatherDetails,
+                    settings = settings,
                     modifier = Modifier.fillMaxSize(),
                 )
             }
@@ -114,6 +128,7 @@ internal fun HomeScreen(
 @Composable
 private fun LoadedHome(
     weatherDetails: WeatherDetails,
+    settings: AppSettings,
     modifier: Modifier = Modifier,
 ) {
     LazyColumn(
@@ -129,22 +144,32 @@ private fun LoadedHome(
                 location = weatherDetails.location,
                 currentWeather = weatherDetails.currentWeather,
                 todayForecast = weatherDetails.dailyForecast.firstOrNull(),
+                settings = settings,
             )
         }
         item {
-            MetricGrid(currentWeather = weatherDetails.currentWeather)
+            MetricGrid(
+                currentWeather = weatherDetails.currentWeather,
+                settings = settings,
+            )
         }
         item {
             ForecastSectionTitle(title = "Hourly Forecast", subtitle = "Next 12 hours")
         }
         item {
-            HourlyForecastRow(items = weatherDetails.hourlyForecast)
+            HourlyForecastRow(
+                items = weatherDetails.hourlyForecast,
+                settings = settings,
+            )
         }
         item {
             ForecastSectionTitle(title = "Daily Forecast", subtitle = "Next 7 days")
         }
         items(weatherDetails.dailyForecast) { forecast ->
-            DailyForecastCard(forecast = forecast)
+            DailyForecastCard(
+                forecast = forecast,
+                settings = settings,
+            )
         }
     }
 }
@@ -176,6 +201,7 @@ private fun CurrentWeatherCard(
     location: Location,
     currentWeather: CurrentWeather,
     todayForecast: DailyForecast?,
+    settings: AppSettings,
 ) {
     Card(
         colors = CardDefaults.cardColors(
@@ -189,7 +215,7 @@ private fun CurrentWeatherCard(
         ) {
             WeatherConditionPill(condition = currentWeather.condition)
             Text(
-                text = "${currentWeather.temperature.toInt()}°",
+                text = formatTemperature(currentWeather.temperature, settings),
                 style = MaterialTheme.typography.displayLarge,
                 fontWeight = FontWeight.Medium,
                 color = MaterialTheme.colorScheme.onPrimaryContainer,
@@ -204,13 +230,13 @@ private fun CurrentWeatherCard(
                 color = MaterialTheme.colorScheme.onPrimaryContainer,
             )
             Text(
-                text = "Feels like ${currentWeather.apparentTemperature.toInt()}°. Wind ${currentWeather.windSpeed.toInt()} km/h.",
+                text = "Feels like ${formatTemperature(currentWeather.apparentTemperature, settings)}. Wind ${formatWindSpeed(currentWeather.windSpeed, settings)}.",
                 style = MaterialTheme.typography.bodyLarge,
                 color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.82f),
             )
             todayForecast?.let { forecast ->
                 Text(
-                    text = "Today’s range ${forecast.minTemperature.toInt()}° to ${forecast.maxTemperature.toInt()}°",
+                    text = "Today’s range ${formatTemperature(forecast.minTemperature, settings)} to ${formatTemperature(forecast.maxTemperature, settings)}",
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.72f),
                 )
@@ -236,7 +262,10 @@ private fun WeatherConditionPill(condition: WeatherCondition) {
 }
 
 @Composable
-private fun MetricGrid(currentWeather: CurrentWeather) {
+private fun MetricGrid(
+    currentWeather: CurrentWeather,
+    settings: AppSettings,
+) {
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             MetricCard(
@@ -316,7 +345,10 @@ private fun ForecastSectionTitle(
 }
 
 @Composable
-private fun HourlyForecastRow(items: List<HourlyForecast>) {
+private fun HourlyForecastRow(
+    items: List<HourlyForecast>,
+    settings: AppSettings,
+) {
     LazyRow(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
         items(items) { item ->
             Card(
@@ -337,7 +369,7 @@ private fun HourlyForecastRow(items: List<HourlyForecast>) {
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                     Text(
-                        text = "${item.temperature.toInt()}°",
+                        text = formatTemperature(item.temperature, settings),
                         style = MaterialTheme.typography.headlineSmall,
                         fontWeight = FontWeight.Medium,
                     )
@@ -357,7 +389,10 @@ private fun HourlyForecastRow(items: List<HourlyForecast>) {
 }
 
 @Composable
-private fun DailyForecastCard(forecast: DailyForecast) {
+private fun DailyForecastCard(
+    forecast: DailyForecast,
+    settings: AppSettings,
+) {
     Card(
         shape = RoundedCornerShape(22.dp),
         colors = CardDefaults.cardColors(
@@ -383,7 +418,7 @@ private fun DailyForecastCard(forecast: DailyForecast) {
             HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.55f))
             Row(horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxWidth()) {
                 Text(
-                    text = "${forecast.minTemperature.toInt()}° / ${forecast.maxTemperature.toInt()}°",
+                    text = "${formatTemperature(forecast.minTemperature, settings)} / ${formatTemperature(forecast.maxTemperature, settings)}",
                     style = MaterialTheme.typography.bodyLarge,
                 )
                 Text(
@@ -481,6 +516,7 @@ private fun LoadedHomePreview() {
     WeatherlyTheme {
         HomeScreen(
             uiState = HomeUiState.Loaded(sampleWeatherDetails(currentLocation)),
+            settings = AppSettings(),
             onRetry = {},
             onEnableLocation = {},
         )
@@ -493,6 +529,7 @@ private fun LoadingHomePreview() {
     WeatherlyTheme {
         HomeScreen(
             uiState = HomeUiState.Loading,
+            settings = AppSettings(),
             onRetry = {},
             onEnableLocation = {},
         )
@@ -505,6 +542,7 @@ private fun PermissionHomePreview() {
     WeatherlyTheme {
         HomeScreen(
             uiState = HomeUiState.PermissionRequired,
+            settings = AppSettings(),
             onRetry = {},
             onEnableLocation = {},
         )
@@ -517,6 +555,7 @@ private fun ErrorHomePreview() {
     WeatherlyTheme {
         HomeScreen(
             uiState = HomeUiState.Error("Open-Meteo is unavailable right now. Please try again in a moment."),
+            settings = AppSettings(),
             onRetry = {},
             onEnableLocation = {},
         )

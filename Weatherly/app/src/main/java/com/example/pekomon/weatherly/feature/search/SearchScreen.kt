@@ -30,6 +30,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -40,6 +41,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.pekomon.weatherly.core.model.Location
+import com.example.pekomon.weatherly.data.repository.DataStoreSettingsRepository
 import com.example.pekomon.weatherly.core.ui.LocationWeatherSummaryCard
 import com.example.pekomon.weatherly.data.repository.currentLocation
 import com.example.pekomon.weatherly.data.repository.sampleLocations
@@ -53,10 +55,16 @@ fun SearchRoute(
         factory = SearchViewModel.factory(context = LocalContext.current.applicationContext),
     ),
 ) {
+    val context = LocalContext.current.applicationContext
+    val settingsRepository = remember(context) {
+        DataStoreSettingsRepository(context)
+    }
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val settings by settingsRepository.settings.collectAsStateWithLifecycle()
 
     SearchScreen(
         uiState = uiState,
+        settings = settings,
         onQueryChange = viewModel::updateQuery,
         onSearch = viewModel::searchNow,
         onClearQuery = viewModel::clearQuery,
@@ -69,6 +77,7 @@ fun SearchRoute(
 @Composable
 internal fun SearchScreen(
     uiState: SearchUiState,
+    settings: com.example.pekomon.weatherly.core.model.AppSettings,
     onQueryChange: (String) -> Unit,
     onSearch: () -> Unit,
     onClearQuery: () -> Unit,
@@ -122,6 +131,7 @@ internal fun SearchScreen(
                     LocationWeatherSummaryCard(
                         title = "Selected Place",
                         weatherDetails = weatherDetails,
+                        settings = settings,
                         isFavorite = weatherDetails.location.id in uiState.favoriteLocationIds,
                         onToggleFavorite = { onToggleFavorite(weatherDetails.location) },
                     )
@@ -344,6 +354,7 @@ private fun SearchScreenPreview() {
                 favoriteLocationIds = setOf(sampleLocations.first().id),
                 hasSearched = true,
             ),
+            settings = com.example.pekomon.weatherly.core.model.AppSettings(),
             onQueryChange = {},
             onSearch = {},
             onClearQuery = {},

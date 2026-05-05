@@ -23,6 +23,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -31,8 +32,10 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.pekomon.weatherly.core.model.AppSettings
 import com.example.pekomon.weatherly.core.model.Location
 import com.example.pekomon.weatherly.core.ui.LocationWeatherSummaryCard
+import com.example.pekomon.weatherly.data.repository.DataStoreSettingsRepository
 import com.example.pekomon.weatherly.data.repository.currentLocation
 import com.example.pekomon.weatherly.data.repository.sampleLocations
 import com.example.pekomon.weatherly.data.repository.sampleWeatherDetails
@@ -45,10 +48,16 @@ fun FavoritesRoute(
         factory = FavoritesViewModel.factory(context = LocalContext.current.applicationContext),
     ),
 ) {
+    val context = LocalContext.current.applicationContext
+    val settingsRepository = remember(context) {
+        DataStoreSettingsRepository(context)
+    }
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val settings by settingsRepository.settings.collectAsStateWithLifecycle()
 
     FavoritesScreen(
         uiState = uiState,
+        settings = settings,
         onLocationSelected = viewModel::selectLocation,
         onRemoveFavorite = viewModel::removeFavorite,
         modifier = Modifier.padding(contentPadding),
@@ -58,6 +67,7 @@ fun FavoritesRoute(
 @Composable
 internal fun FavoritesScreen(
     uiState: FavoritesUiState,
+    settings: AppSettings,
     onLocationSelected: (Location) -> Unit,
     onRemoveFavorite: (String) -> Unit,
     modifier: Modifier = Modifier,
@@ -99,6 +109,7 @@ internal fun FavoritesScreen(
                     LocationWeatherSummaryCard(
                         title = "Selected Favorite",
                         weatherDetails = weatherDetails,
+                        settings = settings,
                     )
                 }
             }
@@ -223,6 +234,7 @@ private fun FavoritesScreenPreview() {
                 favorites = sampleLocations,
                 selectedLocationWeather = sampleWeatherDetails(currentLocation),
             ),
+            settings = AppSettings(),
             onLocationSelected = {},
             onRemoveFavorite = {},
         )

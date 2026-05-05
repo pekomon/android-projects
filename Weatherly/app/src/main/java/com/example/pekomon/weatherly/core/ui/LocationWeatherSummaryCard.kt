@@ -20,6 +20,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.example.pekomon.weatherly.core.model.AppSettings
 import com.example.pekomon.weatherly.core.model.WeatherCondition
 import com.example.pekomon.weatherly.core.model.WeatherDetails
 
@@ -27,6 +28,7 @@ import com.example.pekomon.weatherly.core.model.WeatherDetails
 fun LocationWeatherSummaryCard(
     title: String,
     weatherDetails: WeatherDetails,
+    settings: AppSettings,
     isFavorite: Boolean? = null,
     onToggleFavorite: (() -> Unit)? = null,
     modifier: Modifier = Modifier,
@@ -80,12 +82,12 @@ fun LocationWeatherSummaryCard(
                 color = MaterialTheme.colorScheme.onPrimaryContainer,
             )
             Text(
-                text = "${current.temperature.toInt()}°  •  ${conditionLabel(current.condition)}",
+                text = "${formatTemperature(current.temperature, settings)}  •  ${conditionLabel(current.condition)}",
                 style = MaterialTheme.typography.titleLarge,
                 color = MaterialTheme.colorScheme.onPrimaryContainer,
             )
             Text(
-                text = "Feels like ${current.apparentTemperature.toInt()}°. Wind ${current.windSpeed.toInt()} km/h. Humidity ${current.humidityPercent}%.",
+                text = "Feels like ${formatTemperature(current.apparentTemperature, settings)}. Wind ${formatWindSpeed(current.windSpeed, settings)}. Humidity ${current.humidityPercent}%.",
                 style = MaterialTheme.typography.bodyLarge,
                 color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.85f),
             )
@@ -106,7 +108,7 @@ fun LocationWeatherSummaryCard(
                             color = MaterialTheme.colorScheme.onPrimaryContainer,
                         )
                         Text(
-                            text = "${forecast.minTemperature.toInt()}° / ${forecast.maxTemperature.toInt()}°",
+                            text = "${formatTemperature(forecast.minTemperature, settings)} / ${formatTemperature(forecast.maxTemperature, settings)}",
                             color = MaterialTheme.colorScheme.onPrimaryContainer,
                         )
                     }
