@@ -35,6 +35,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.pekomon.weatherly.core.model.AppSettings
 import com.example.pekomon.weatherly.core.model.Location
 import com.example.pekomon.weatherly.core.ui.LocationWeatherSummaryCard
+import com.example.pekomon.weatherly.core.ui.isExpandedWidth
 import com.example.pekomon.weatherly.data.repository.DataStoreSettingsRepository
 import com.example.pekomon.weatherly.data.repository.currentLocation
 import com.example.pekomon.weatherly.data.repository.sampleLocations
@@ -72,61 +73,152 @@ internal fun FavoritesScreen(
     onRemoveFavorite: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val useTwoPane = isExpandedWidth()
+
     Surface(
         modifier = modifier.fillMaxSize(),
         color = MaterialTheme.colorScheme.background,
     ) {
-        LazyColumn(
-            contentPadding = PaddingValues(horizontal = 20.dp, vertical = 20.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp),
-        ) {
-            item {
-                Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                    Text(
-                        text = "Favorites",
-                        style = MaterialTheme.typography.headlineLarge,
-                        fontWeight = FontWeight.SemiBold,
-                    )
-                    Text(
-                        text = "Saved locations stay here for quick weather checks and future home-screen shortcuts.",
-                        style = MaterialTheme.typography.bodyLarge,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                }
+        if (useTwoPane) {
+            Row(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(horizontal = 20.dp, vertical = 20.dp),
+                horizontalArrangement = Arrangement.spacedBy(20.dp),
+            ) {
+                FavoritesListPane(
+                    uiState = uiState,
+                    onLocationSelected = onLocationSelected,
+                    onRemoveFavorite = onRemoveFavorite,
+                    modifier = Modifier.weight(0.95f),
+                )
+                FavoritesDetailPane(
+                    uiState = uiState,
+                    settings = settings,
+                    modifier = Modifier.weight(1.05f),
+                )
             }
-            uiState.errorMessage?.let { message ->
-                item {
-                    InfoCard(message = message)
+        } else {
+            LazyColumn(
+                contentPadding = PaddingValues(horizontal = 20.dp, vertical = 20.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp),
+            ) {
+                item { FavoritesHeader() }
+                uiState.errorMessage?.let { message ->
+                    item {
+                        InfoCard(message = message)
+                    }
                 }
-            }
-            if (uiState.isLoadingSelection) {
-                item {
-                    LoadingCard(message = "Loading weather for the selected favorite…")
+                if (uiState.isLoadingSelection) {
+                    item {
+                        LoadingCard(message = "Loading weather for the selected favorite…")
+                    }
                 }
-            }
-            uiState.selectedLocationWeather?.let { weatherDetails ->
-                item {
-                    LocationWeatherSummaryCard(
-                        title = "Selected Favorite",
-                        weatherDetails = weatherDetails,
-                        settings = settings,
-                    )
+                uiState.selectedLocationWeather?.let { weatherDetails ->
+                    item {
+                        LocationWeatherSummaryCard(
+                            title = "Selected Favorite",
+                            weatherDetails = weatherDetails,
+                            settings = settings,
+                        )
+                    }
                 }
-            }
-            if (uiState.favorites.isEmpty()) {
-                item {
-                    InfoCard(message = "No saved places yet. Add favorites from Search to build your shortlist.")
-                }
-            } else {
-                items(uiState.favorites, key = { it.id }) { location ->
-                    FavoriteLocationCard(
-                        location = location,
-                        onClick = { onLocationSelected(location) },
-                        onRemove = { onRemoveFavorite(location.id) },
-                    )
+                if (uiState.favorites.isEmpty()) {
+                    item {
+                        InfoCard(message = "No saved places yet. Add favorites from Search to build your shortlist.")
+                    }
+                } else {
+                    items(uiState.favorites, key = { it.id }) { location ->
+                        FavoriteLocationCard(
+                            location = location,
+                            onClick = { onLocationSelected(location) },
+                            onRemove = { onRemoveFavorite(location.id) },
+                        )
+                    }
                 }
             }
         }
+    }
+}
+
+@Composable
+private fun FavoritesListPane(
+    uiState: FavoritesUiState,
+    onLocationSelected: (Location) -> Unit,
+    onRemoveFavorite: (String) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    LazyColumn(
+        modifier = modifier.fillMaxSize(),
+        verticalArrangement = Arrangement.spacedBy(16.dp),
+    ) {
+        item { FavoritesHeader() }
+        uiState.errorMessage?.let { message ->
+            item { InfoCard(message) }
+        }
+        if (uiState.favorites.isEmpty()) {
+            item {
+                InfoCard(message = "No saved places yet. Add favorites from Search to build your shortlist.")
+            }
+        } else {
+            items(uiState.favorites, key = { it.id }) { location ->
+                FavoriteLocationCard(
+                    location = location,
+                    onClick = { onLocationSelected(location) },
+                    onRemove = { onRemoveFavorite(location.id) },
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun FavoritesDetailPane(
+    uiState: FavoritesUiState,
+    settings: AppSettings,
+    modifier: Modifier = Modifier,
+) {
+    LazyColumn(
+        modifier = modifier.fillMaxSize(),
+        verticalArrangement = Arrangement.spacedBy(16.dp),
+    ) {
+        item {
+            Text(
+                text = "Preview",
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.SemiBold,
+            )
+        }
+        if (uiState.isLoadingSelection) {
+            item { LoadingCard(message = "Loading weather for the selected favorite…") }
+        }
+        uiState.selectedLocationWeather?.let { weatherDetails ->
+            item {
+                LocationWeatherSummaryCard(
+                    title = "Selected Favorite",
+                    weatherDetails = weatherDetails,
+                    settings = settings,
+                )
+            }
+        } ?: item {
+            InfoCard(message = "Select a favorite from the list to preview its weather.")
+        }
+    }
+}
+
+@Composable
+private fun FavoritesHeader() {
+    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        Text(
+            text = "Favorites",
+            style = MaterialTheme.typography.headlineLarge,
+            fontWeight = FontWeight.SemiBold,
+        )
+        Text(
+            text = "Saved locations stay here for quick weather checks and future home-screen shortcuts.",
+            style = MaterialTheme.typography.bodyLarge,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
     }
 }
 

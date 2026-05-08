@@ -42,6 +42,7 @@ import com.example.pekomon.weatherly.core.model.HourlyForecast
 import com.example.pekomon.weatherly.core.model.Location
 import com.example.pekomon.weatherly.core.model.WeatherCondition
 import com.example.pekomon.weatherly.core.model.WeatherDetails
+import com.example.pekomon.weatherly.core.ui.isExpandedWidth
 import com.example.pekomon.weatherly.core.ui.formatTemperature
 import com.example.pekomon.weatherly.core.ui.formatWindSpeed
 import com.example.pekomon.weatherly.data.repository.DataStoreSettingsRepository
@@ -131,45 +132,91 @@ private fun LoadedHome(
     settings: AppSettings,
     modifier: Modifier = Modifier,
 ) {
+    val useTwoPane = isExpandedWidth()
     LazyColumn(
         modifier = modifier,
         contentPadding = PaddingValues(horizontal = 20.dp, vertical = 20.dp),
         verticalArrangement = Arrangement.spacedBy(18.dp),
     ) {
-        item {
-            HomeHeader(location = weatherDetails.location)
-        }
-        item {
-            CurrentWeatherCard(
-                location = weatherDetails.location,
-                currentWeather = weatherDetails.currentWeather,
-                todayForecast = weatherDetails.dailyForecast.firstOrNull(),
-                settings = settings,
-            )
-        }
-        item {
-            MetricGrid(
-                currentWeather = weatherDetails.currentWeather,
-                settings = settings,
-            )
-        }
-        item {
-            ForecastSectionTitle(title = "Hourly Forecast", subtitle = "Next 12 hours")
-        }
-        item {
-            HourlyForecastRow(
-                items = weatherDetails.hourlyForecast,
-                settings = settings,
-            )
-        }
-        item {
-            ForecastSectionTitle(title = "Daily Forecast", subtitle = "Next 7 days")
-        }
-        items(weatherDetails.dailyForecast) { forecast ->
-            DailyForecastCard(
-                forecast = forecast,
-                settings = settings,
-            )
+        if (useTwoPane) {
+            item {
+                HomeHeader(location = weatherDetails.location)
+            }
+            item {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(20.dp),
+                ) {
+                    Column(
+                        modifier = Modifier.weight(0.95f),
+                        verticalArrangement = Arrangement.spacedBy(16.dp),
+                    ) {
+                        CurrentWeatherCard(
+                            location = weatherDetails.location,
+                            currentWeather = weatherDetails.currentWeather,
+                            todayForecast = weatherDetails.dailyForecast.firstOrNull(),
+                            settings = settings,
+                        )
+                        MetricGrid(
+                            currentWeather = weatherDetails.currentWeather,
+                            settings = settings,
+                        )
+                    }
+                    Column(
+                        modifier = Modifier.weight(1.05f),
+                        verticalArrangement = Arrangement.spacedBy(16.dp),
+                    ) {
+                        ForecastSectionTitle(title = "Hourly Forecast", subtitle = "Next 12 hours")
+                        HourlyForecastRow(
+                            items = weatherDetails.hourlyForecast,
+                            settings = settings,
+                        )
+                        ForecastSectionTitle(title = "Daily Forecast", subtitle = "Next 7 days")
+                        weatherDetails.dailyForecast.forEach { forecast ->
+                            DailyForecastCard(
+                                forecast = forecast,
+                                settings = settings,
+                            )
+                        }
+                    }
+                }
+            }
+        } else {
+            item {
+                HomeHeader(location = weatherDetails.location)
+            }
+            item {
+                CurrentWeatherCard(
+                    location = weatherDetails.location,
+                    currentWeather = weatherDetails.currentWeather,
+                    todayForecast = weatherDetails.dailyForecast.firstOrNull(),
+                    settings = settings,
+                )
+            }
+            item {
+                MetricGrid(
+                    currentWeather = weatherDetails.currentWeather,
+                    settings = settings,
+                )
+            }
+            item {
+                ForecastSectionTitle(title = "Hourly Forecast", subtitle = "Next 12 hours")
+            }
+            item {
+                HourlyForecastRow(
+                    items = weatherDetails.hourlyForecast,
+                    settings = settings,
+                )
+            }
+            item {
+                ForecastSectionTitle(title = "Daily Forecast", subtitle = "Next 7 days")
+            }
+            items(weatherDetails.dailyForecast) { forecast ->
+                DailyForecastCard(
+                    forecast = forecast,
+                    settings = settings,
+                )
+            }
         }
     }
 }

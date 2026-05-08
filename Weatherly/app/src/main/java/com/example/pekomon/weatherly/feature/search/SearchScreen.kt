@@ -40,9 +40,11 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.pekomon.weatherly.core.model.AppSettings
 import com.example.pekomon.weatherly.core.model.Location
 import com.example.pekomon.weatherly.data.repository.DataStoreSettingsRepository
 import com.example.pekomon.weatherly.core.ui.LocationWeatherSummaryCard
+import com.example.pekomon.weatherly.core.ui.isExpandedWidth
 import com.example.pekomon.weatherly.data.repository.currentLocation
 import com.example.pekomon.weatherly.data.repository.sampleLocations
 import com.example.pekomon.weatherly.data.repository.sampleWeatherDetails
@@ -77,7 +79,7 @@ fun SearchRoute(
 @Composable
 internal fun SearchScreen(
     uiState: SearchUiState,
-    settings: com.example.pekomon.weatherly.core.model.AppSettings,
+    settings: AppSettings,
     onQueryChange: (String) -> Unit,
     onSearch: () -> Unit,
     onClearQuery: () -> Unit,
@@ -85,80 +87,200 @@ internal fun SearchScreen(
     onToggleFavorite: (Location) -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val useTwoPane = isExpandedWidth()
+
     Surface(
         modifier = modifier.fillMaxSize(),
         color = MaterialTheme.colorScheme.background,
     ) {
-        LazyColumn(
-            contentPadding = PaddingValues(horizontal = 20.dp, vertical = 20.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp),
-        ) {
-            item {
-                Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                    Text(
-                        text = "Search Places",
-                        style = MaterialTheme.typography.headlineLarge,
-                        fontWeight = FontWeight.SemiBold,
-                    )
-                    Text(
-                        text = "Search any city, then preview current conditions and a short forecast before we wire full place detail.",
-                        style = MaterialTheme.typography.bodyLarge,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                }
-            }
-            item {
-                SearchInputCard(
-                    query = uiState.query,
-                    isSearching = uiState.isSearching,
+        if (useTwoPane) {
+            Row(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(horizontal = 20.dp, vertical = 20.dp),
+                horizontalArrangement = Arrangement.spacedBy(20.dp),
+            ) {
+                SearchListPane(
+                    uiState = uiState,
                     onQueryChange = onQueryChange,
                     onSearch = onSearch,
                     onClearQuery = onClearQuery,
+                    onLocationSelected = onLocationSelected,
+                    onToggleFavorite = onToggleFavorite,
+                    modifier = Modifier.weight(0.95f),
+                )
+                SearchDetailPane(
+                    uiState = uiState,
+                    settings = settings,
+                    onToggleFavorite = onToggleFavorite,
+                    modifier = Modifier.weight(1.05f),
                 )
             }
-            uiState.errorMessage?.let { message ->
+        } else {
+            LazyColumn(
+                contentPadding = PaddingValues(horizontal = 20.dp, vertical = 20.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp),
+            ) {
                 item {
-                    MessageCard(message = message)
+                    SearchHeader()
                 }
-            }
-            if (uiState.isLoadingSelection) {
                 item {
-                    LoadingCard(message = "Loading forecast for the selected place…")
-                }
-            }
-            uiState.selectedLocationWeather?.let { weatherDetails ->
-                item {
-                    LocationWeatherSummaryCard(
-                        title = "Selected Place",
-                        weatherDetails = weatherDetails,
-                        settings = settings,
-                        isFavorite = weatherDetails.location.id in uiState.favoriteLocationIds,
-                        onToggleFavorite = { onToggleFavorite(weatherDetails.location) },
+                    SearchInputCard(
+                        query = uiState.query,
+                        isSearching = uiState.isSearching,
+                        onQueryChange = onQueryChange,
+                        onSearch = onSearch,
+                        onClearQuery = onClearQuery,
                     )
                 }
-            }
-            if (uiState.results.isNotEmpty()) {
-                item {
-                    Text(
-                        text = "Results",
-                        style = MaterialTheme.typography.titleLarge,
-                        fontWeight = FontWeight.SemiBold,
-                    )
+                uiState.errorMessage?.let { message ->
+                    item {
+                        MessageCard(message = message)
+                    }
                 }
-                items(uiState.results, key = { it.id }) { location ->
-                    SearchResultCard(
-                        location = location,
-                        isFavorite = location.id in uiState.favoriteLocationIds,
-                        onClick = { onLocationSelected(location) },
-                        onToggleFavorite = { onToggleFavorite(location) },
-                    )
+                if (uiState.isLoadingSelection) {
+                    item {
+                        LoadingCard(message = "Loading forecast for the selected place…")
+                    }
                 }
-            } else if (uiState.hasSearched && !uiState.isSearching && uiState.errorMessage == null) {
-                item {
-                    MessageCard(message = "No locations found. Try a broader city or postal code search.")
+                uiState.selectedLocationWeather?.let { weatherDetails ->
+                    item {
+                        LocationWeatherSummaryCard(
+                            title = "Selected Place",
+                            weatherDetails = weatherDetails,
+                            settings = settings,
+                            isFavorite = weatherDetails.location.id in uiState.favoriteLocationIds,
+                            onToggleFavorite = { onToggleFavorite(weatherDetails.location) },
+                        )
+                    }
+                }
+                if (uiState.results.isNotEmpty()) {
+                    item {
+                        Text(
+                            text = "Results",
+                            style = MaterialTheme.typography.titleLarge,
+                            fontWeight = FontWeight.SemiBold,
+                        )
+                    }
+                    items(uiState.results, key = { it.id }) { location ->
+                        SearchResultCard(
+                            location = location,
+                            isFavorite = location.id in uiState.favoriteLocationIds,
+                            onClick = { onLocationSelected(location) },
+                            onToggleFavorite = { onToggleFavorite(location) },
+                        )
+                    }
+                } else if (uiState.hasSearched && !uiState.isSearching && uiState.errorMessage == null) {
+                    item {
+                        MessageCard(message = "No locations found. Try a broader city or postal code search.")
+                    }
                 }
             }
         }
+    }
+}
+
+@Composable
+private fun SearchListPane(
+    uiState: SearchUiState,
+    onQueryChange: (String) -> Unit,
+    onSearch: () -> Unit,
+    onClearQuery: () -> Unit,
+    onLocationSelected: (Location) -> Unit,
+    onToggleFavorite: (Location) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    LazyColumn(
+        modifier = modifier.fillMaxSize(),
+        verticalArrangement = Arrangement.spacedBy(16.dp),
+    ) {
+        item { SearchHeader() }
+        item {
+            SearchInputCard(
+                query = uiState.query,
+                isSearching = uiState.isSearching,
+                onQueryChange = onQueryChange,
+                onSearch = onSearch,
+                onClearQuery = onClearQuery,
+            )
+        }
+        uiState.errorMessage?.let { message ->
+            item { MessageCard(message = message) }
+        }
+        item {
+            Text(
+                text = "Results",
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.SemiBold,
+            )
+        }
+        if (uiState.results.isNotEmpty()) {
+            items(uiState.results, key = { it.id }) { location ->
+                SearchResultCard(
+                    location = location,
+                    isFavorite = location.id in uiState.favoriteLocationIds,
+                    onClick = { onLocationSelected(location) },
+                    onToggleFavorite = { onToggleFavorite(location) },
+                )
+            }
+        } else if (uiState.hasSearched && !uiState.isSearching && uiState.errorMessage == null) {
+            item {
+                MessageCard(message = "No locations found. Try a broader city or postal code search.")
+            }
+        }
+    }
+}
+
+@Composable
+private fun SearchDetailPane(
+    uiState: SearchUiState,
+    settings: AppSettings,
+    onToggleFavorite: (Location) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    LazyColumn(
+        modifier = modifier.fillMaxSize(),
+        verticalArrangement = Arrangement.spacedBy(16.dp),
+    ) {
+        item {
+            Text(
+                text = "Preview",
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.SemiBold,
+            )
+        }
+        if (uiState.isLoadingSelection) {
+            item { LoadingCard(message = "Loading forecast for the selected place…") }
+        }
+        uiState.selectedLocationWeather?.let { weatherDetails ->
+            item {
+                LocationWeatherSummaryCard(
+                    title = "Selected Place",
+                    weatherDetails = weatherDetails,
+                    settings = settings,
+                    isFavorite = weatherDetails.location.id in uiState.favoriteLocationIds,
+                    onToggleFavorite = { onToggleFavorite(weatherDetails.location) },
+                )
+            }
+        } ?: item {
+            MessageCard(message = "Select a place from the list to preview its current conditions and short forecast.")
+        }
+    }
+}
+
+@Composable
+private fun SearchHeader() {
+    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        Text(
+            text = "Search Places",
+            style = MaterialTheme.typography.headlineLarge,
+            fontWeight = FontWeight.SemiBold,
+        )
+        Text(
+            text = "Search any city, then preview current conditions and a short forecast before we wire full place detail.",
+            style = MaterialTheme.typography.bodyLarge,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
     }
 }
 
