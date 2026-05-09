@@ -10,29 +10,34 @@ import com.example.pekomon.weatherly.core.model.TemperatureUnit
 import com.example.pekomon.weatherly.core.model.WindSpeedUnit
 import com.example.pekomon.weatherly.data.repository.DataStoreSettingsRepository
 import com.example.pekomon.weatherly.domain.repository.SettingsRepository
+import com.example.pekomon.weatherly.widget.WeatherlyWidgetUpdater
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 
 class SettingsViewModel(
     private val settingsRepository: SettingsRepository,
+    private val context: Context,
 ) : ViewModel() {
     val settings: StateFlow<AppSettings> = settingsRepository.settings
 
     fun setTemperatureUnit(unit: TemperatureUnit) {
         viewModelScope.launch {
             settingsRepository.setTemperatureUnit(unit)
+            WeatherlyWidgetUpdater.refresh(context)
         }
     }
 
     fun setWindSpeedUnit(unit: WindSpeedUnit) {
         viewModelScope.launch {
             settingsRepository.setWindSpeedUnit(unit)
+            WeatherlyWidgetUpdater.refresh(context)
         }
     }
 
     fun setAppearanceMode(mode: AppAppearanceMode) {
         viewModelScope.launch {
             settingsRepository.setAppearanceMode(mode)
+            WeatherlyWidgetUpdater.refresh(context)
         }
     }
 
@@ -43,7 +48,7 @@ class SettingsViewModel(
         ): ViewModelProvider.Factory = object : ViewModelProvider.Factory {
             @Suppress("UNCHECKED_CAST")
             override fun <T : ViewModel> create(modelClass: Class<T>): T {
-                return SettingsViewModel(settingsRepository) as T
+                return SettingsViewModel(settingsRepository, context.applicationContext) as T
             }
         }
     }

@@ -1,3 +1,5 @@
 <resources>
     <string name="app_name">Weatherly</string>
+    <string name="weatherly_widget_name">Weatherly Current Weather</string>
+    <string name="weatherly_widget_description">Current weather summary for your Weatherly home location.</string>
 </resources>
