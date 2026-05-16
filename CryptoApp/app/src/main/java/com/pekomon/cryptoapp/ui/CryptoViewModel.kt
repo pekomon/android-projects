@@ -13,6 +13,7 @@ import com.pekomon.cryptoapp.data.UserCrypto
 import com.pekomon.cryptoapp.data.Transaction
 import com.pekomon.cryptoapp.data.TransactionType
 import com.pekomon.cryptoapp.domain.market.CryptoAssetSorter
+import com.pekomon.cryptoapp.domain.market.DefaultCryptoAssets
 import com.pekomon.cryptoapp.domain.model.CryptoAsset
 import com.pekomon.cryptoapp.domain.model.MarketPrice
 import com.pekomon.cryptoapp.domain.portfolio.PortfolioCalculator
@@ -21,6 +22,7 @@ import com.pekomon.cryptoapp.domain.portfolio.PortfolioValidator
 import com.pekomon.cryptoapp.domain.repository.MarketRepository
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.flow.first
+import retrofit2.HttpException
 import java.time.LocalDateTime
 
 class CryptoViewModel(
@@ -48,12 +50,6 @@ class CryptoViewModel(
     var selectedCryptos by mutableStateOf<Set<String>>(emptySet())
         private set
     
-    private val cryptoDetails = mapOf(
-        "bitcoin" to Pair("Bitcoin", "BTC"),
-        "ethereum" to Pair("Ethereum", "ETH"),
-        "dogecoin" to Pair("Dogecoin", "DOGE")
-    )
-    
     var currentSortOption by mutableStateOf(SortOption.DEFAULT)
         private set
     
@@ -62,28 +58,7 @@ class CryptoViewModel(
     
     private var isInitialized = false
     
-    private val defaultCryptos = listOf(
-        "bitcoin",
-        "ethereum",
-        "tether",
-        "binancecoin",
-        "ripple",
-        "solana",
-        "cardano",
-        "dogecoin",
-        "polkadot",
-        "avalanche-2",
-        "tron",
-        "chainlink",
-        "polygon",
-        "litecoin",
-        "bitcoin-cash",
-        "stellar",
-        "monero",
-        "cosmos",
-        "ethereum-classic",
-        "hedera"
-    )
+    private val defaultCryptos = DefaultCryptoAssets.assets.map { it.id }
     
     var userCryptos by mutableStateOf<List<UserCrypto>>(emptyList())
         private set
@@ -197,7 +172,7 @@ class CryptoViewModel(
                 }.toMutableMap()
                 marketLoadState = MarketLoadState.Content(lastUpdated = LocalDateTime.now())
             } catch (e: Exception) {
-                error = "Unable to load prices. Check your connection and try again."
+                error = marketErrorMessage(e)
                 marketLoadState = MarketLoadState.Error(error ?: "Unable to load prices.")
             }
             isLoading = false
@@ -210,8 +185,7 @@ class CryptoViewModel(
         try {
             availableCryptos = repository.getAllAvailableCryptos()
         } catch (e: Exception) {
-            error = "Unable to load available cryptocurrencies. Check your connection and try again."
-            throw e
+            availableCryptos = DefaultCryptoAssets.assets
         }
     }
     
@@ -317,5 +291,13 @@ class CryptoViewModel(
     
     fun getCombinedUserCryptos(): List<UserCrypto> {
         return PortfolioCalculator.combineHoldings(userCryptos)
+    }
+
+    private fun marketErrorMessage(error: Exception): String {
+        return if (error is HttpException && error.code() == 429) {
+            "CoinGecko is rate limiting requests. Wait a moment and refresh again."
+        } else {
+            "Unable to load prices. Check your connection and try again."
+        }
     }
 }
