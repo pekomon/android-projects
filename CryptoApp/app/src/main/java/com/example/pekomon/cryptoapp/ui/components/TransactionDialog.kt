@@ -13,7 +13,6 @@ import com.example.pekomon.cryptoapp.data.TransactionType
 import java.time.format.DateTimeFormatter
 import androidx.compose.foundation.layout.Arrangement
 import com.example.pekomon.cryptoapp.data.Currency
-import androidx.compose.ui.graphics.Color
 
 @Composable
 fun TransactionDialog(
@@ -31,9 +30,10 @@ fun TransactionDialog(
             Column(
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                // Näytä arvon muutos
                 val priceChange = currentPrice - initialPrice
-                val priceChangePercentage = (priceChange / initialPrice) * 100
+                val priceChangePercentage = if (initialPrice == 0.0) 0.0 else {
+                    (priceChange / initialPrice) * 100
+                }
                 
                 Card {
                     Column(
@@ -60,7 +60,6 @@ fun TransactionDialog(
                     }
                 }
                 
-                // Näytä transaktiot
                 Text(
                     text = "Transaction History",
                     style = MaterialTheme.typography.titleMedium
@@ -131,4 +130,4 @@ private fun TransactionItem(
             }
         }
     }
-} 
+}

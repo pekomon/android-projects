@@ -82,7 +82,7 @@ class CryptoViewModel(
         private set
     
     val totalPortfolioValue: Double
-        get() = userCryptos.sumOf { userCrypto ->
+        get() = getCombinedUserCryptos().sumOf { userCrypto ->
             val price = getCryptoInfo(userCrypto.cryptoId)?.currentPrice ?: 0.0
             price * userCrypto.amount
         }
@@ -246,13 +246,40 @@ class CryptoViewModel(
     }
     
     fun updateUserCrypto(cryptoId: String, amount: Double) {
+        updateUserCrypto(cryptoId = cryptoId, amount = amount, price = 0.0, dateTime = LocalDateTime.now())
+    }
+
+    fun updateUserCrypto(
+        cryptoId: String,
+        amount: Double,
+        price: Double,
+        dateTime: LocalDateTime
+    ) {
         viewModelScope.launch {
-            val existingCrypto = userCryptos.find { it.cryptoId == cryptoId }
+            val existingCrypto = getCombinedUserCryptos().find { it.cryptoId == cryptoId }
             if (existingCrypto != null) {
-                val newCryptos = userCryptos.map { 
-                    if (it.cryptoId == cryptoId) {
-                        it.copy(amount = amount)
-                    } else it 
+                val adjustment = amount - existingCrypto.amount
+                val adjustmentTransaction = when {
+                    adjustment > 0.0 -> Transaction(
+                        type = TransactionType.BUY,
+                        amount = adjustment,
+                        price = price,
+                        dateTime = dateTime
+                    )
+                    adjustment < 0.0 -> Transaction(
+                        type = TransactionType.SELL,
+                        amount = -adjustment,
+                        price = price,
+                        dateTime = dateTime
+                    )
+                    else -> null
+                }
+                val updatedCrypto = existingCrypto.copy(
+                    amount = amount,
+                    transactions = existingCrypto.transactions + listOfNotNull(adjustmentTransaction)
+                )
+                val newCryptos = userCryptos.filterNot { it.cryptoId == cryptoId }.let { remaining ->
+                    if (amount > 0.0) remaining + updatedCrypto else remaining
                 }
                 preferencesRepository.updateUserCryptos(newCryptos)
                 fetchPrices()

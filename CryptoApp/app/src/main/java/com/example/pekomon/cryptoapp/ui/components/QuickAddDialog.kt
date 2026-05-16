@@ -22,8 +22,6 @@ import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.material3.MaterialTheme
-import com.example.pekomon.cryptoapp.ui.components.DatePickerDialog
-import com.example.pekomon.cryptoapp.ui.components.TimePickerDialog
 
 @Composable
 fun QuickAddDialog(
@@ -31,17 +29,21 @@ fun QuickAddDialog(
     currentPrice: Double,
     currency: Currency,
     onDismiss: () -> Unit,
-    onConfirm: (amount: Double, price: Double, dateTime: LocalDateTime) -> Unit
+    onConfirm: (amount: Double, price: Double, dateTime: LocalDateTime) -> Unit,
+    initialAmount: Double? = null,
+    initialPrice: Double = currentPrice,
+    title: String = "Add $cryptoName",
+    confirmLabel: String = "Add"
 ) {
-    var amount by remember { mutableStateOf("") }
-    var price by remember { mutableStateOf(currentPrice.toString()) }
+    var amount by remember { mutableStateOf(initialAmount?.toString().orEmpty()) }
+    var price by remember { mutableStateOf(initialPrice.toString()) }
     var showDatePicker by remember { mutableStateOf(false) }
     var showTimePicker by remember { mutableStateOf(false) }
     var selectedDateTime by remember { mutableStateOf(LocalDateTime.now()) }
     
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Add $cryptoName") },
+        title = { Text(title) },
         text = {
             Column(
                 verticalArrangement = Arrangement.spacedBy(16.dp)
@@ -93,7 +95,7 @@ fun QuickAddDialog(
                 },
                 enabled = amount.toDoubleOrNull() != null && price.toDoubleOrNull() != null
             ) {
-                Text("Add")
+                Text(confirmLabel)
             }
         },
         dismissButton = {
@@ -122,4 +124,4 @@ fun QuickAddDialog(
             }
         )
     }
-} 
+}

@@ -23,13 +23,14 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import com.example.pekomon.cryptoapp.data.Currency
 import com.example.pekomon.cryptoapp.data.UserCrypto
 import com.example.pekomon.cryptoapp.ui.CryptoViewModel
 import com.example.pekomon.cryptoapp.ui.components.CommonCard
 import com.example.pekomon.cryptoapp.ui.components.QuickAddDialog
+import com.example.pekomon.cryptoapp.ui.components.ScreenHeader
+import com.example.pekomon.cryptoapp.ui.components.StateMessageCard
 import com.example.pekomon.cryptoapp.ui.components.TransactionDialog
 
 @Composable
@@ -46,10 +47,7 @@ fun PortfolioScreen(
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        Text(
-            text = "Portfolio",
-            style = MaterialTheme.typography.headlineMedium
-        )
+        ScreenHeader(title = "Portfolio")
         
         Card(
             modifier = Modifier.fillMaxWidth()
@@ -66,28 +64,41 @@ fun PortfolioScreen(
                     text = "${viewModel.selectedCurrency.symbol}%.2f".format(viewModel.totalPortfolioValue),
                     style = MaterialTheme.typography.headlineMedium
                 )
+                Text(
+                    text = "${viewModel.getCombinedUserCryptos().size} active holdings",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
             }
         }
-        
-        LazyColumn(
-            verticalArrangement = Arrangement.spacedBy(8.dp),
-            modifier = Modifier.weight(1f)
-        ) {
-            items(viewModel.getCombinedUserCryptos()) { userCrypto ->
-                val crypto = viewModel.availableCryptos.find { it.id == userCrypto.cryptoId }
-                val cryptoInfo = viewModel.getCryptoInfo(userCrypto.cryptoId)
-                
-                if (crypto != null) {
-                    PortfolioItem(
-                        cryptoName = crypto.name,
-                        cryptoSymbol = crypto.symbol.uppercase(),
-                        userCrypto = userCrypto,
-                        currentPrice = cryptoInfo?.currentPrice ?: 0.0,
-                        currency = viewModel.selectedCurrency,
-                        onEdit = { editingCrypto = userCrypto },
-                        onDelete = { viewModel.removeUserCrypto(userCrypto.cryptoId) },
-                        onClick = { showTransactionDialog = userCrypto }
-                    )
+
+        val holdings = viewModel.getCombinedUserCryptos()
+        if (holdings.isEmpty()) {
+            StateMessageCard(
+                title = "No holdings yet",
+                message = "Use the add button from Watchlist or Favorites to track an asset in your portfolio."
+            )
+        } else {
+            LazyColumn(
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+                modifier = Modifier.weight(1f)
+            ) {
+                items(holdings) { userCrypto ->
+                    val crypto = viewModel.availableCryptos.find { it.id == userCrypto.cryptoId }
+                    val cryptoInfo = viewModel.getCryptoInfo(userCrypto.cryptoId)
+
+                    if (crypto != null) {
+                        PortfolioItem(
+                            cryptoName = crypto.name,
+                            cryptoSymbol = crypto.symbol.uppercase(),
+                            userCrypto = userCrypto,
+                            currentPrice = cryptoInfo?.currentPrice ?: 0.0,
+                            currency = viewModel.selectedCurrency,
+                            onEdit = { editingCrypto = userCrypto },
+                            onDelete = { viewModel.removeUserCrypto(userCrypto.cryptoId) },
+                            onClick = { showTransactionDialog = userCrypto }
+                        )
+                    }
                 }
             }
         }
@@ -102,9 +113,13 @@ fun PortfolioScreen(
             currency = viewModel.selectedCurrency,
             onDismiss = { editingCrypto = null },
             onConfirm = { amount, price, dateTime ->
-                viewModel.updateUserCrypto(crypto.cryptoId, amount)
+                viewModel.updateUserCrypto(crypto.cryptoId, amount, price, dateTime)
                 editingCrypto = null
-            }
+            },
+            initialAmount = crypto.amount,
+            initialPrice = currentPrice,
+            title = "Update $cryptoName",
+            confirmLabel = "Update"
         )
     }
     
@@ -164,7 +179,9 @@ private fun PortfolioItem(
                     val totalValue = currentPrice * userCrypto.amount
                     val initialValue = userCrypto.purchasePrice * userCrypto.amount
                     val valueChange = totalValue - initialValue
-                    val valueChangePercentage = (valueChange / initialValue) * 100
+                    val valueChangePercentage = if (initialValue == 0.0) 0.0 else {
+                        (valueChange / initialValue) * 100
+                    }
                     
                     Text(
                         text = "${currency.symbol}${String.format("%.2f", totalValue)}",
@@ -188,4 +205,4 @@ private fun PortfolioItem(
             }
         }
     }
-} 
+}
