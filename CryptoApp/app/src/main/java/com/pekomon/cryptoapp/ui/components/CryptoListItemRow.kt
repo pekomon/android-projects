@@ -11,6 +11,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
+import com.pekomon.cryptoapp.core.formatting.DisplayFormatters
 import com.pekomon.cryptoapp.data.Currency
 import com.pekomon.cryptoapp.domain.model.CryptoAsset
 
@@ -52,11 +53,11 @@ fun CryptoListItemRow(
                 modifier = Modifier.weight(1f)
             ) {
                 Text(
-                    text = "${currency.symbol}${String.format("%.2f", currentPrice)}",
+                    text = DisplayFormatters.currencyAmount(currentPrice, currency),
                     style = MaterialTheme.typography.titleMedium
                 )
                 Text(
-                    text = "${if (priceChangePercentage >= 0) "+" else ""}${String.format("%.2f", priceChangePercentage)}%",
+                    text = DisplayFormatters.percentage(priceChangePercentage),
                     color = if (priceChangePercentage >= 0) Color.Green else Color.Red,
                     style = MaterialTheme.typography.bodyMedium
                 )

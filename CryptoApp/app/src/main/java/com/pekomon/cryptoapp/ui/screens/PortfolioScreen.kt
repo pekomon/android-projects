@@ -24,6 +24,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import com.pekomon.cryptoapp.core.formatting.DisplayFormatters
 import com.pekomon.cryptoapp.data.Currency
 import com.pekomon.cryptoapp.data.UserCrypto
 import com.pekomon.cryptoapp.ui.CryptoViewModel
@@ -61,7 +62,10 @@ fun PortfolioScreen(
                     style = MaterialTheme.typography.titleMedium
                 )
                 Text(
-                    text = "${viewModel.selectedCurrency.symbol}%.2f".format(viewModel.totalPortfolioValue),
+                    text = DisplayFormatters.currencyAmount(
+                        value = viewModel.totalPortfolioValue,
+                        currency = viewModel.selectedCurrency
+                    ),
                     style = MaterialTheme.typography.headlineMedium
                 )
                 Text(
@@ -184,11 +188,11 @@ private fun PortfolioItem(
                     }
                     
                     Text(
-                        text = "${currency.symbol}${String.format("%.2f", totalValue)}",
+                        text = DisplayFormatters.currencyAmount(totalValue, currency),
                         style = MaterialTheme.typography.titleMedium
                     )
                     Text(
-                        text = "${if (valueChange >= 0) "+" else ""}${currency.symbol}${String.format("%.2f", valueChange)} (${String.format("%.2f", valueChangePercentage)}%)",
+                        text = "${DisplayFormatters.signedCurrencyAmount(valueChange, currency)} (${DisplayFormatters.percentage(valueChangePercentage)})",
                         style = MaterialTheme.typography.bodyMedium,
                         color = if (valueChange >= 0) MaterialTheme.colorScheme.tertiary else MaterialTheme.colorScheme.error
                     )

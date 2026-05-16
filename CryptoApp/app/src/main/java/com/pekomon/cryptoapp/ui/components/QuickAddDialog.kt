@@ -17,9 +17,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import com.pekomon.cryptoapp.core.formatting.DisplayFormatters
 import com.pekomon.cryptoapp.data.Currency
 import java.time.LocalDateTime
-import java.time.format.DateTimeFormatter
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.material3.MaterialTheme
 
@@ -79,7 +79,7 @@ fun QuickAddDialog(
                 }
                 
                 Text(
-                    text = "Purchase time: ${selectedDateTime.format(DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm"))}",
+                    text = "Purchase time: ${DisplayFormatters.dateTime(selectedDateTime)}",
                     style = MaterialTheme.typography.bodyMedium
                 )
             }

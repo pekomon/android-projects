@@ -10,8 +10,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.pekomon.cryptoapp.data.Transaction
 import com.pekomon.cryptoapp.data.TransactionType
-import java.time.format.DateTimeFormatter
 import androidx.compose.foundation.layout.Arrangement
+import com.pekomon.cryptoapp.core.formatting.DisplayFormatters
 import com.pekomon.cryptoapp.data.Currency
 
 @Composable
@@ -45,15 +45,15 @@ fun TransactionDialog(
                             style = MaterialTheme.typography.titleMedium
                         )
                         Text(
-                            text = "Initial price: ${currency.symbol}${String.format("%.2f", initialPrice)}",
+                            text = "Initial price: ${DisplayFormatters.currencyAmount(initialPrice, currency)}",
                             style = MaterialTheme.typography.bodyMedium
                         )
                         Text(
-                            text = "Current price: ${currency.symbol}${String.format("%.2f", currentPrice)}",
+                            text = "Current price: ${DisplayFormatters.currencyAmount(currentPrice, currency)}",
                             style = MaterialTheme.typography.bodyMedium
                         )
                         Text(
-                            text = "Change: ${currency.symbol}${String.format("%.2f", priceChange)} (${String.format("%.2f", priceChangePercentage)}%)",
+                            text = "Change: ${DisplayFormatters.signedCurrencyAmount(priceChange, currency)} (${DisplayFormatters.percentage(priceChangePercentage)})",
                             style = MaterialTheme.typography.bodyMedium,
                             color = if (priceChange >= 0) MaterialTheme.colorScheme.tertiary else MaterialTheme.colorScheme.error
                         )
@@ -88,8 +88,6 @@ private fun TransactionItem(
     transaction: Transaction,
     currency: Currency
 ) {
-    val formatter = DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm")
-    
     Card(
         modifier = Modifier.fillMaxWidth()
     ) {
@@ -113,7 +111,7 @@ private fun TransactionItem(
                     }
                 )
                 Text(
-                    text = transaction.dateTime.format(formatter),
+                    text = DisplayFormatters.dateTime(transaction.dateTime),
                     style = MaterialTheme.typography.bodySmall
                 )
             }
@@ -124,7 +122,7 @@ private fun TransactionItem(
                     style = MaterialTheme.typography.bodyMedium
                 )
                 Text(
-                    text = "${currency.symbol}${String.format("%.2f", transaction.price)}",
+                    text = DisplayFormatters.currencyAmount(transaction.price, currency),
                     style = MaterialTheme.typography.bodyMedium
                 )
             }
