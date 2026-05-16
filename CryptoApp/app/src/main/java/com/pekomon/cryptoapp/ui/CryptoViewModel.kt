@@ -9,12 +9,12 @@ import com.pekomon.cryptoapp.data.CryptoRepository
 import com.pekomon.cryptoapp.data.SortOption
 import com.pekomon.cryptoapp.data.Currency
 import com.pekomon.cryptoapp.data.PreferencesRepository
-import com.pekomon.cryptoapp.data.PortfolioCalculator
 import com.pekomon.cryptoapp.data.UserCrypto
 import com.pekomon.cryptoapp.data.Transaction
 import com.pekomon.cryptoapp.data.TransactionType
 import com.pekomon.cryptoapp.domain.model.CryptoAsset
 import com.pekomon.cryptoapp.domain.model.MarketPrice
+import com.pekomon.cryptoapp.domain.portfolio.PortfolioCalculator
 import com.pekomon.cryptoapp.domain.repository.MarketRepository
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.flow.first

@@ -1,5 +1,6 @@
 package com.pekomon.cryptoapp.data
 
+import com.pekomon.cryptoapp.domain.portfolio.PortfolioCalculator
 import org.junit.Assert.assertEquals
 import org.junit.Test
 import java.time.LocalDateTime

@@ -1,4 +1,6 @@
-package com.pekomon.cryptoapp.data
+package com.pekomon.cryptoapp.domain.portfolio
+
+import com.pekomon.cryptoapp.data.UserCrypto
 
 object PortfolioCalculator {
     fun combineHoldings(holdings: List<UserCrypto>): List<UserCrypto> {
