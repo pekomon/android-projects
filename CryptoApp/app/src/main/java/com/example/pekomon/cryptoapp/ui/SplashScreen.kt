@@ -9,12 +9,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.scale
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
-import kotlinx.coroutines.delay
 
 @Composable
 fun SplashScreen(
@@ -29,9 +24,7 @@ fun SplashScreen(
     )
     
     LaunchedEffect(Unit) {
-        // Aloita datan lataus
         viewModel.initialize()
-        // Käynnistä animaatio
         progress = 1f
     }
     
@@ -52,10 +45,10 @@ fun SplashScreen(
             )
             
             CircularProgressIndicator(
-                progress = animatedProgress,
+                progress = { animatedProgress },
                 modifier = Modifier.size(64.dp),
                 color = MaterialTheme.colorScheme.onPrimary
             )
         }
     }
-} 
+}

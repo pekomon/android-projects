@@ -2,7 +2,7 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
-    kotlin("plugin.serialization") version "1.9.0"
+    alias(libs.plugins.kotlin.serialization)
 }
 
 android {
@@ -58,26 +58,13 @@ dependencies {
     debugImplementation(libs.androidx.ui.tooling)
     debugImplementation(libs.androidx.ui.test.manifest)
     
-    // Retrofit verkkopyyntöjä varten
-    implementation("com.squareup.retrofit2:retrofit:2.9.0")
-    implementation("com.squareup.retrofit2:converter-gson:2.9.0")
-    
-    // Coroutines asynkronista ohjelmointia varten
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3")
-    implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.7.0")
-    
-    // Navigation Compose
-    implementation("androidx.navigation:navigation-compose:2.7.7")
-    
-    // Material Icons Extended
-    implementation("androidx.compose.material:material-icons-extended:1.6.3")
-    
-    // DataStore
-    implementation("androidx.datastore:datastore-preferences:1.0.0")
-
-    // Swipe-to-refresh
-    implementation("com.google.accompanist:accompanist-swiperefresh:0.27.0")
-
-    // Lisää kotlinx.serialization riippuvuus
-    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.5.1")
+    implementation(libs.retrofit)
+    implementation(libs.retrofit.converter.gson)
+    implementation(libs.kotlinx.coroutines.android)
+    implementation(libs.androidx.lifecycle.viewmodel.compose)
+    implementation(libs.androidx.navigation.compose)
+    implementation(libs.androidx.material.icons.extended)
+    implementation(libs.androidx.datastore.preferences)
+    implementation(libs.accompanist.swiperefresh)
+    implementation(libs.kotlinx.serialization.json)
 }

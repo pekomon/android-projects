@@ -188,7 +188,7 @@ class CryptoViewModel(
                     CryptoInfo(
                         id = id,
                         currentPrice = price,
-                        priceChangePercentage = 0.0  // Tämä pitäisi hakea API:sta
+                        priceChangePercentage = 0.0
                     )
                 }.toMutableMap()
             } catch (e: Exception) {
