@@ -11,16 +11,17 @@ class CryptoRepository {
     }
     
     suspend fun getCryptoPrices(coinIds: List<String>, currency: String): Map<String, Double> {
-        return try {
-            val response = api.getSimplePrices(
-                ids = coinIds.joinToString(","),
-                vsCurrencies = currency
-            )
-            response.mapValues { (_, prices) -> 
-                prices[currency] ?: 0.0 
-            }
-        } catch (e: Exception) {
-            emptyMap()
+        if (coinIds.isEmpty()) {
+            return emptyMap()
+        }
+
+        val response = api.getSimplePrices(
+            ids = coinIds.distinct().joinToString(","),
+            vsCurrencies = currency
+        )
+
+        return response.mapValues { (_, prices) ->
+            prices[currency] ?: error("Missing $currency price in CoinGecko response")
         }
     }
 }
@@ -30,4 +31,4 @@ data class CryptoListItem(
     val symbol: String,
     val name: String,
     val marketCapRank: Int?
-) 
+)

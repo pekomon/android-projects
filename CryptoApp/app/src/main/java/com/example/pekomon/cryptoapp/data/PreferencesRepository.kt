@@ -10,7 +10,6 @@ import kotlinx.coroutines.flow.map
 import java.io.IOException
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.encodeToString
-import android.util.Log
 
 private val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "settings")
 
@@ -34,7 +33,7 @@ class PreferencesRepository(private val context: Context) {
         }
         .map { preferences ->
             val currencyName = preferences[PreferencesKeys.SELECTED_CURRENCY] ?: Currency.EUR.name
-            Currency.valueOf(currencyName)
+            enumValueOrDefault(currencyName, Currency.EUR)
         }
     
     val sortOption: Flow<SortOption> = context.dataStore.data
@@ -46,8 +45,8 @@ class PreferencesRepository(private val context: Context) {
             }
         }
         .map { preferences ->
-            val sortOptionName = preferences[PreferencesKeys.SORT_OPTION] ?: SortOption.NAME_ASC.name
-            SortOption.valueOf(sortOptionName)
+            val sortOptionName = preferences[PreferencesKeys.SORT_OPTION] ?: SortOption.DEFAULT.name
+            enumValueOrDefault(sortOptionName, SortOption.DEFAULT)
         }
     
     val favorites: Flow<Set<String>> = context.dataStore.data
@@ -76,16 +75,17 @@ class PreferencesRepository(private val context: Context) {
     
     val userCryptos: Flow<List<UserCrypto>> = context.dataStore.data
         .catch { exception ->
-            Log.e("PreferencesRepository", "Error reading user cryptos", exception)
-            emit(emptyPreferences())
+            if (exception is IOException) {
+                emit(emptyPreferences())
+            } else {
+                throw exception
+            }
         }
         .map { preferences ->
             try {
                 val json = preferences[PreferencesKeys.USER_CRYPTOS] ?: "[]"
-                Log.d("PreferencesRepository", "Reading user cryptos: $json")
                 Json.decodeFromString<List<UserCrypto>>(json)
             } catch (e: Exception) {
-                Log.e("PreferencesRepository", "Error deserializing user cryptos", e)
                 emptyList()
             }
         }
@@ -115,14 +115,14 @@ class PreferencesRepository(private val context: Context) {
     }
     
     suspend fun updateUserCryptos(cryptos: List<UserCrypto>) {
-        try {
-            val json = Json.encodeToString(cryptos)
-            Log.d("PreferencesRepository", "Saving user cryptos: $json")
-            context.dataStore.edit { preferences ->
-                preferences[PreferencesKeys.USER_CRYPTOS] = json
-            }
-        } catch (e: Exception) {
-            Log.e("PreferencesRepository", "Error saving user cryptos", e)
+        val json = Json.encodeToString(cryptos)
+        context.dataStore.edit { preferences ->
+            preferences[PreferencesKeys.USER_CRYPTOS] = json
         }
     }
-} 
+
+    private inline fun <reified T : Enum<T>> enumValueOrDefault(
+        name: String,
+        defaultValue: T
+    ): T = enumValues<T>().firstOrNull { it.name == name } ?: defaultValue
+}

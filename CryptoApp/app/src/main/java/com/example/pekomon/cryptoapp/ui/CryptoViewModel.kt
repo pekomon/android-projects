@@ -1,6 +1,5 @@
 package com.example.pekomon.cryptoapp.ui
 
-import android.util.Log
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
@@ -16,7 +15,6 @@ import com.example.pekomon.cryptoapp.data.UserCrypto
 import com.example.pekomon.cryptoapp.data.Transaction
 import com.example.pekomon.cryptoapp.data.TransactionType
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.first
 import java.time.LocalDateTime
 
@@ -135,7 +133,10 @@ class CryptoViewModel(
     }
     
     fun updateSortOption(option: SortOption) {
-        currentSortOption = option
+        viewModelScope.launch {
+            preferencesRepository.updateSortOption(option)
+            currentSortOption = option
+        }
     }
     
     fun updateCurrency(currency: Currency) {
@@ -173,7 +174,7 @@ class CryptoViewModel(
             isLoading = true
             error = null
             try {
-                val cryptosToFetch = (selectedCryptos + favorites).toList()
+                val cryptosToFetch = (selectedCryptos + favorites + userCryptos.map { it.cryptoId }).toList()
                 val prices = repository.getCryptoPrices(cryptosToFetch, selectedCurrency.code)
                 
                 cryptoInfoMap = prices.mapValues { (id, price) ->
@@ -184,7 +185,7 @@ class CryptoViewModel(
                     )
                 }.toMutableMap()
             } catch (e: Exception) {
-                error = "Error fetching prices: ${e.message}"
+                error = "Unable to load prices. Check your connection and try again."
             }
             isLoading = false
         }
@@ -195,10 +196,9 @@ class CryptoViewModel(
     private suspend fun loadAvailableCryptos() {
         try {
             availableCryptos = repository.getAllAvailableCryptos()
-            Log.d("CryptoViewModel", "Loaded ${availableCryptos.size} available cryptocurrencies")
         } catch (e: Exception) {
-            error = "Error loading available cryptocurrencies: ${e.message}"
-            throw e  // Heitetään poikkeus eteenpäin, jotta initialize() käsittelee sen
+            error = "Unable to load available cryptocurrencies. Check your connection and try again."
+            throw e
         }
     }
     
@@ -234,6 +234,7 @@ class CryptoViewModel(
             
             val newCryptos = userCryptos + newCrypto
             preferencesRepository.updateUserCryptos(newCryptos)
+            fetchPrices()
         }
     }
     
@@ -247,6 +248,7 @@ class CryptoViewModel(
                     } else it 
                 }
                 preferencesRepository.updateUserCryptos(newCryptos)
+                fetchPrices()
             }
         }
     }
@@ -255,6 +257,7 @@ class CryptoViewModel(
         viewModelScope.launch {
             val newCryptos = userCryptos.filter { it.cryptoId != cryptoId }
             preferencesRepository.updateUserCryptos(newCryptos)
+            fetchPrices()
         }
     }
     
@@ -264,13 +267,16 @@ class CryptoViewModel(
         return userCryptos
             .groupBy { it.cryptoId }
             .map { (cryptoId, cryptos) ->
+                val totalAmount = cryptos.sumOf { it.amount }
                 UserCrypto(
                     cryptoId = cryptoId,
-                    amount = cryptos.sumOf { it.amount },
-                    purchasePrice = cryptos.sumOf { it.purchasePrice * it.amount } / cryptos.sumOf { it.amount },
+                    amount = totalAmount,
+                    purchasePrice = if (totalAmount == 0.0) 0.0 else {
+                        cryptos.sumOf { it.purchasePrice * it.amount } / totalAmount
+                    },
                     purchaseDateTime = cryptos.minOf { it.purchaseDateTime },
                     transactions = cryptos.flatMap { it.transactions }
                 )
             }
     }
-} 
+}
