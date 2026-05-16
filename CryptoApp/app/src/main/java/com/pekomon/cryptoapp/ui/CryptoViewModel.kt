@@ -12,6 +12,7 @@ import com.pekomon.cryptoapp.data.PreferencesRepository
 import com.pekomon.cryptoapp.data.UserCrypto
 import com.pekomon.cryptoapp.data.Transaction
 import com.pekomon.cryptoapp.data.TransactionType
+import com.pekomon.cryptoapp.domain.market.CryptoAssetSorter
 import com.pekomon.cryptoapp.domain.model.CryptoAsset
 import com.pekomon.cryptoapp.domain.model.MarketPrice
 import com.pekomon.cryptoapp.domain.portfolio.PortfolioCalculator
@@ -171,14 +172,11 @@ class CryptoViewModel(
         get() = sortCryptos(availableCryptos.filter { it.id in favorites })
 
     private fun sortCryptos(cryptos: List<CryptoAsset>): List<CryptoAsset> {
-        return when (currentSortOption) {
-            SortOption.NAME_ASC -> cryptos.sortedBy { it.name }
-            SortOption.NAME_DESC -> cryptos.sortedByDescending { it.name }
-            SortOption.SYMBOL_ASC -> cryptos.sortedBy { it.symbol }
-            SortOption.SYMBOL_DESC -> cryptos.sortedByDescending { it.symbol }
-            SortOption.PRICE_ASC -> cryptos.sortedBy { getCryptoInfo(it.id)?.currentPrice ?: 0.0 }
-            SortOption.PRICE_DESC -> cryptos.sortedByDescending { getCryptoInfo(it.id)?.currentPrice ?: 0.0 }
-        }
+        return CryptoAssetSorter.sort(
+            assets = cryptos,
+            sortOption = currentSortOption,
+            priceForAsset = ::getCryptoInfo
+        )
     }
     
     fun fetchPrices() {
