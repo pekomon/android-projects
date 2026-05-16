@@ -2,15 +2,16 @@ package com.pekomon.cryptoapp.data
 
 import com.pekomon.cryptoapp.data.remote.CoinGeckoApi
 import com.pekomon.cryptoapp.domain.model.CryptoAsset
+import com.pekomon.cryptoapp.domain.repository.MarketRepository
 
-class CryptoRepository {
+class CryptoRepository : MarketRepository {
     private val api = CoinGeckoApi.create()
     
-    suspend fun getAllAvailableCryptos(): List<CryptoAsset> {
+    override suspend fun getAllAvailableCryptos(): List<CryptoAsset> {
         return api.getCoinsList().map { it.toDomain() }
     }
     
-    suspend fun getCryptoPrices(coinIds: List<String>, currency: String): Map<String, Double> {
+    override suspend fun getCryptoPrices(coinIds: List<String>, currency: String): Map<String, Double> {
         if (coinIds.isEmpty()) {
             return emptyMap()
         }

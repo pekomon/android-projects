@@ -15,15 +15,15 @@ import com.pekomon.cryptoapp.data.Transaction
 import com.pekomon.cryptoapp.data.TransactionType
 import com.pekomon.cryptoapp.domain.model.CryptoAsset
 import com.pekomon.cryptoapp.domain.model.MarketPrice
+import com.pekomon.cryptoapp.domain.repository.MarketRepository
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.flow.first
 import java.time.LocalDateTime
 
 class CryptoViewModel(
-    private val preferencesRepository: PreferencesRepository
+    private val preferencesRepository: PreferencesRepository,
+    private val repository: MarketRepository = CryptoRepository()
 ) : ViewModel() {
-    private val repository = CryptoRepository()
-    
     var cryptos by mutableStateOf<List<MarketPrice>>(emptyList())
         private set
     
