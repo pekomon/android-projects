@@ -1,13 +1,13 @@
 package com.pekomon.cryptoapp.data
 
-import retrofit2.Retrofit
-import retrofit2.converter.gson.GsonConverterFactory
+import com.pekomon.cryptoapp.data.remote.CoinGeckoApi
+import com.pekomon.cryptoapp.domain.model.CryptoAsset
 
 class CryptoRepository {
     private val api = CoinGeckoApi.create()
     
-    suspend fun getAllAvailableCryptos(): List<CryptoListItem> {
-        return api.getCoinsList()
+    suspend fun getAllAvailableCryptos(): List<CryptoAsset> {
+        return api.getCoinsList().map { it.toDomain() }
     }
     
     suspend fun getCryptoPrices(coinIds: List<String>, currency: String): Map<String, Double> {
@@ -25,10 +25,3 @@ class CryptoRepository {
         }
     }
 }
-
-data class CryptoListItem(
-    val id: String,
-    val symbol: String,
-    val name: String,
-    val marketCapRank: Int?
-)

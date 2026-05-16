@@ -6,15 +6,15 @@ import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.pekomon.cryptoapp.data.CryptoRepository
-import com.pekomon.cryptoapp.data.CryptoInfo
 import com.pekomon.cryptoapp.data.SortOption
 import com.pekomon.cryptoapp.data.Currency
 import com.pekomon.cryptoapp.data.PreferencesRepository
 import com.pekomon.cryptoapp.data.PortfolioCalculator
-import com.pekomon.cryptoapp.data.CryptoListItem
 import com.pekomon.cryptoapp.data.UserCrypto
 import com.pekomon.cryptoapp.data.Transaction
 import com.pekomon.cryptoapp.data.TransactionType
+import com.pekomon.cryptoapp.domain.model.CryptoAsset
+import com.pekomon.cryptoapp.domain.model.MarketPrice
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.flow.first
 import java.time.LocalDateTime
@@ -24,7 +24,7 @@ class CryptoViewModel(
 ) : ViewModel() {
     private val repository = CryptoRepository()
     
-    var cryptos by mutableStateOf<List<CryptoInfo>>(emptyList())
+    var cryptos by mutableStateOf<List<MarketPrice>>(emptyList())
         private set
     
     var isLoading by mutableStateOf(false)
@@ -36,7 +36,7 @@ class CryptoViewModel(
     var favorites by mutableStateOf<Set<String>>(emptySet())
         private set
     
-    var availableCryptos by mutableStateOf<List<CryptoListItem>>(emptyList())
+    var availableCryptos by mutableStateOf<List<CryptoAsset>>(emptyList())
         private set
     
     var selectedCryptos by mutableStateOf<Set<String>>(emptySet())
@@ -87,7 +87,7 @@ class CryptoViewModel(
             getCryptoInfo(cryptoId)?.currentPrice
         }
     
-    private var cryptoInfoMap = mutableMapOf<String, CryptoInfo>()
+    private var cryptoInfoMap = mutableMapOf<String, MarketPrice>()
     
     init {
         viewModelScope.launch {
@@ -159,13 +159,13 @@ class CryptoViewModel(
         }
     }
     
-    val sortedCryptos: List<CryptoListItem>
+    val sortedCryptos: List<CryptoAsset>
         get() = sortCryptos(availableCryptos.filter { it.id in selectedCryptos })
 
-    val sortedFavoriteCryptos: List<CryptoListItem>
+    val sortedFavoriteCryptos: List<CryptoAsset>
         get() = sortCryptos(availableCryptos.filter { it.id in favorites })
 
-    private fun sortCryptos(cryptos: List<CryptoListItem>): List<CryptoListItem> {
+    private fun sortCryptos(cryptos: List<CryptoAsset>): List<CryptoAsset> {
         return when (currentSortOption) {
             SortOption.NAME_ASC -> cryptos.sortedBy { it.name }
             SortOption.NAME_DESC -> cryptos.sortedByDescending { it.name }
@@ -185,8 +185,8 @@ class CryptoViewModel(
                 val prices = repository.getCryptoPrices(cryptosToFetch, selectedCurrency.code)
                 
                 cryptoInfoMap = prices.mapValues { (id, price) ->
-                    CryptoInfo(
-                        id = id,
+                    MarketPrice(
+                        cryptoId = id,
                         currentPrice = price,
                         priceChangePercentage = 0.0
                     )
@@ -295,7 +295,7 @@ class CryptoViewModel(
         }
     }
     
-    fun getCryptoInfo(id: String): CryptoInfo? = cryptoInfoMap[id]
+    fun getCryptoInfo(id: String): MarketPrice? = cryptoInfoMap[id]
     
     fun getCombinedUserCryptos(): List<UserCrypto> {
         return PortfolioCalculator.combineHoldings(userCryptos)

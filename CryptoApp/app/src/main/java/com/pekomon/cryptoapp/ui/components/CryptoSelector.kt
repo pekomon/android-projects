@@ -9,11 +9,11 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import com.pekomon.cryptoapp.data.CryptoListItem
+import com.pekomon.cryptoapp.domain.model.CryptoAsset
 
 @Composable
 fun CryptoSelector(
-    availableCryptos: List<CryptoListItem>,
+    availableCryptos: List<CryptoAsset>,
     selectedCryptos: Set<String>,
     onSelectionChanged: (Set<String>) -> Unit,
     modifier: Modifier = Modifier

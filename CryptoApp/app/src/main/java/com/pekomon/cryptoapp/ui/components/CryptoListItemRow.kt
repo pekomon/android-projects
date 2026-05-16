@@ -11,12 +11,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
-import com.pekomon.cryptoapp.data.CryptoListItem
 import com.pekomon.cryptoapp.data.Currency
+import com.pekomon.cryptoapp.domain.model.CryptoAsset
 
 @Composable
 fun CryptoListItemRow(
-    crypto: CryptoListItem,
+    crypto: CryptoAsset,
     currentPrice: Double,
     priceChangePercentage: Double,
     currency: Currency,

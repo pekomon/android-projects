@@ -16,7 +16,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import com.pekomon.cryptoapp.data.CryptoListItem
+import com.pekomon.cryptoapp.domain.model.CryptoAsset
 import com.pekomon.cryptoapp.ui.CryptoViewModel
 import com.pekomon.cryptoapp.ui.components.CryptoList
 import com.pekomon.cryptoapp.ui.components.QuickAddDialog
@@ -31,7 +31,7 @@ fun HomeScreen(
     viewModel: CryptoViewModel,
     modifier: Modifier = Modifier
 ) {
-    var quickAddCrypto by remember { mutableStateOf<CryptoListItem?>(null) }
+    var quickAddCrypto by remember { mutableStateOf<CryptoAsset?>(null) }
     
     Column(
         modifier = modifier.padding(16.dp),

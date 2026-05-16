@@ -5,14 +5,14 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.unit.dp
-import com.pekomon.cryptoapp.data.CryptoListItem
+import com.pekomon.cryptoapp.domain.model.CryptoAsset
 import com.pekomon.cryptoapp.ui.CryptoViewModel
 
 @Composable
 fun CryptoList(
-    cryptos: List<CryptoListItem>,
+    cryptos: List<CryptoAsset>,
     viewModel: CryptoViewModel,
-    onQuickAdd: (CryptoListItem) -> Unit,
+    onQuickAdd: (CryptoAsset) -> Unit,
     modifier: androidx.compose.ui.Modifier = androidx.compose.ui.Modifier
 ) {
     LazyColumn(
@@ -32,4 +32,4 @@ fun CryptoList(
             )
         }
     }
-} 
+}
