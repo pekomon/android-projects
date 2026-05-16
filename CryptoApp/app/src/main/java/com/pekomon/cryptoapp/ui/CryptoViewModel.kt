@@ -32,6 +32,9 @@ class CryptoViewModel(
     
     var error by mutableStateOf<String?>(null)
         private set
+
+    var marketLoadState by mutableStateOf<MarketLoadState>(MarketLoadState.Idle)
+        private set
         
     var favorites by mutableStateOf<Set<String>>(emptySet())
         private set
@@ -180,6 +183,7 @@ class CryptoViewModel(
         viewModelScope.launch {
             isLoading = true
             error = null
+            marketLoadState = MarketLoadState.Loading
             try {
                 val cryptosToFetch = (selectedCryptos + favorites + userCryptos.map { it.cryptoId }).toList()
                 val prices = repository.getCryptoPrices(cryptosToFetch, selectedCurrency.code)
@@ -191,8 +195,10 @@ class CryptoViewModel(
                         priceChangePercentage = 0.0
                     )
                 }.toMutableMap()
+                marketLoadState = MarketLoadState.Content(lastUpdated = LocalDateTime.now())
             } catch (e: Exception) {
                 error = "Unable to load prices. Check your connection and try again."
+                marketLoadState = MarketLoadState.Error(error ?: "Unable to load prices.")
             }
             isLoading = false
         }
