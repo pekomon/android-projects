@@ -16,7 +16,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import com.pekomon.cryptoapp.core.formatting.DisplayFormatters
 import com.pekomon.cryptoapp.domain.model.CryptoAsset
+import com.pekomon.cryptoapp.ui.MarketLoadState
 import com.pekomon.cryptoapp.ui.CryptoViewModel
 import com.pekomon.cryptoapp.ui.components.CryptoList
 import com.pekomon.cryptoapp.ui.components.QuickAddDialog
@@ -44,10 +46,19 @@ fun HomeScreen(
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Text(
-                text = "Sort by: ${viewModel.currentSortOption.displayName}",
-                style = MaterialTheme.typography.bodyLarge
-            )
+            Column {
+                Text(
+                    text = "Sort by: ${viewModel.currentSortOption.displayName}",
+                    style = MaterialTheme.typography.bodyLarge
+                )
+                (viewModel.marketLoadState as? MarketLoadState.Content)?.let { state ->
+                    Text(
+                        text = DisplayFormatters.updateTime(state.lastUpdated),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
             SortMenu(
                 currentSort = viewModel.currentSortOption,
                 onSortSelected = { viewModel.updateSortOption(it) }
