@@ -10,6 +10,7 @@ import com.example.pekomon.cryptoapp.data.CryptoInfo
 import com.example.pekomon.cryptoapp.data.SortOption
 import com.example.pekomon.cryptoapp.data.Currency
 import com.example.pekomon.cryptoapp.data.PreferencesRepository
+import com.example.pekomon.cryptoapp.data.PortfolioCalculator
 import com.example.pekomon.cryptoapp.data.CryptoListItem
 import com.example.pekomon.cryptoapp.data.UserCrypto
 import com.example.pekomon.cryptoapp.data.Transaction
@@ -82,9 +83,8 @@ class CryptoViewModel(
         private set
     
     val totalPortfolioValue: Double
-        get() = getCombinedUserCryptos().sumOf { userCrypto ->
-            val price = getCryptoInfo(userCrypto.cryptoId)?.currentPrice ?: 0.0
-            price * userCrypto.amount
+        get() = PortfolioCalculator.totalValue(userCryptos) { cryptoId ->
+            getCryptoInfo(cryptoId)?.currentPrice
         }
     
     private var cryptoInfoMap = mutableMapOf<String, CryptoInfo>()
@@ -298,19 +298,6 @@ class CryptoViewModel(
     fun getCryptoInfo(id: String): CryptoInfo? = cryptoInfoMap[id]
     
     fun getCombinedUserCryptos(): List<UserCrypto> {
-        return userCryptos
-            .groupBy { it.cryptoId }
-            .map { (cryptoId, cryptos) ->
-                val totalAmount = cryptos.sumOf { it.amount }
-                UserCrypto(
-                    cryptoId = cryptoId,
-                    amount = totalAmount,
-                    purchasePrice = if (totalAmount == 0.0) 0.0 else {
-                        cryptos.sumOf { it.purchasePrice * it.amount } / totalAmount
-                    },
-                    purchaseDateTime = cryptos.minOf { it.purchaseDateTime },
-                    transactions = cryptos.flatMap { it.transactions }
-                )
-            }
+        return PortfolioCalculator.combineHoldings(userCryptos)
     }
 }
