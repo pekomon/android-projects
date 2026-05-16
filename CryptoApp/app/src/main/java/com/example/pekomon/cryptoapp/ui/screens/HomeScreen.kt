@@ -22,6 +22,7 @@ import com.example.pekomon.cryptoapp.ui.components.CryptoList
 import com.example.pekomon.cryptoapp.ui.components.QuickAddDialog
 import com.example.pekomon.cryptoapp.ui.components.ScreenHeader
 import com.example.pekomon.cryptoapp.ui.components.SortMenu
+import com.example.pekomon.cryptoapp.ui.components.StateMessageCard
 import com.google.accompanist.swiperefresh.SwipeRefresh
 import com.google.accompanist.swiperefresh.rememberSwipeRefreshState
 
@@ -36,7 +37,7 @@ fun HomeScreen(
         modifier = modifier.padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        ScreenHeader(title = "Cryptocurrencies")
+        ScreenHeader(title = "Watchlist")
         
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -60,9 +61,15 @@ fun HomeScreen(
                 )
             }
             viewModel.error != null -> {
-                Text(
-                    text = viewModel.error ?: "",
-                    color = MaterialTheme.colorScheme.error
+                StateMessageCard(
+                    title = "Prices unavailable",
+                    message = viewModel.error ?: "Unable to load prices."
+                )
+            }
+            viewModel.sortedCryptos.isEmpty() -> {
+                StateMessageCard(
+                    title = "No assets selected",
+                    message = "Open Settings and choose the cryptocurrencies you want on your watchlist."
                 )
             }
             else -> {

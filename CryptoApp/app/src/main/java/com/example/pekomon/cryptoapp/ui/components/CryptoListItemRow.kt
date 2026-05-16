@@ -1,6 +1,5 @@
 package com.example.pekomon.cryptoapp.ui.components
 
-import android.util.Log
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
@@ -69,7 +68,6 @@ fun CryptoListItemRow(
             ) {
                 IconButton(
                     onClick = {
-                        Log.d("CryptoListItemRow", "Add button clicked for ${crypto.name}")
                         onQuickAdd()
                     },
                     modifier = Modifier.size(40.dp)
@@ -83,7 +81,6 @@ fun CryptoListItemRow(
                 
                 IconButton(
                     onClick = {
-                        Log.d("CryptoListItemRow", "Favorite button clicked for ${crypto.name}")
                         onFavoriteClick()
                     },
                     modifier = Modifier.size(40.dp)
@@ -97,4 +94,4 @@ fun CryptoListItemRow(
             }
         }
     }
-} 
+}

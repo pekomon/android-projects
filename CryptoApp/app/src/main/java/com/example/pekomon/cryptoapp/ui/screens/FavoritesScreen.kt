@@ -24,7 +24,9 @@ import com.example.pekomon.cryptoapp.data.CryptoListItem
 import com.example.pekomon.cryptoapp.ui.CryptoViewModel
 import com.example.pekomon.cryptoapp.ui.components.CryptoList
 import com.example.pekomon.cryptoapp.ui.components.QuickAddDialog
+import com.example.pekomon.cryptoapp.ui.components.ScreenHeader
 import com.example.pekomon.cryptoapp.ui.components.SortMenu
+import com.example.pekomon.cryptoapp.ui.components.StateMessageCard
 import com.google.accompanist.swiperefresh.SwipeRefresh
 import com.google.accompanist.swiperefresh.rememberSwipeRefreshState
 
@@ -40,11 +42,7 @@ fun FavoritesScreen(
         modifier = modifier.padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        Text(
-            text = "Favorite Cryptocurrencies",
-            style = MaterialTheme.typography.headlineMedium,
-            modifier = Modifier.fillMaxWidth()
-        )
+        ScreenHeader(title = "Favorites")
         
         OutlinedButton(
             onClick = { showSortMenu = true },
@@ -83,20 +81,18 @@ fun FavoritesScreen(
                 )
             }
             viewModel.error != null -> {
-                Text(
-                    text = viewModel.error ?: "",
-                    color = MaterialTheme.colorScheme.error
+                StateMessageCard(
+                    title = "Favorites unavailable",
+                    message = viewModel.error ?: "Unable to load favorite prices."
                 )
             }
             else -> {
-                val favorites = viewModel.sortedCryptos.filter { crypto -> 
-                    viewModel.isFavorite(crypto.id)
-                }
+                val favorites = viewModel.sortedFavoriteCryptos
                 
                 if (favorites.isEmpty()) {
-                    Text(
-                        text = "No favorites yet",
-                        modifier = Modifier.align(Alignment.CenterHorizontally)
+                    StateMessageCard(
+                        title = "No favorites yet",
+                        message = "Tap the heart icon on any asset to keep it here for quick monitoring."
                     )
                 } else {
                     SwipeRefresh(
@@ -130,4 +126,4 @@ fun FavoritesScreen(
             }
         )
     }
-} 
+}

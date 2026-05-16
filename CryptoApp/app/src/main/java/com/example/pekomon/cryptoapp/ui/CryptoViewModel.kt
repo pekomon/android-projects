@@ -160,14 +160,21 @@ class CryptoViewModel(
     }
     
     val sortedCryptos: List<CryptoListItem>
-        get() = when (currentSortOption) {
-            SortOption.NAME_ASC -> availableCryptos.sortedBy { it.name }
-            SortOption.NAME_DESC -> availableCryptos.sortedByDescending { it.name }
-            SortOption.SYMBOL_ASC -> availableCryptos.sortedBy { it.symbol }
-            SortOption.SYMBOL_DESC -> availableCryptos.sortedByDescending { it.symbol }
-            SortOption.PRICE_ASC -> availableCryptos.sortedBy { getCryptoInfo(it.id)?.currentPrice ?: 0.0 }
-            SortOption.PRICE_DESC -> availableCryptos.sortedByDescending { getCryptoInfo(it.id)?.currentPrice ?: 0.0 }
+        get() = sortCryptos(availableCryptos.filter { it.id in selectedCryptos })
+
+    val sortedFavoriteCryptos: List<CryptoListItem>
+        get() = sortCryptos(availableCryptos.filter { it.id in favorites })
+
+    private fun sortCryptos(cryptos: List<CryptoListItem>): List<CryptoListItem> {
+        return when (currentSortOption) {
+            SortOption.NAME_ASC -> cryptos.sortedBy { it.name }
+            SortOption.NAME_DESC -> cryptos.sortedByDescending { it.name }
+            SortOption.SYMBOL_ASC -> cryptos.sortedBy { it.symbol }
+            SortOption.SYMBOL_DESC -> cryptos.sortedByDescending { it.symbol }
+            SortOption.PRICE_ASC -> cryptos.sortedBy { getCryptoInfo(it.id)?.currentPrice ?: 0.0 }
+            SortOption.PRICE_DESC -> cryptos.sortedByDescending { getCryptoInfo(it.id)?.currentPrice ?: 0.0 }
         }
+    }
     
     fun fetchPrices() {
         viewModelScope.launch {
