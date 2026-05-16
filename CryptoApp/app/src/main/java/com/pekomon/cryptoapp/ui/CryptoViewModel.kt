@@ -15,6 +15,8 @@ import com.pekomon.cryptoapp.data.TransactionType
 import com.pekomon.cryptoapp.domain.model.CryptoAsset
 import com.pekomon.cryptoapp.domain.model.MarketPrice
 import com.pekomon.cryptoapp.domain.portfolio.PortfolioCalculator
+import com.pekomon.cryptoapp.domain.portfolio.PortfolioValidationResult
+import com.pekomon.cryptoapp.domain.portfolio.PortfolioValidator
 import com.pekomon.cryptoapp.domain.repository.MarketRepository
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.flow.first
@@ -230,6 +232,12 @@ class CryptoViewModel(
         dateTime: LocalDateTime
     ) {
         viewModelScope.launch {
+            val validation = PortfolioValidator.validateTransactionInput(amount, price)
+            if (validation is PortfolioValidationResult.Invalid) {
+                error = validation.message
+                return@launch
+            }
+
             val transaction = Transaction(
                 type = TransactionType.BUY,
                 amount = amount,
@@ -262,6 +270,12 @@ class CryptoViewModel(
         dateTime: LocalDateTime
     ) {
         viewModelScope.launch {
+            val validation = PortfolioValidator.validateTransactionInput(amount, price)
+            if (validation is PortfolioValidationResult.Invalid) {
+                error = validation.message
+                return@launch
+            }
+
             val existingCrypto = getCombinedUserCryptos().find { it.cryptoId == cryptoId }
             if (existingCrypto != null) {
                 val adjustment = amount - existingCrypto.amount
