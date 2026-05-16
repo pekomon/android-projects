@@ -27,6 +27,8 @@ import androidx.compose.ui.unit.dp
 import com.example.pekomon.cryptoapp.data.Currency
 import com.example.pekomon.cryptoapp.ui.CryptoViewModel
 import com.example.pekomon.cryptoapp.ui.components.CryptoSelector
+import com.example.pekomon.cryptoapp.ui.components.ScreenHeader
+import com.example.pekomon.cryptoapp.ui.components.SortMenu
 
 @Composable
 fun SettingsScreen(
@@ -60,10 +62,7 @@ fun SettingsScreen(
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        Text(
-            text = "Settings",
-            style = MaterialTheme.typography.headlineMedium
-        )
+        ScreenHeader(title = "Settings")
 
         Card(
             modifier = Modifier.fillMaxWidth()
@@ -102,17 +101,69 @@ fun SettingsScreen(
             }
         }
 
-        OutlinedButton(
-            onClick = { showCryptoSelector = true },
+        Card(
             modifier = Modifier.fillMaxWidth()
         ) {
-            Text("Select displayed cryptocurrencies")
+            Column(
+                modifier = Modifier.padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Text(
+                    text = "Sorting",
+                    style = MaterialTheme.typography.titleMedium
+                )
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column {
+                        Text(
+                            text = viewModel.currentSortOption.displayName,
+                            style = MaterialTheme.typography.bodyLarge
+                        )
+                        Text(
+                            text = "Used across Watchlist and Favorites",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                    SortMenu(
+                        currentSort = viewModel.currentSortOption,
+                        onSortSelected = { viewModel.updateSortOption(it) }
+                    )
+                }
+            }
         }
 
-        Text(
-            text = "${viewModel.selectedCryptos.size} cryptocurrencies selected",
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
-        )
+        Card(
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Column(
+                modifier = Modifier.padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                Text(
+                    text = "Watchlist",
+                    style = MaterialTheme.typography.titleMedium
+                )
+                Text(
+                    text = "${viewModel.selectedCryptos.size} assets selected",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Text(
+                    text = "Watchlist assets appear on Home. Favorites are marked separately with the heart action.",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                OutlinedButton(
+                    onClick = { showCryptoSelector = true },
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text("Edit watchlist")
+                }
+            }
+        }
     }
 }

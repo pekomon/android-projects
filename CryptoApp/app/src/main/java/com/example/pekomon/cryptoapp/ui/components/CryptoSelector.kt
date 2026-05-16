@@ -27,10 +27,16 @@ fun CryptoSelector(
         OutlinedTextField(
             value = searchQuery,
             onValueChange = { searchQuery = it },
-            label = { Text("Search cryptocurrencies") },
+            label = { Text("Search watchlist assets") },
             modifier = Modifier.fillMaxWidth()
         )
-        
+
+        Text(
+            text = "${selectedCryptos.size} selected",
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+
         LazyColumn(
             verticalArrangement = Arrangement.spacedBy(4.dp)
         ) {
@@ -38,7 +44,18 @@ fun CryptoSelector(
                 it.name.contains(searchQuery, ignoreCase = true) ||
                 it.symbol.contains(searchQuery, ignoreCase = true)
             }.sortedBy { it.marketCapRank ?: Int.MAX_VALUE }
-            
+
+            if (filteredCryptos.isEmpty()) {
+                item {
+                    Text(
+                        text = "No assets match your search.",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(8.dp)
+                    )
+                }
+            }
+
             items(filteredCryptos) { crypto ->
                 Row(
                     modifier = Modifier
@@ -77,4 +94,4 @@ fun CryptoSelector(
             }
         }
     }
-} 
+}
