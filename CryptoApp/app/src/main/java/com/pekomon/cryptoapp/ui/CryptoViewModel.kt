@@ -8,7 +8,7 @@ import androidx.lifecycle.viewModelScope
 import com.pekomon.cryptoapp.data.CryptoRepository
 import com.pekomon.cryptoapp.data.SortOption
 import com.pekomon.cryptoapp.data.Currency
-import com.pekomon.cryptoapp.data.PreferencesRepository
+import com.pekomon.cryptoapp.data.local.PreferencesRepository
 import com.pekomon.cryptoapp.data.UserCrypto
 import com.pekomon.cryptoapp.data.Transaction
 import com.pekomon.cryptoapp.data.TransactionType

@@ -7,7 +7,7 @@ import androidx.activity.enableEdgeToEdge
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
-import com.pekomon.cryptoapp.data.PreferencesRepository
+import com.pekomon.cryptoapp.data.local.PreferencesRepository
 import com.pekomon.cryptoapp.ui.CryptoViewModel
 import com.pekomon.cryptoapp.ui.theme.CryptoAppTheme
 
