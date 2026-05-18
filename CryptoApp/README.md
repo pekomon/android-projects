@@ -21,6 +21,16 @@ This app is intentionally a local companion app. It does not include exchange in
 ./gradlew :app:compileDebugKotlin
 ```
 
+### Optional CoinGecko Demo API Key
+
+CryptoApp can call CoinGecko without a key, but keyless requests are more likely to be rate limited. To use a free CoinGecko Demo API key, add this to `local.properties`:
+
+```properties
+COINGECKO_DEMO_API_KEY=your_key_here
+```
+
+`local.properties` is ignored by git, so do not commit API keys.
+
 ## Test
 
 ```bash
@@ -29,4 +39,4 @@ This app is intentionally a local companion app. It does not include exchange in
 
 ## Notes
 
-Market data comes from CoinGecko's public API, so rate limits or network failures can affect refresh behavior.
+Market data comes from CoinGecko. If no Demo API key is configured, the app uses keyless public requests and may be rate limited more often.

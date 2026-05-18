@@ -293,10 +293,17 @@ class CryptoViewModel(
     }
 
     private fun marketErrorMessage(error: Exception): String {
-        return if (error is HttpException && error.code() == 429) {
-            "CoinGecko is rate limiting requests. Wait a moment and refresh again."
-        } else {
-            "Unable to load prices. Check your connection and try again."
+        return when {
+            error is HttpException && error.code() == 401 -> {
+                "CoinGecko rejected the API key. Check COINGECKO_DEMO_API_KEY in local.properties."
+            }
+            error is HttpException && error.code() == 403 -> {
+                "CoinGecko access is forbidden. Check the API plan, key, or endpoint."
+            }
+            error is HttpException && error.code() == 429 -> {
+                "CoinGecko is rate limiting requests. Wait a moment and refresh again."
+            }
+            else -> "Unable to load prices. Check your connection and try again."
         }
     }
 }

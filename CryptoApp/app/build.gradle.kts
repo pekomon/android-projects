@@ -1,9 +1,22 @@
+import java.util.Properties
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.kotlin.serialization)
 }
+
+val localProperties = Properties().apply {
+    val localPropertiesFile = rootProject.file("local.properties")
+    if (localPropertiesFile.exists()) {
+        localPropertiesFile.inputStream().use { load(it) }
+    }
+}
+
+val coinGeckoDemoApiKey = localProperties
+    .getProperty("COINGECKO_DEMO_API_KEY")
+    .orEmpty()
 
 android {
     namespace = "com.pekomon.cryptoapp"
@@ -37,6 +50,15 @@ android {
     }
     buildFeatures {
         compose = true
+        buildConfig = true
+    }
+
+    defaultConfig {
+        buildConfigField(
+            "String",
+            "COINGECKO_DEMO_API_KEY",
+            "\"$coinGeckoDemoApiKey\""
+        )
     }
 }
 
