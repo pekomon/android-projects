@@ -85,15 +85,12 @@ class CryptoViewModel(
             isLoading = true
             error = null
             
-            // Lataa asetukset
             selectedCurrency = preferencesRepository.selectedCurrency.first()
             currentSortOption = preferencesRepository.sortOption.first()
             favorites = preferencesRepository.favorites.first()
             
-            // Lataa ensin saatavilla olevat kryptot
             loadAvailableCryptos()
 
-            // Lataa valitut kryptot tai käytä oletuslistaa
             selectedCryptos = preferencesRepository.selectedCryptos.first().let { saved ->
                 saved.ifEmpty {
                     defaultCryptos.toSet().also { defaultSelection ->
@@ -102,7 +99,6 @@ class CryptoViewModel(
                 }
             }
             
-            // Lataa hinnat valituille kryptoille
             fetchPrices()
             
             isInitialized = true
@@ -183,9 +179,12 @@ class CryptoViewModel(
     
     private suspend fun loadAvailableCryptos() {
         try {
-            availableCryptos = repository.getAllAvailableCryptos()
+            val liveAssets = repository.getAllAvailableCryptos()
+            availableCryptos = liveAssets
+            preferencesRepository.updateCachedCryptoAssets(liveAssets)
         } catch (e: Exception) {
-            availableCryptos = DefaultCryptoAssets.assets
+            availableCryptos = preferencesRepository.cachedCryptoAssets.first()
+                .ifEmpty { DefaultCryptoAssets.assets }
         }
     }
     

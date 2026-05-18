@@ -11,10 +11,12 @@ import androidx.datastore.preferences.preferencesDataStore
 import com.pekomon.cryptoapp.data.Currency
 import com.pekomon.cryptoapp.data.SortOption
 import com.pekomon.cryptoapp.data.UserCrypto
+import com.pekomon.cryptoapp.domain.model.CryptoAsset
 import java.io.IOException
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.map
+import kotlinx.serialization.Serializable
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 
@@ -28,6 +30,7 @@ class PreferencesRepository(private val context: Context) {
         val FAVORITES = stringSetPreferencesKey("favorites")
         val SELECTED_CRYPTOS = stringSetPreferencesKey("selected_cryptos")
         val USER_CRYPTOS = stringPreferencesKey("user_cryptos")
+        val CACHED_CRYPTO_ASSETS = stringPreferencesKey("cached_crypto_assets")
     }
 
     val selectedCurrency: Flow<Currency> = context.dataStore.data
@@ -97,6 +100,23 @@ class PreferencesRepository(private val context: Context) {
             }
         }
 
+    val cachedCryptoAssets: Flow<List<CryptoAsset>> = context.dataStore.data
+        .catch { exception ->
+            if (exception is IOException) {
+                emit(emptyPreferences())
+            } else {
+                throw exception
+            }
+        }
+        .map { preferences ->
+            try {
+                val json = preferences[PreferencesKeys.CACHED_CRYPTO_ASSETS] ?: "[]"
+                Json.decodeFromString<List<CachedCryptoAsset>>(json).map { it.toDomain() }
+            } catch (e: Exception) {
+                emptyList()
+            }
+        }
+
     suspend fun updateSelectedCurrency(currency: Currency) {
         context.dataStore.edit { preferences ->
             preferences[PreferencesKeys.SELECTED_CURRENCY] = currency.name
@@ -128,8 +148,43 @@ class PreferencesRepository(private val context: Context) {
         }
     }
 
+    suspend fun updateCachedCryptoAssets(assets: List<CryptoAsset>) {
+        val json = Json.encodeToString(assets.map { CachedCryptoAsset.fromDomain(it) })
+        context.dataStore.edit { preferences ->
+            preferences[PreferencesKeys.CACHED_CRYPTO_ASSETS] = json
+        }
+    }
+
     private inline fun <reified T : Enum<T>> enumValueOrDefault(
         name: String,
         defaultValue: T
     ): T = enumValues<T>().firstOrNull { it.name == name } ?: defaultValue
+}
+
+@Serializable
+private data class CachedCryptoAsset(
+    val id: String,
+    val symbol: String,
+    val name: String,
+    val marketCapRank: Int?
+) {
+    fun toDomain(): CryptoAsset {
+        return CryptoAsset(
+            id = id,
+            symbol = symbol,
+            name = name,
+            marketCapRank = marketCapRank
+        )
+    }
+
+    companion object {
+        fun fromDomain(asset: CryptoAsset): CachedCryptoAsset {
+            return CachedCryptoAsset(
+                id = asset.id,
+                symbol = asset.symbol,
+                name = asset.name,
+                marketCapRank = asset.marketCapRank
+            )
+        }
+    }
 }
