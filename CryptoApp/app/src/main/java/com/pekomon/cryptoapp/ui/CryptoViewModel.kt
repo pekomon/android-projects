@@ -1,5 +1,6 @@
 package com.pekomon.cryptoapp.ui
 
+import android.util.Log
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
@@ -103,6 +104,7 @@ class CryptoViewModel(
             
             isInitialized = true
         } catch (e: Exception) {
+            Log.e(TAG, "initialize failed", e)
             error = "Error initializing data: ${e.message}"
         } finally {
             isLoading = false
@@ -157,6 +159,7 @@ class CryptoViewModel(
             marketLoadState = MarketLoadState.Loading
             try {
                 val cryptosToFetch = (selectedCryptos + favorites + userCryptos.map { it.cryptoId }).toList()
+                Log.d(TAG, "fetchPrices start ids=${cryptosToFetch.distinct().joinToString(",")} currency=${selectedCurrency.code}")
                 val prices = repository.getCryptoPrices(cryptosToFetch, selectedCurrency.code)
                 
                 cryptoInfoMap = prices.mapValues { (id, price) ->
@@ -166,8 +169,10 @@ class CryptoViewModel(
                         priceChangePercentage = 0.0
                     )
                 }.toMutableMap()
+                Log.d(TAG, "fetchPrices success count=${cryptoInfoMap.size}")
                 marketLoadState = MarketLoadState.Content(lastUpdated = LocalDateTime.now())
             } catch (e: Exception) {
+                Log.e(TAG, "fetchPrices failed", e)
                 error = marketErrorMessage(e)
                 marketLoadState = MarketLoadState.Error(error ?: "Unable to load prices.")
             }
@@ -179,12 +184,19 @@ class CryptoViewModel(
     
     private suspend fun loadAvailableCryptos() {
         try {
+            Log.d(TAG, "loadAvailableCryptos using live API")
             val liveAssets = repository.getAllAvailableCryptos()
             availableCryptos = liveAssets
             preferencesRepository.updateCachedCryptoAssets(liveAssets)
+            Log.d(TAG, "loadAvailableCryptos live success count=${liveAssets.size}")
         } catch (e: Exception) {
-            availableCryptos = preferencesRepository.cachedCryptoAssets.first()
-                .ifEmpty { DefaultCryptoAssets.assets }
+            Log.e(TAG, "loadAvailableCryptos live failed; trying cache", e)
+            val cachedAssets = preferencesRepository.cachedCryptoAssets.first()
+            availableCryptos = cachedAssets.ifEmpty { DefaultCryptoAssets.assets }
+            Log.d(
+                TAG,
+                "loadAvailableCryptos fallback source=${if (cachedAssets.isEmpty()) "default" else "cache"} count=${availableCryptos.size}"
+            )
         }
     }
     
@@ -305,5 +317,9 @@ class CryptoViewModel(
             }
             else -> "Unable to load prices. Check your connection and try again."
         }
+    }
+
+    private companion object {
+        const val TAG = "CryptoAppNetwork"
     }
 }

@@ -18,7 +18,7 @@ import com.pekomon.cryptoapp.domain.model.CryptoAsset
 @Composable
 fun CryptoListItemRow(
     crypto: CryptoAsset,
-    currentPrice: Double,
+    currentPrice: Double?,
     priceChangePercentage: Double,
     currency: Currency,
     isFavorite: Boolean,
@@ -53,7 +53,7 @@ fun CryptoListItemRow(
                 modifier = Modifier.weight(1f)
             ) {
                 Text(
-                    text = DisplayFormatters.currencyAmount(currentPrice, currency),
+                    text = currentPrice?.let { DisplayFormatters.currencyAmount(it, currency) } ?: "Unavailable",
                     style = MaterialTheme.typography.titleMedium
                 )
                 Text(

@@ -16,7 +16,7 @@ object DefaultCryptoAssets {
         CryptoAsset("avalanche-2", "avax", "Avalanche", 10),
         CryptoAsset("tron", "trx", "TRON", 11),
         CryptoAsset("chainlink", "link", "Chainlink", 12),
-        CryptoAsset("polygon", "matic", "Polygon", 13),
+        CryptoAsset("polygon-ecosystem-token", "pol", "Polygon Ecosystem Token", 13),
         CryptoAsset("litecoin", "ltc", "Litecoin", 14),
         CryptoAsset("bitcoin-cash", "bch", "Bitcoin Cash", 15),
         CryptoAsset("stellar", "xlm", "Stellar", 16),

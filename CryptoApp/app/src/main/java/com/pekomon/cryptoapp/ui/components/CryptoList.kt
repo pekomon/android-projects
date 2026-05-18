@@ -23,7 +23,7 @@ fun CryptoList(
             val cryptoInfo = viewModel.getCryptoInfo(crypto.id)
             CryptoListItemRow(
                 crypto = crypto,
-                currentPrice = cryptoInfo?.currentPrice ?: 0.0,
+                currentPrice = cryptoInfo?.currentPrice,
                 priceChangePercentage = cryptoInfo?.priceChangePercentage ?: 0.0,
                 currency = viewModel.selectedCurrency,
                 isFavorite = viewModel.isFavorite(crypto.id),
