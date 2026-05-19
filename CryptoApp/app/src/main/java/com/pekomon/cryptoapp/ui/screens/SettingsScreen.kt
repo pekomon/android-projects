@@ -152,6 +152,13 @@ fun SettingsScreen(
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
+                viewModel.assetMetadataSource?.let { source ->
+                    Text(
+                        text = source.label,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
                 Text(
                     text = "Watchlist assets appear on Home. Favorites are marked separately with the heart action.",
                     style = MaterialTheme.typography.bodyMedium,

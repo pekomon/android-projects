@@ -48,6 +48,9 @@ class CryptoViewModel(
     
     var availableCryptos by mutableStateOf<List<CryptoAsset>>(emptyList())
         private set
+
+    var assetMetadataSource by mutableStateOf<AssetMetadataSource?>(null)
+        private set
     
     var selectedCryptos by mutableStateOf<Set<String>>(emptySet())
         private set
@@ -182,12 +185,18 @@ class CryptoViewModel(
             Log.d(TAG, "loadAvailableCryptos using live API")
             val liveAssets = repository.getAllAvailableCryptos()
             availableCryptos = liveAssets
+            assetMetadataSource = AssetMetadataSource.Live
             preferencesRepository.updateCachedCryptoAssets(liveAssets)
             Log.d(TAG, "loadAvailableCryptos live success count=${liveAssets.size}")
         } catch (e: Exception) {
             Log.e(TAG, "loadAvailableCryptos live failed; trying cache", e)
             val cachedAssets = preferencesRepository.cachedCryptoAssets.first()
             availableCryptos = cachedAssets.ifEmpty { DefaultCryptoAssets.assets }
+            assetMetadataSource = if (cachedAssets.isEmpty()) {
+                AssetMetadataSource.Default
+            } else {
+                AssetMetadataSource.Cache
+            }
             Log.d(
                 TAG,
                 "loadAvailableCryptos fallback source=${if (cachedAssets.isEmpty()) "default" else "cache"} count=${availableCryptos.size}"

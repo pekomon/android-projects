@@ -19,8 +19,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.pekomon.cryptoapp.core.formatting.DisplayFormatters
 import com.pekomon.cryptoapp.domain.model.CryptoAsset
-import com.pekomon.cryptoapp.ui.MarketLoadState
+import com.pekomon.cryptoapp.ui.AssetMetadataSource
 import com.pekomon.cryptoapp.ui.CryptoViewModel
+import com.pekomon.cryptoapp.ui.MarketLoadState
 import com.pekomon.cryptoapp.ui.components.CryptoList
 import com.pekomon.cryptoapp.ui.components.QuickAddDialog
 import com.pekomon.cryptoapp.ui.components.ScreenHeader
@@ -67,6 +68,15 @@ fun HomeScreen(
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
+                viewModel.assetMetadataSource
+                    ?.takeUnless { it == AssetMetadataSource.Live }
+                    ?.let { source ->
+                        Text(
+                            text = source.label,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.tertiary
+                        )
+                    }
             }
             SortMenu(
                 currentSort = viewModel.currentSortOption,
