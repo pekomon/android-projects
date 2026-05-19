@@ -1,7 +1,7 @@
 package com.pekomon.cryptoapp.data
 
-import android.util.Log
 import com.pekomon.cryptoapp.BuildConfig
+import com.pekomon.cryptoapp.core.logging.CryptoAppLogger
 import com.pekomon.cryptoapp.data.remote.CoinGeckoApi
 import com.pekomon.cryptoapp.domain.model.CryptoAsset
 import com.pekomon.cryptoapp.domain.repository.MarketRepository
@@ -13,25 +13,25 @@ class CryptoRepository(
     private val api = CoinGeckoApi.create()
     
     override suspend fun getAllAvailableCryptos(): List<CryptoAsset> {
-        Log.d(TAG, "GET /coins/list keyConfigured=${coinGeckoDemoApiKey != null}")
+        CryptoAppLogger.debug(TAG, "GET /coins/list keyConfigured=${coinGeckoDemoApiKey != null}")
         return try {
             val coins = api.getCoinsList(apiKey = coinGeckoDemoApiKey).map { it.toDomain() }
-            Log.d(TAG, "GET /coins/list success count=${coins.size}")
+            CryptoAppLogger.debug(TAG, "GET /coins/list success count=${coins.size}")
             coins
         } catch (error: Exception) {
-            Log.e(TAG, "GET /coins/list failed ${error.debugSummary()}", error)
+            CryptoAppLogger.error(TAG, "GET /coins/list failed ${error.debugSummary()}", error)
             throw error
         }
     }
     
     override suspend fun getCryptoPrices(coinIds: List<String>, currency: String): Map<String, Double> {
         if (coinIds.isEmpty()) {
-            Log.d(TAG, "GET /simple/price skipped: empty coinIds")
+            CryptoAppLogger.debug(TAG, "GET /simple/price skipped: empty coinIds")
             return emptyMap()
         }
 
         val distinctCoinIds = coinIds.distinct()
-        Log.d(
+        CryptoAppLogger.debug(
             TAG,
             "GET /simple/price ids=${distinctCoinIds.joinToString(",")} currency=$currency keyConfigured=${coinGeckoDemoApiKey != null}"
         )
@@ -43,18 +43,18 @@ class CryptoRepository(
                 apiKey = coinGeckoDemoApiKey
             )
         } catch (error: Exception) {
-            Log.e(TAG, "GET /simple/price failed ${error.debugSummary()}", error)
+            CryptoAppLogger.error(TAG, "GET /simple/price failed ${error.debugSummary()}", error)
             throw error
         }
 
-        Log.d(TAG, "GET /simple/price success returnedIds=${response.keys.joinToString(",")}")
+        CryptoAppLogger.debug(TAG, "GET /simple/price success returnedIds=${response.keys.joinToString(",")}")
 
         val missingPriceIds = response
             .filterValues { prices -> prices[currency] == null }
             .keys
 
         if (missingPriceIds.isNotEmpty()) {
-            Log.w(TAG, "GET /simple/price missing $currency prices for ids=${missingPriceIds.joinToString(",")}")
+            CryptoAppLogger.warning(TAG, "GET /simple/price missing $currency prices for ids=${missingPriceIds.joinToString(",")}")
         }
 
         return response.mapNotNull { (id, prices) ->
