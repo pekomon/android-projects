@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -34,6 +35,14 @@ fun HomeScreen(
     modifier: Modifier = Modifier
 ) {
     var quickAddCrypto by remember { mutableStateOf<CryptoAsset?>(null) }
+    var searchQuery by remember { mutableStateOf("") }
+    val visibleCryptos = remember(viewModel.sortedCryptos, searchQuery) {
+        viewModel.sortedCryptos.filter { crypto ->
+            searchQuery.isBlank() ||
+                crypto.name.contains(searchQuery, ignoreCase = true) ||
+                crypto.symbol.contains(searchQuery, ignoreCase = true)
+        }
+    }
     
     Column(
         modifier = modifier.padding(16.dp),
@@ -65,6 +74,14 @@ fun HomeScreen(
             )
         }
 
+        OutlinedTextField(
+            value = searchQuery,
+            onValueChange = { searchQuery = it },
+            label = { Text("Search watchlist") },
+            singleLine = true,
+            modifier = Modifier.fillMaxWidth()
+        )
+
         when {
             viewModel.isLoading -> {
                 CircularProgressIndicator(
@@ -83,6 +100,12 @@ fun HomeScreen(
                     message = "Open Settings and choose the cryptocurrencies you want on your watchlist."
                 )
             }
+            visibleCryptos.isEmpty() -> {
+                StateMessageCard(
+                    title = "No matches",
+                    message = "Try another asset name or symbol."
+                )
+            }
             else -> {
                 SwipeRefresh(
                     state = rememberSwipeRefreshState(viewModel.isLoading),
@@ -90,7 +113,7 @@ fun HomeScreen(
                     modifier = Modifier.weight(1f)
                 ) {
                     CryptoList(
-                        cryptos = viewModel.sortedCryptos,
+                        cryptos = visibleCryptos,
                         viewModel = viewModel,
                         onQuickAdd = { crypto -> quickAddCrypto = crypto }
                     )
