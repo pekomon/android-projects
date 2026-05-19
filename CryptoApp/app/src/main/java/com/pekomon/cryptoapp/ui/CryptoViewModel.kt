@@ -14,6 +14,7 @@ import com.pekomon.cryptoapp.data.UserCrypto
 import com.pekomon.cryptoapp.data.Transaction
 import com.pekomon.cryptoapp.data.TransactionType
 import com.pekomon.cryptoapp.domain.market.CryptoAssetSorter
+import com.pekomon.cryptoapp.domain.market.CryptoSelectionSanitizer
 import com.pekomon.cryptoapp.domain.market.DefaultCryptoAssets
 import com.pekomon.cryptoapp.domain.model.CryptoAsset
 import com.pekomon.cryptoapp.domain.model.MarketPrice
@@ -92,13 +93,7 @@ class CryptoViewModel(
             
             loadAvailableCryptos()
 
-            selectedCryptos = preferencesRepository.selectedCryptos.first().let { saved ->
-                saved.ifEmpty {
-                    defaultCryptos.toSet().also { defaultSelection ->
-                        preferencesRepository.updateSelectedCryptos(defaultSelection)
-                    }
-                }
-            }
+            selectedCryptos = sanitizeSelectedCryptos(preferencesRepository.selectedCryptos.first())
             
             fetchPrices()
             
@@ -202,8 +197,9 @@ class CryptoViewModel(
     
     fun updateSelectedCryptos(cryptos: Set<String>) {
         viewModelScope.launch {
-            preferencesRepository.updateSelectedCryptos(cryptos)
-            selectedCryptos = cryptos
+            val sanitized = sanitizeSelectedCryptos(cryptos)
+            preferencesRepository.updateSelectedCryptos(sanitized)
+            selectedCryptos = sanitized
             fetchPrices()
         }
     }
@@ -317,6 +313,24 @@ class CryptoViewModel(
             }
             else -> "Unable to load prices. Check your connection and try again."
         }
+    }
+
+    private suspend fun sanitizeSelectedCryptos(savedSelection: Set<String>): Set<String> {
+        val sanitized = CryptoSelectionSanitizer.sanitizeSelection(
+            selectedIds = savedSelection,
+            availableAssets = availableCryptos,
+            fallbackIds = defaultCryptos.toSet()
+        )
+
+        if (sanitized != savedSelection) {
+            Log.d(
+                TAG,
+                "sanitizeSelectedCryptos removed=${(savedSelection - sanitized).joinToString(",")} selected=${sanitized.joinToString(",")}"
+            )
+            preferencesRepository.updateSelectedCryptos(sanitized)
+        }
+
+        return sanitized
     }
 
     private companion object {
