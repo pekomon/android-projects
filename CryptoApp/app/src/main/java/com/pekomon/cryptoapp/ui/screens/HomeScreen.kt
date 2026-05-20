@@ -22,6 +22,7 @@ import com.pekomon.cryptoapp.domain.model.CryptoAsset
 import com.pekomon.cryptoapp.ui.AssetMetadataSource
 import com.pekomon.cryptoapp.ui.CryptoViewModel
 import com.pekomon.cryptoapp.ui.MarketLoadState
+import com.pekomon.cryptoapp.ui.components.CommonCard
 import com.pekomon.cryptoapp.ui.components.CryptoList
 import com.pekomon.cryptoapp.ui.components.QuickAddDialog
 import com.pekomon.cryptoapp.ui.components.ScreenHeader
@@ -37,6 +38,11 @@ fun HomeScreen(
 ) {
     var quickAddCrypto by remember { mutableStateOf<CryptoAsset?>(null) }
     var searchQuery by remember { mutableStateOf("") }
+    val totalWatchlistAssets = viewModel.sortedCryptos.size
+    val pricedWatchlistAssets = viewModel.sortedCryptos.count { crypto ->
+        viewModel.getCryptoInfo(crypto.id) != null
+    }
+    val missingPriceAssets = (totalWatchlistAssets - pricedWatchlistAssets).coerceAtLeast(0)
     val visibleCryptos = remember(viewModel.sortedCryptos, searchQuery) {
         viewModel.sortedCryptos.filter { crypto ->
             searchQuery.isBlank() ||
@@ -84,13 +90,36 @@ fun HomeScreen(
             )
         }
 
-        OutlinedTextField(
-            value = searchQuery,
-            onValueChange = { searchQuery = it },
-            label = { Text("Search watchlist") },
-            singleLine = true,
-            modifier = Modifier.fillMaxWidth()
+        WatchlistSummaryCard(
+            totalAssets = totalWatchlistAssets,
+            pricedAssets = pricedWatchlistAssets,
+            missingPriceAssets = missingPriceAssets
         )
+
+        CommonCard {
+            Column(
+                modifier = Modifier.padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                OutlinedTextField(
+                    value = searchQuery,
+                    onValueChange = { searchQuery = it },
+                    label = { Text("Search watchlist") },
+                    placeholder = { Text("Bitcoin, ETH, SOL...") },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth()
+                )
+                Text(
+                    text = searchResultLabel(
+                        visibleCount = visibleCryptos.size,
+                        totalCount = totalWatchlistAssets,
+                        searchQuery = searchQuery
+                    ),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        }
 
         when {
             viewModel.isLoading -> {
@@ -145,4 +174,77 @@ fun HomeScreen(
             }
         )
     }
+}
+
+@Composable
+private fun WatchlistSummaryCard(
+    totalAssets: Int,
+    pricedAssets: Int,
+    missingPriceAssets: Int,
+    modifier: Modifier = Modifier
+) {
+    CommonCard(modifier = modifier) {
+        Row(
+            modifier = Modifier
+                .padding(16.dp)
+                .fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            SummaryMetric(
+                label = "Watchlist",
+                value = totalAssets.toString(),
+                modifier = Modifier.weight(1f)
+            )
+            SummaryMetric(
+                label = "Live prices",
+                value = pricedAssets.toString(),
+                modifier = Modifier.weight(1f)
+            )
+            SummaryMetric(
+                label = "Unavailable",
+                value = missingPriceAssets.toString(),
+                modifier = Modifier.weight(1f),
+                emphasized = missingPriceAssets > 0
+            )
+        }
+    }
+}
+
+@Composable
+private fun SummaryMetric(
+    label: String,
+    value: String,
+    modifier: Modifier = Modifier,
+    emphasized: Boolean = false
+) {
+    Column(
+        modifier = modifier,
+        verticalArrangement = Arrangement.spacedBy(2.dp)
+    ) {
+        Text(
+            text = value,
+            style = MaterialTheme.typography.headlineSmall,
+            color = if (emphasized) {
+                MaterialTheme.colorScheme.tertiary
+            } else {
+                MaterialTheme.colorScheme.onSurface
+            }
+        )
+        Text(
+            text = label,
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+    }
+}
+
+private fun searchResultLabel(
+    visibleCount: Int,
+    totalCount: Int,
+    searchQuery: String
+): String = when {
+    totalCount == 0 -> "Add assets in Settings to build your watchlist."
+    searchQuery.isBlank() -> "Showing all $totalCount watchlist assets."
+    else -> "Showing $visibleCount of $totalCount assets for \"$searchQuery\"."
 }

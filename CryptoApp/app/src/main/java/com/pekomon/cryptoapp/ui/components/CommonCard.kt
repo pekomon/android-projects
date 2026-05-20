@@ -27,4 +27,4 @@ fun CommonCard(
     ) {
         content()
     }
-} 
+}

@@ -9,7 +9,6 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import com.pekomon.cryptoapp.core.formatting.DisplayFormatters
 import com.pekomon.cryptoapp.data.Currency
@@ -52,15 +51,32 @@ fun CryptoListItemRow(
                 horizontalAlignment = Alignment.End,
                 modifier = Modifier.weight(1f)
             ) {
-                Text(
-                    text = currentPrice?.let { DisplayFormatters.currencyAmount(it, currency) } ?: "Unavailable",
-                    style = MaterialTheme.typography.titleMedium
-                )
-                Text(
-                    text = DisplayFormatters.percentage(priceChangePercentage),
-                    color = if (priceChangePercentage >= 0) Color.Green else Color.Red,
-                    style = MaterialTheme.typography.bodyMedium
-                )
+                if (currentPrice == null) {
+                    Text(
+                        text = "Price unavailable",
+                        style = MaterialTheme.typography.titleMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Text(
+                        text = "No ${currency.name} quote",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                } else {
+                    Text(
+                        text = DisplayFormatters.currencyAmount(currentPrice, currency),
+                        style = MaterialTheme.typography.titleMedium
+                    )
+                    Text(
+                        text = DisplayFormatters.percentage(priceChangePercentage),
+                        color = if (priceChangePercentage >= 0) {
+                            MaterialTheme.colorScheme.tertiary
+                        } else {
+                            MaterialTheme.colorScheme.error
+                        },
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+                }
             }
             
             Row(
