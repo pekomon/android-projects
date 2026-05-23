@@ -11,7 +11,6 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
-import androidx.compose.material3.Card
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -49,38 +48,23 @@ fun PortfolioScreen(
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         ScreenHeader(title = "Portfolio")
-        
-        Card(
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Column(
-                modifier = Modifier.padding(16.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                Text(
-                    text = "Total Value",
-                    style = MaterialTheme.typography.titleMedium
-                )
-                Text(
-                    text = DisplayFormatters.currencyAmount(
-                        value = viewModel.totalPortfolioValue,
-                        currency = viewModel.selectedCurrency
-                    ),
-                    style = MaterialTheme.typography.headlineMedium
-                )
-                Text(
-                    text = "${viewModel.getCombinedUserCryptos().size} active holdings",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
+
+        val holdings = viewModel.getCombinedUserCryptos()
+        val portfolioMetrics = remember(holdings, viewModel.marketLoadState, viewModel.selectedCurrency) {
+            holdings.toPortfolioMetrics { cryptoId ->
+                viewModel.getCryptoInfo(cryptoId)?.currentPrice
             }
         }
 
-        val holdings = viewModel.getCombinedUserCryptos()
+        PortfolioSummaryCard(
+            metrics = portfolioMetrics,
+            currency = viewModel.selectedCurrency
+        )
+
         if (holdings.isEmpty()) {
             StateMessageCard(
                 title = "No holdings yet",
-                message = "Use the add button from Watchlist or Favorites to track an asset in your portfolio."
+                message = "Add an asset from Watchlist to start tracking value, cost basis, and profit/loss."
             )
         } else {
             LazyColumn(
@@ -96,7 +80,7 @@ fun PortfolioScreen(
                             cryptoName = crypto.name,
                             cryptoSymbol = crypto.symbol.uppercase(),
                             userCrypto = userCrypto,
-                            currentPrice = cryptoInfo?.currentPrice ?: 0.0,
+                            currentPrice = cryptoInfo?.currentPrice,
                             currency = viewModel.selectedCurrency,
                             onEdit = { editingCrypto = userCrypto },
                             onDelete = { viewModel.removeUserCrypto(userCrypto.cryptoId) },
@@ -147,18 +131,28 @@ private fun PortfolioItem(
     cryptoName: String,
     cryptoSymbol: String,
     userCrypto: UserCrypto,
-    currentPrice: Double,
+    currentPrice: Double?,
     currency: Currency,
     onEdit: () -> Unit,
     onDelete: () -> Unit,
     onClick: () -> Unit
 ) {
+    val initialValue = userCrypto.purchasePrice * userCrypto.amount
+    val totalValue = currentPrice?.let { it * userCrypto.amount }
+    val valueChange = totalValue?.let { it - initialValue }
+    val valueChangePercentage = if (initialValue == 0.0 || valueChange == null) {
+        null
+    } else {
+        (valueChange / initialValue) * 100
+    }
+
     CommonCard(
         modifier = Modifier.fillMaxWidth(),
         onClick = onClick
     ) {
         Column(
-            modifier = Modifier.padding(16.dp)
+            modifier = Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -171,7 +165,7 @@ private fun PortfolioItem(
                         style = MaterialTheme.typography.titleMedium
                     )
                     Text(
-                        text = "$cryptoSymbol • ${userCrypto.amount}",
+                        text = "$cryptoSymbol • ${userCrypto.amount} held",
                         style = MaterialTheme.typography.bodyMedium
                     )
                 }
@@ -180,22 +174,32 @@ private fun PortfolioItem(
                     horizontalAlignment = Alignment.End,
                     modifier = Modifier.weight(1f)
                 ) {
-                    val totalValue = currentPrice * userCrypto.amount
-                    val initialValue = userCrypto.purchasePrice * userCrypto.amount
-                    val valueChange = totalValue - initialValue
-                    val valueChangePercentage = if (initialValue == 0.0) 0.0 else {
-                        (valueChange / initialValue) * 100
+                    if (totalValue == null || valueChange == null || valueChangePercentage == null) {
+                        Text(
+                            text = "Value unavailable",
+                            style = MaterialTheme.typography.titleMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Text(
+                            text = "Waiting for market price",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    } else {
+                        Text(
+                            text = DisplayFormatters.currencyAmount(totalValue, currency),
+                            style = MaterialTheme.typography.titleMedium
+                        )
+                        Text(
+                            text = "${DisplayFormatters.signedCurrencyAmount(valueChange, currency)} (${DisplayFormatters.percentage(valueChangePercentage)})",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = if (valueChange >= 0) {
+                                MaterialTheme.colorScheme.tertiary
+                            } else {
+                                MaterialTheme.colorScheme.error
+                            }
+                        )
                     }
-                    
-                    Text(
-                        text = DisplayFormatters.currencyAmount(totalValue, currency),
-                        style = MaterialTheme.typography.titleMedium
-                    )
-                    Text(
-                        text = "${DisplayFormatters.signedCurrencyAmount(valueChange, currency)} (${DisplayFormatters.percentage(valueChangePercentage)})",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = if (valueChange >= 0) MaterialTheme.colorScheme.tertiary else MaterialTheme.colorScheme.error
-                    )
                 }
                 
                 Row {
@@ -207,6 +211,190 @@ private fun PortfolioItem(
                     }
                 }
             }
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                HoldingMetric(
+                    label = "Cost basis",
+                    value = DisplayFormatters.currencyAmount(initialValue, currency),
+                    modifier = Modifier.weight(1f)
+                )
+                HoldingMetric(
+                    label = "Avg buy",
+                    value = DisplayFormatters.currencyAmount(userCrypto.purchasePrice, currency),
+                    modifier = Modifier.weight(1f)
+                )
+                HoldingMetric(
+                    label = "Current",
+                    value = currentPrice?.let { DisplayFormatters.currencyAmount(it, currency) } ?: "Unavailable",
+                    modifier = Modifier.weight(1f)
+                )
+            }
         }
     }
+}
+
+@Composable
+private fun PortfolioSummaryCard(
+    metrics: PortfolioMetrics,
+    currency: Currency,
+    modifier: Modifier = Modifier
+) {
+    CommonCard(modifier = modifier) {
+        Column(
+            modifier = Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(14.dp)
+        ) {
+            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                Text(
+                    text = "Portfolio Value",
+                    style = MaterialTheme.typography.titleMedium
+                )
+                Text(
+                    text = DisplayFormatters.currencyAmount(metrics.currentValue, currency),
+                    style = MaterialTheme.typography.headlineMedium
+                )
+                Text(
+                    text = "${metrics.holdingCount} active holdings • ${metrics.pricedHoldingCount} priced",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                PortfolioMetric(
+                    label = "Invested",
+                    value = DisplayFormatters.currencyAmount(metrics.investedValue, currency),
+                    modifier = Modifier.weight(1f)
+                )
+                PortfolioMetric(
+                    label = "P/L",
+                    value = DisplayFormatters.signedCurrencyAmount(metrics.profitLoss, currency),
+                    modifier = Modifier.weight(1f),
+                    valueTone = metrics.profitLoss.tone()
+                )
+                PortfolioMetric(
+                    label = "Return",
+                    value = DisplayFormatters.percentage(metrics.profitLossPercentage),
+                    modifier = Modifier.weight(1f),
+                    valueTone = metrics.profitLoss.tone()
+                )
+            }
+
+            if (metrics.unpricedHoldingCount > 0) {
+                Text(
+                    text = "${metrics.unpricedHoldingCount} holdings are excluded from live value until prices are available.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun PortfolioMetric(
+    label: String,
+    value: String,
+    modifier: Modifier = Modifier,
+    valueTone: ValueTone = ValueTone.Neutral
+) {
+    Column(
+        modifier = modifier,
+        verticalArrangement = Arrangement.spacedBy(2.dp)
+    ) {
+        Text(
+            text = value,
+            style = MaterialTheme.typography.titleMedium,
+            color = valueTone.color()
+        )
+        Text(
+            text = label,
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+    }
+}
+
+@Composable
+private fun HoldingMetric(
+    label: String,
+    value: String,
+    modifier: Modifier = Modifier
+) {
+    Column(
+        modifier = modifier,
+        verticalArrangement = Arrangement.spacedBy(2.dp)
+    ) {
+        Text(
+            text = label,
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+        Text(
+            text = value,
+            style = MaterialTheme.typography.bodyMedium
+        )
+    }
+}
+
+private data class PortfolioMetrics(
+    val holdingCount: Int,
+    val pricedHoldingCount: Int,
+    val investedValue: Double,
+    val currentValue: Double,
+    val profitLoss: Double,
+    val profitLossPercentage: Double
+) {
+    val unpricedHoldingCount: Int = holdingCount - pricedHoldingCount
+}
+
+private fun List<UserCrypto>.toPortfolioMetrics(
+    priceForCrypto: (String) -> Double?
+): PortfolioMetrics {
+    val investedValue = sumOf { it.purchasePrice * it.amount }
+    val pricedHoldings = filter { priceForCrypto(it.cryptoId) != null }
+    val currentValue = pricedHoldings.sumOf { holding ->
+        (priceForCrypto(holding.cryptoId) ?: 0.0) * holding.amount
+    }
+    val pricedInvestedValue = pricedHoldings.sumOf { it.purchasePrice * it.amount }
+    val profitLoss = currentValue - pricedInvestedValue
+    val profitLossPercentage = if (pricedInvestedValue == 0.0) {
+        0.0
+    } else {
+        (profitLoss / pricedInvestedValue) * 100
+    }
+
+    return PortfolioMetrics(
+        holdingCount = size,
+        pricedHoldingCount = pricedHoldings.size,
+        investedValue = investedValue,
+        currentValue = currentValue,
+        profitLoss = profitLoss,
+        profitLossPercentage = profitLossPercentage
+    )
+}
+
+private enum class ValueTone {
+    Positive,
+    Negative,
+    Neutral
+}
+
+private fun Double.tone(): ValueTone = when {
+    this > 0.0 -> ValueTone.Positive
+    this < 0.0 -> ValueTone.Negative
+    else -> ValueTone.Neutral
+}
+
+@Composable
+private fun ValueTone.color() = when (this) {
+    ValueTone.Positive -> MaterialTheme.colorScheme.tertiary
+    ValueTone.Negative -> MaterialTheme.colorScheme.error
+    ValueTone.Neutral -> MaterialTheme.colorScheme.onSurface
 }
