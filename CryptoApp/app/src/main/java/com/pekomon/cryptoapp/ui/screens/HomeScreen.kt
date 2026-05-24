@@ -130,7 +130,9 @@ fun HomeScreen(
             viewModel.error != null -> {
                 StateMessageCard(
                     title = "Prices unavailable",
-                    message = viewModel.error ?: "Unable to load prices."
+                    message = viewModel.error ?: "Unable to load prices.",
+                    actionLabel = "Retry",
+                    onAction = { viewModel.fetchPrices() }
                 )
             }
             viewModel.sortedCryptos.isEmpty() -> {

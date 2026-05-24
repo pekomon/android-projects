@@ -94,7 +94,9 @@ fun FavoritesScreen(
             viewModel.error != null -> {
                 StateMessageCard(
                     title = "Favorites unavailable",
-                    message = viewModel.error ?: "Unable to load favorite prices."
+                    message = viewModel.error ?: "Unable to load favorite prices.",
+                    actionLabel = "Retry",
+                    onAction = { viewModel.fetchPrices() }
                 )
             }
             else -> {
