@@ -3,6 +3,8 @@ package com.pekomon.cryptoapp.data
 import com.pekomon.cryptoapp.BuildConfig
 import com.pekomon.cryptoapp.core.logging.CryptoAppLogger
 import com.pekomon.cryptoapp.data.remote.CoinGeckoApi
+import com.pekomon.cryptoapp.domain.market.MarketDataError
+import com.pekomon.cryptoapp.domain.market.MarketDataResult
 import com.pekomon.cryptoapp.domain.model.CryptoAsset
 import com.pekomon.cryptoapp.domain.repository.MarketRepository
 import retrofit2.HttpException
@@ -62,12 +64,34 @@ class CryptoRepository(
         }.toMap()
     }
 
+    override suspend fun getCryptoPricesResult(
+        coinIds: List<String>,
+        currency: String
+    ): MarketDataResult<Map<String, Double>> {
+        return try {
+            MarketDataResult.Success(getCryptoPrices(coinIds, currency))
+        } catch (error: Exception) {
+            MarketDataResult.Failure(error.toMarketDataError())
+        }
+    }
+
     private fun Exception.debugSummary(): String {
         return if (this is HttpException) {
             val errorBody = response()?.errorBody()?.string()?.take(500)
             "httpCode=${code()} message=${message()} errorBody=$errorBody"
         } else {
             "${this::class.java.simpleName}: ${message}"
+        }
+    }
+
+    private fun Exception.toMarketDataError(): MarketDataError {
+        val summary = debugSummary()
+        return when {
+            this is HttpException && code() == 401 -> MarketDataError.Unauthorized(summary)
+            this is HttpException && code() == 403 -> MarketDataError.Forbidden(summary)
+            this is HttpException && code() == 429 -> MarketDataError.RateLimited(summary)
+            this is java.io.IOException -> MarketDataError.Network(summary)
+            else -> MarketDataError.Unknown(summary)
         }
     }
 

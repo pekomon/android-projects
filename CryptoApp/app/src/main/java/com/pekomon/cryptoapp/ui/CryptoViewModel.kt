@@ -16,6 +16,8 @@ import com.pekomon.cryptoapp.data.TransactionType
 import com.pekomon.cryptoapp.domain.market.CryptoAssetSorter
 import com.pekomon.cryptoapp.domain.market.CryptoSelectionSanitizer
 import com.pekomon.cryptoapp.domain.market.DefaultCryptoAssets
+import com.pekomon.cryptoapp.domain.market.MarketDataError
+import com.pekomon.cryptoapp.domain.market.MarketDataResult
 import com.pekomon.cryptoapp.domain.model.CryptoAsset
 import com.pekomon.cryptoapp.domain.model.MarketPrice
 import com.pekomon.cryptoapp.domain.portfolio.PortfolioCalculator
@@ -24,7 +26,6 @@ import com.pekomon.cryptoapp.domain.portfolio.PortfolioValidator
 import com.pekomon.cryptoapp.domain.repository.MarketRepository
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.flow.first
-import retrofit2.HttpException
 import java.time.LocalDateTime
 
 class CryptoViewModel(
@@ -158,20 +159,27 @@ class CryptoViewModel(
             try {
                 val cryptosToFetch = (selectedCryptos + favorites + userCryptos.map { it.cryptoId }).toList()
                 CryptoAppLogger.debug(TAG, "fetchPrices start ids=${cryptosToFetch.distinct().joinToString(",")} currency=${selectedCurrency.code}")
-                val prices = repository.getCryptoPrices(cryptosToFetch, selectedCurrency.code)
-                
-                cryptoInfoMap = prices.mapValues { (id, price) ->
-                    MarketPrice(
-                        cryptoId = id,
-                        currentPrice = price,
-                        priceChangePercentage = 0.0
-                    )
-                }.toMutableMap()
-                CryptoAppLogger.debug(TAG, "fetchPrices success count=${cryptoInfoMap.size}")
-                marketLoadState = MarketLoadState.Content(lastUpdated = LocalDateTime.now())
+                when (val result = repository.getCryptoPricesResult(cryptosToFetch, selectedCurrency.code)) {
+                    is MarketDataResult.Success -> {
+                        cryptoInfoMap = result.value.mapValues { (id, price) ->
+                            MarketPrice(
+                                cryptoId = id,
+                                currentPrice = price,
+                                priceChangePercentage = 0.0
+                            )
+                        }.toMutableMap()
+                        CryptoAppLogger.debug(TAG, "fetchPrices success count=${cryptoInfoMap.size}")
+                        marketLoadState = MarketLoadState.Content(lastUpdated = LocalDateTime.now())
+                    }
+                    is MarketDataResult.Failure -> {
+                        error = result.error.userMessage()
+                        CryptoAppLogger.error(TAG, "fetchPrices failed ${result.error.technicalMessage}")
+                        marketLoadState = MarketLoadState.Error(error ?: "Unable to load prices.")
+                    }
+                }
             } catch (e: Exception) {
                 CryptoAppLogger.error(TAG, "fetchPrices failed", e)
-                error = marketErrorMessage(e)
+                error = MarketDataError.Unknown(e.message).userMessage()
                 marketLoadState = MarketLoadState.Error(error ?: "Unable to load prices.")
             }
             isLoading = false
@@ -309,19 +317,20 @@ class CryptoViewModel(
         return PortfolioCalculator.combineHoldings(userCryptos)
     }
 
-    private fun marketErrorMessage(error: Exception): String {
-        return when {
-            error is HttpException && error.code() == 401 -> {
-                "CoinGecko rejected the API key. Check COINGECKO_DEMO_API_KEY in local.properties."
-            }
-            error is HttpException && error.code() == 403 -> {
-                "CoinGecko access is forbidden. Check the API plan, key, or endpoint."
-            }
-            error is HttpException && error.code() == 429 -> {
-                "CoinGecko is rate limiting requests. Wait a moment and refresh again."
-            }
-            else -> "Unable to load prices. Check your connection and try again."
+    private fun MarketDataError.userMessage(): String = when (this) {
+        is MarketDataError.Unauthorized -> {
+            "CoinGecko rejected the API key. Check COINGECKO_DEMO_API_KEY in local.properties."
         }
+        is MarketDataError.Forbidden -> {
+            "CoinGecko access is forbidden. Check the API plan, key, or endpoint."
+        }
+        is MarketDataError.RateLimited -> {
+            "CoinGecko is rate limiting requests. Wait a moment and refresh again."
+        }
+        is MarketDataError.Network -> {
+            "Unable to reach CoinGecko. Check your connection and try again."
+        }
+        is MarketDataError.Unknown -> "Unable to load prices. Check your connection and try again."
     }
 
     private suspend fun sanitizeSelectedCryptos(savedSelection: Set<String>): Set<String> {
