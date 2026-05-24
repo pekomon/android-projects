@@ -73,6 +73,13 @@ fun HomeScreen(
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
+                    if (state.isStale) {
+                        Text(
+                            text = state.message ?: "Using last successful prices.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.tertiary
+                        )
+                    }
                 }
                 viewModel.assetMetadataSource
                     ?.takeUnless { it == AssetMetadataSource.Live }
@@ -127,10 +134,11 @@ fun HomeScreen(
                     modifier = Modifier.align(Alignment.CenterHorizontally)
                 )
             }
-            viewModel.error != null -> {
+            viewModel.marketLoadState is MarketLoadState.Error -> {
+                val state = viewModel.marketLoadState as MarketLoadState.Error
                 StateMessageCard(
                     title = "Prices unavailable",
-                    message = viewModel.error ?: "Unable to load prices.",
+                    message = state.message,
                     actionLabel = "Retry",
                     onAction = { viewModel.fetchPrices() }
                 )

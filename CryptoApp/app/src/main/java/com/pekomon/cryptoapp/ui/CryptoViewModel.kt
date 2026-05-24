@@ -75,6 +75,7 @@ class CryptoViewModel(
         }
     
     private var cryptoInfoMap = mutableMapOf<String, MarketPrice>()
+    private var lastMarketUpdated: LocalDateTime? = null
     
     init {
         viewModelScope.launch {
@@ -169,18 +170,36 @@ class CryptoViewModel(
                             )
                         }.toMutableMap()
                         CryptoAppLogger.debug(TAG, "fetchPrices success count=${cryptoInfoMap.size}")
-                        marketLoadState = MarketLoadState.Content(lastUpdated = LocalDateTime.now())
+                        lastMarketUpdated = LocalDateTime.now()
+                        marketLoadState = MarketLoadState.Content(lastUpdated = lastMarketUpdated ?: LocalDateTime.now())
                     }
                     is MarketDataResult.Failure -> {
-                        error = result.error.userMessage()
+                        val message = result.error.userMessage()
+                        error = message
                         CryptoAppLogger.error(TAG, "fetchPrices failed ${result.error.technicalMessage}")
-                        marketLoadState = MarketLoadState.Error(error ?: "Unable to load prices.")
+                        marketLoadState = if (cryptoInfoMap.isNotEmpty() && lastMarketUpdated != null) {
+                            MarketLoadState.Content(
+                                lastUpdated = lastMarketUpdated ?: LocalDateTime.now(),
+                                isStale = true,
+                                message = message
+                            )
+                        } else {
+                            MarketLoadState.Error(message)
+                        }
                     }
                 }
             } catch (e: Exception) {
                 CryptoAppLogger.error(TAG, "fetchPrices failed", e)
                 error = MarketDataError.Unknown(e.message).userMessage()
-                marketLoadState = MarketLoadState.Error(error ?: "Unable to load prices.")
+                marketLoadState = if (cryptoInfoMap.isNotEmpty() && lastMarketUpdated != null) {
+                    MarketLoadState.Content(
+                        lastUpdated = lastMarketUpdated ?: LocalDateTime.now(),
+                        isStale = true,
+                        message = error
+                    )
+                } else {
+                    MarketLoadState.Error(error ?: "Unable to load prices.")
+                }
             }
             isLoading = false
         }

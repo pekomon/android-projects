@@ -66,6 +66,13 @@ fun FavoritesScreen(
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
+                        if (state.isStale) {
+                            Text(
+                                text = state.message ?: "Using last successful prices.",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.tertiary
+                            )
+                        }
                     }
                 }
                 Icon(
@@ -91,10 +98,11 @@ fun FavoritesScreen(
                     modifier = Modifier.align(Alignment.CenterHorizontally)
                 )
             }
-            viewModel.error != null -> {
+            viewModel.marketLoadState is MarketLoadState.Error -> {
+                val state = viewModel.marketLoadState as MarketLoadState.Error
                 StateMessageCard(
                     title = "Favorites unavailable",
-                    message = viewModel.error ?: "Unable to load favorite prices.",
+                    message = state.message,
                     actionLabel = "Retry",
                     onAction = { viewModel.fetchPrices() }
                 )

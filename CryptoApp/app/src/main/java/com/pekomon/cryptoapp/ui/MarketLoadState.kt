@@ -7,7 +7,9 @@ sealed interface MarketLoadState {
     data object Loading : MarketLoadState
 
     data class Content(
-        val lastUpdated: LocalDateTime
+        val lastUpdated: LocalDateTime,
+        val isStale: Boolean = false,
+        val message: String? = null
     ) : MarketLoadState
 
     data class Error(
