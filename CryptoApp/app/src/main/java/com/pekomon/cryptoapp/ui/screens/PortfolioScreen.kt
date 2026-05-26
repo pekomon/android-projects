@@ -94,7 +94,7 @@ fun PortfolioScreen(
     
     editingCrypto?.let { crypto ->
         val cryptoName = viewModel.availableCryptos.find { it.id == crypto.cryptoId }?.name ?: "Unknown"
-        val currentPrice = viewModel.getCryptoInfo(crypto.cryptoId)?.currentPrice ?: 0.0
+        val currentPrice = viewModel.getCryptoInfo(crypto.cryptoId)?.currentPrice
         QuickAddDialog(
             cryptoName = cryptoName,
             currentPrice = currentPrice,

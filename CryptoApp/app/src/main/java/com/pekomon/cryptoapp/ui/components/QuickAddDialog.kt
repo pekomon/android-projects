@@ -26,17 +26,17 @@ import androidx.compose.material3.MaterialTheme
 @Composable
 fun QuickAddDialog(
     cryptoName: String,
-    currentPrice: Double,
+    currentPrice: Double?,
     currency: Currency,
     onDismiss: () -> Unit,
     onConfirm: (amount: Double, price: Double, dateTime: LocalDateTime) -> Unit,
     initialAmount: Double? = null,
-    initialPrice: Double = currentPrice,
+    initialPrice: Double? = currentPrice,
     title: String = "Add $cryptoName",
     confirmLabel: String = "Add"
 ) {
     var amount by remember { mutableStateOf(initialAmount?.toString().orEmpty()) }
-    var price by remember { mutableStateOf(initialPrice.toString()) }
+    var price by remember { mutableStateOf(initialPrice?.toString().orEmpty()) }
     var showDatePicker by remember { mutableStateOf(false) }
     var showTimePicker by remember { mutableStateOf(false) }
     var selectedDateTime by remember { mutableStateOf(LocalDateTime.now()) }

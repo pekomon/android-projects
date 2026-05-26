@@ -5,6 +5,11 @@ sealed interface MarketDataResult<out T> {
         val value: T
     ) : MarketDataResult<T>
 
+    data class PartialSuccess<T>(
+        val value: T,
+        val missingIds: Set<String>
+    ) : MarketDataResult<T>
+
     data class Failure(
         val error: MarketDataError
     ) : MarketDataResult<Nothing>

@@ -66,8 +66,36 @@ class CryptoRepository(
         coinIds: List<String>,
         currency: String
     ): MarketDataResult<Map<String, Double>> {
+        if (coinIds.isEmpty()) {
+            return MarketDataResult.Success(emptyMap())
+        }
+
+        val distinctCoinIds = coinIds.distinct()
+        CryptoAppLogger.debug(
+            TAG,
+            "GET /simple/price result ids=${distinctCoinIds.joinToString(",")} currency=$currency keyConfigured=${coinGeckoDemoApiKey != null}"
+        )
+
         return try {
-            MarketDataResult.Success(getCryptoPrices(coinIds, currency))
+            val response = api.getSimplePrices(
+                ids = distinctCoinIds.joinToString(","),
+                vsCurrencies = currency,
+                apiKey = coinGeckoDemoApiKey
+            )
+            val result = MarketPriceResponseMapper.mapPrices(
+                requestedIds = distinctCoinIds,
+                currency = currency,
+                response = response
+            )
+
+            if (result is MarketDataResult.PartialSuccess) {
+                CryptoAppLogger.warning(
+                    TAG,
+                    "GET /simple/price partial missingIds=${result.missingIds.joinToString(",")}"
+                )
+            }
+
+            result
         } catch (error: Exception) {
             MarketDataResult.Failure(MarketDataErrorMapper.fromException(error))
         }

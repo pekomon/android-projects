@@ -66,7 +66,7 @@ fun FavoritesScreen(
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
-                        if (state.isStale) {
+                        if (state.isStale || state.message != null) {
                             Text(
                                 text = state.message ?: "Using last successful prices.",
                                 style = MaterialTheme.typography.bodySmall,
@@ -135,7 +135,7 @@ fun FavoritesScreen(
     }
     
     quickAddCrypto?.let { crypto ->
-        val currentPrice = viewModel.getCryptoInfo(crypto.id)?.currentPrice ?: 0.0
+        val currentPrice = viewModel.getCryptoInfo(crypto.id)?.currentPrice
         QuickAddDialog(
             cryptoName = crypto.name,
             currentPrice = currentPrice,
