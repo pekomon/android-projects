@@ -278,7 +278,7 @@ class CryptoViewModel(
                 transactions = listOf(transaction)
             )
             
-            val newCryptos = userCryptos + newCrypto
+            val newCryptos = PortfolioCalculator.normalizeHoldings(userCryptos + newCrypto)
             preferencesRepository.updateUserCryptos(newCryptos)
             fetchPrices()
         }
@@ -319,13 +319,16 @@ class CryptoViewModel(
                     )
                     else -> null
                 }
-                val updatedCrypto = existingCrypto.copy(
-                    amount = amount,
-                    transactions = existingCrypto.transactions + listOfNotNull(adjustmentTransaction)
-                )
-                val newCryptos = userCryptos.filterNot { it.cryptoId == cryptoId }.let { remaining ->
-                    if (amount > 0.0) remaining + updatedCrypto else remaining
+                val updatedCrypto = if (adjustmentTransaction == null) {
+                    existingCrypto
+                } else {
+                    existingCrypto.copy(
+                        transactions = existingCrypto.transactions + adjustmentTransaction
+                    )
                 }
+                val newCryptos = PortfolioCalculator.normalizeHoldings(
+                    userCryptos.filterNot { it.cryptoId == cryptoId } + updatedCrypto
+                )
                 preferencesRepository.updateUserCryptos(newCryptos)
                 fetchPrices()
             }

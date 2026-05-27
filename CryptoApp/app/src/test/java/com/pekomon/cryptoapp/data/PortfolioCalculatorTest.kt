@@ -44,6 +44,39 @@ class PortfolioCalculatorTest {
         assertEquals(600.0, totalValue, 0.0)
     }
 
+    @Test
+    fun combineHoldingsDerivesAmountFromTransactions() {
+        val dateTime = LocalDateTime.of(2026, 1, 1, 10, 0)
+        val holdings = listOf(
+            UserCrypto(
+                cryptoId = "bitcoin",
+                amount = 99.0,
+                purchasePrice = 999.0,
+                purchaseDateTime = dateTime,
+                transactions = listOf(
+                    Transaction(
+                        type = TransactionType.BUY,
+                        amount = 3.0,
+                        price = 100.0,
+                        dateTime = dateTime
+                    ),
+                    Transaction(
+                        type = TransactionType.SELL,
+                        amount = 1.0,
+                        price = 150.0,
+                        dateTime = dateTime.plusDays(1)
+                    )
+                )
+            )
+        )
+
+        val combined = PortfolioCalculator.combineHoldings(holdings)
+
+        assertEquals(1, combined.size)
+        assertEquals(2.0, combined.first().amount, 0.0)
+        assertEquals(100.0, combined.first().purchasePrice, 0.0)
+    }
+
     private fun holding(
         cryptoId: String,
         amount: Double,
