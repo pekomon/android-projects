@@ -11,10 +11,12 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -42,6 +44,7 @@ fun PortfolioScreen(
     modifier: Modifier = Modifier
 ) {
     var editingCrypto by remember { mutableStateOf<UserCrypto?>(null) }
+    var pendingDeleteCrypto by remember { mutableStateOf<UserCrypto?>(null) }
     var showTransactionDialog by remember { mutableStateOf<UserCrypto?>(null) }
     
     Column(
@@ -90,7 +93,7 @@ fun PortfolioScreen(
                             metrics = holdingMetrics[userCrypto.cryptoId],
                             currency = viewModel.selectedCurrency,
                             onEdit = { editingCrypto = userCrypto },
-                            onDelete = { viewModel.removeUserCrypto(userCrypto.cryptoId) },
+                            onDelete = { pendingDeleteCrypto = userCrypto },
                             onClick = { showTransactionDialog = userCrypto }
                         )
                     }
@@ -115,6 +118,33 @@ fun PortfolioScreen(
             initialPrice = currentPrice,
             title = "Update $cryptoName",
             confirmLabel = "Update"
+        )
+    }
+
+    pendingDeleteCrypto?.let { crypto ->
+        val cryptoName = viewModel.availableCryptos.find { it.id == crypto.cryptoId }?.name ?: crypto.cryptoId
+
+        AlertDialog(
+            onDismissRequest = { pendingDeleteCrypto = null },
+            title = { Text("Remove $cryptoName?") },
+            text = {
+                Text("This removes the holding and its transaction history from your local portfolio.")
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        viewModel.removeUserCrypto(crypto.cryptoId)
+                        pendingDeleteCrypto = null
+                    }
+                ) {
+                    Text("Remove")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { pendingDeleteCrypto = null }) {
+                    Text("Cancel")
+                }
+            }
         )
     }
     

@@ -302,36 +302,41 @@ class CryptoViewModel(
             }
 
             val existingCrypto = getCombinedUserCryptos().find { it.cryptoId == cryptoId }
-            if (existingCrypto != null) {
-                val adjustment = amount - existingCrypto.amount
-                val adjustmentTransaction = when {
-                    adjustment > 0.0 -> Transaction(
-                        type = TransactionType.BUY,
-                        amount = adjustment,
-                        price = price,
-                        dateTime = dateTime
-                    )
-                    adjustment < 0.0 -> Transaction(
-                        type = TransactionType.SELL,
-                        amount = -adjustment,
-                        price = price,
-                        dateTime = dateTime
-                    )
-                    else -> null
-                }
-                val updatedCrypto = if (adjustmentTransaction == null) {
-                    existingCrypto
-                } else {
-                    existingCrypto.copy(
-                        transactions = existingCrypto.transactions + adjustmentTransaction
-                    )
-                }
-                val newCryptos = PortfolioCalculator.normalizeHoldings(
-                    userCryptos.filterNot { it.cryptoId == cryptoId } + updatedCrypto
-                )
-                preferencesRepository.updateUserCryptos(newCryptos)
-                fetchPrices()
+            if (existingCrypto == null) {
+                error = "This holding is no longer in your portfolio."
+                return@launch
             }
+
+            val adjustment = amount - existingCrypto.amount
+            val adjustmentTransaction = when {
+                adjustment > 0.0 -> Transaction(
+                    type = TransactionType.BUY,
+                    amount = adjustment,
+                    price = price,
+                    dateTime = dateTime
+                )
+                adjustment < 0.0 -> Transaction(
+                    type = TransactionType.SELL,
+                    amount = -adjustment,
+                    price = price,
+                    dateTime = dateTime
+                )
+                else -> null
+            }
+
+            if (adjustmentTransaction == null) {
+                error = null
+                return@launch
+            }
+
+            val updatedCrypto = existingCrypto.copy(
+                transactions = existingCrypto.transactions + adjustmentTransaction
+            )
+            val newCryptos = PortfolioCalculator.normalizeHoldings(
+                userCryptos.filterNot { it.cryptoId == cryptoId } + updatedCrypto
+            )
+            preferencesRepository.updateUserCryptos(newCryptos)
+            fetchPrices()
         }
     }
     
