@@ -53,6 +53,72 @@ object PortfolioCalculator {
         }
     }
 
+    fun holdingMetrics(
+        holdings: List<UserCrypto>,
+        priceForCrypto: (String) -> Double?
+    ): List<PortfolioHoldingMetrics> {
+        val combinedHoldings = combineHoldings(holdings)
+        val currentValues = combinedHoldings.associate { holding ->
+            holding.cryptoId to priceForCrypto(holding.cryptoId)?.let { price -> price * holding.amount }
+        }
+        val totalCurrentValue = currentValues.values.filterNotNull().sum()
+
+        return combinedHoldings.map { holding ->
+            val costBasis = holding.purchasePrice * holding.amount
+            val currentPrice = priceForCrypto(holding.cryptoId)
+            val currentValue = currentValues[holding.cryptoId]
+            val profitLoss = currentValue?.let { it - costBasis }
+            val profitLossPercentage = if (costBasis == 0.0 || profitLoss == null) {
+                null
+            } else {
+                (profitLoss / costBasis) * 100
+            }
+            val allocationPercentage = if (currentValue == null || totalCurrentValue == 0.0) {
+                0.0
+            } else {
+                (currentValue / totalCurrentValue) * 100
+            }
+
+            PortfolioHoldingMetrics(
+                cryptoId = holding.cryptoId,
+                amount = holding.amount,
+                averageCost = holding.purchasePrice,
+                costBasis = costBasis,
+                currentPrice = currentPrice,
+                currentValue = currentValue,
+                profitLoss = profitLoss,
+                profitLossPercentage = profitLossPercentage,
+                allocationPercentage = allocationPercentage
+            )
+        }
+    }
+
+    fun summaryMetrics(
+        holdings: List<UserCrypto>,
+        priceForCrypto: (String) -> Double?
+    ): PortfolioSummaryMetrics {
+        val holdingMetrics = holdingMetrics(holdings, priceForCrypto)
+        val pricedHoldings = holdingMetrics.filter { it.currentValue != null }
+        val investedValue = holdingMetrics.sumOf { it.costBasis }
+        val currentValue = pricedHoldings.sumOf { it.currentValue ?: 0.0 }
+        val pricedInvestedValue = pricedHoldings.sumOf { it.costBasis }
+        val profitLoss = currentValue - pricedInvestedValue
+        val profitLossPercentage = if (pricedInvestedValue == 0.0) {
+            0.0
+        } else {
+            (profitLoss / pricedInvestedValue) * 100
+        }
+
+        return PortfolioSummaryMetrics(
+            holdingCount = holdingMetrics.size,
+            pricedHoldingCount = pricedHoldings.size,
+            investedValue = investedValue,
+            currentValue = currentValue,
+            profitLoss = profitLoss,
+            profitLossPercentage = profitLossPercentage
+        )
+    }
+
     private fun UserCrypto.effectiveTransactions(): List<Transaction> {
         return transactions.ifEmpty {
             listOf(

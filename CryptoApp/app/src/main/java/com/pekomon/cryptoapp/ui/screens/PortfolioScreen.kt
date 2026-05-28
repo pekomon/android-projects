@@ -26,6 +26,9 @@ import androidx.compose.ui.unit.dp
 import com.pekomon.cryptoapp.core.formatting.DisplayFormatters
 import com.pekomon.cryptoapp.data.Currency
 import com.pekomon.cryptoapp.data.UserCrypto
+import com.pekomon.cryptoapp.domain.portfolio.PortfolioCalculator
+import com.pekomon.cryptoapp.domain.portfolio.PortfolioHoldingMetrics
+import com.pekomon.cryptoapp.domain.portfolio.PortfolioSummaryMetrics
 import com.pekomon.cryptoapp.ui.CryptoViewModel
 import com.pekomon.cryptoapp.ui.components.CommonCard
 import com.pekomon.cryptoapp.ui.components.QuickAddDialog
@@ -50,10 +53,15 @@ fun PortfolioScreen(
         ScreenHeader(title = "Portfolio")
 
         val holdings = viewModel.getCombinedUserCryptos()
-        val portfolioMetrics = remember(holdings, viewModel.marketLoadState, viewModel.selectedCurrency) {
-            holdings.toPortfolioMetrics { cryptoId ->
+        val portfolioMetrics = remember(holdings, viewModel.marketLoadState) {
+            PortfolioCalculator.summaryMetrics(holdings) { cryptoId ->
                 viewModel.getCryptoInfo(cryptoId)?.currentPrice
             }
+        }
+        val holdingMetrics = remember(holdings, viewModel.marketLoadState) {
+            PortfolioCalculator.holdingMetrics(holdings) { cryptoId ->
+                viewModel.getCryptoInfo(cryptoId)?.currentPrice
+            }.associateBy { it.cryptoId }
         }
 
         PortfolioSummaryCard(
@@ -73,14 +81,13 @@ fun PortfolioScreen(
             ) {
                 items(holdings) { userCrypto ->
                     val crypto = viewModel.availableCryptos.find { it.id == userCrypto.cryptoId }
-                    val cryptoInfo = viewModel.getCryptoInfo(userCrypto.cryptoId)
 
                     if (crypto != null) {
                         PortfolioItem(
                             cryptoName = crypto.name,
                             cryptoSymbol = crypto.symbol.uppercase(),
                             userCrypto = userCrypto,
-                            currentPrice = cryptoInfo?.currentPrice,
+                            metrics = holdingMetrics[userCrypto.cryptoId],
                             currency = viewModel.selectedCurrency,
                             onEdit = { editingCrypto = userCrypto },
                             onDelete = { viewModel.removeUserCrypto(userCrypto.cryptoId) },
@@ -131,20 +138,14 @@ private fun PortfolioItem(
     cryptoName: String,
     cryptoSymbol: String,
     userCrypto: UserCrypto,
-    currentPrice: Double?,
+    metrics: PortfolioHoldingMetrics?,
     currency: Currency,
     onEdit: () -> Unit,
     onDelete: () -> Unit,
     onClick: () -> Unit
 ) {
-    val initialValue = userCrypto.purchasePrice * userCrypto.amount
-    val totalValue = currentPrice?.let { it * userCrypto.amount }
-    val valueChange = totalValue?.let { it - initialValue }
-    val valueChangePercentage = if (initialValue == 0.0 || valueChange == null) {
-        null
-    } else {
-        (valueChange / initialValue) * 100
-    }
+    val amount = metrics?.amount ?: userCrypto.amount
+    val costBasis = metrics?.costBasis ?: userCrypto.purchasePrice * userCrypto.amount
 
     CommonCard(
         modifier = Modifier.fillMaxWidth(),
@@ -165,7 +166,7 @@ private fun PortfolioItem(
                         style = MaterialTheme.typography.titleMedium
                     )
                     Text(
-                        text = "$cryptoSymbol • ${userCrypto.amount} held",
+                        text = "$cryptoSymbol • $amount held",
                         style = MaterialTheme.typography.bodyMedium
                     )
                 }
@@ -174,7 +175,11 @@ private fun PortfolioItem(
                     horizontalAlignment = Alignment.End,
                     modifier = Modifier.weight(1f)
                 ) {
-                    if (totalValue == null || valueChange == null || valueChangePercentage == null) {
+                    val currentValue = metrics?.currentValue
+                    val profitLoss = metrics?.profitLoss
+                    val profitLossPercentage = metrics?.profitLossPercentage
+
+                    if (currentValue == null || profitLoss == null || profitLossPercentage == null) {
                         Text(
                             text = "Value unavailable",
                             style = MaterialTheme.typography.titleMedium,
@@ -187,13 +192,13 @@ private fun PortfolioItem(
                         )
                     } else {
                         Text(
-                            text = DisplayFormatters.currencyAmount(totalValue, currency),
+                            text = DisplayFormatters.currencyAmount(currentValue, currency),
                             style = MaterialTheme.typography.titleMedium
                         )
                         Text(
-                            text = "${DisplayFormatters.signedCurrencyAmount(valueChange, currency)} (${DisplayFormatters.percentage(valueChangePercentage)})",
+                            text = "${DisplayFormatters.signedCurrencyAmount(profitLoss, currency)} (${DisplayFormatters.percentage(profitLossPercentage)})",
                             style = MaterialTheme.typography.bodyMedium,
-                            color = if (valueChange >= 0) {
+                            color = if (profitLoss >= 0) {
                                 MaterialTheme.colorScheme.tertiary
                             } else {
                                 MaterialTheme.colorScheme.error
@@ -218,18 +223,26 @@ private fun PortfolioItem(
             ) {
                 HoldingMetric(
                     label = "Cost basis",
-                    value = DisplayFormatters.currencyAmount(initialValue, currency),
+                    value = DisplayFormatters.currencyAmount(costBasis, currency),
                     modifier = Modifier.weight(1f)
                 )
                 HoldingMetric(
                     label = "Avg buy",
-                    value = DisplayFormatters.currencyAmount(userCrypto.purchasePrice, currency),
+                    value = DisplayFormatters.currencyAmount(metrics?.averageCost ?: userCrypto.purchasePrice, currency),
                     modifier = Modifier.weight(1f)
                 )
                 HoldingMetric(
                     label = "Current",
-                    value = currentPrice?.let { DisplayFormatters.currencyAmount(it, currency) } ?: "Unavailable",
+                    value = metrics?.currentPrice?.let { DisplayFormatters.currencyAmount(it, currency) } ?: "Unavailable",
                     modifier = Modifier.weight(1f)
+                )
+            }
+
+            if (metrics != null && metrics.currentValue != null) {
+                HoldingMetric(
+                    label = "Allocation",
+                    value = DisplayFormatters.percentage(metrics.allocationPercentage),
+                    modifier = Modifier.fillMaxWidth()
                 )
             }
         }
@@ -238,7 +251,7 @@ private fun PortfolioItem(
 
 @Composable
 private fun PortfolioSummaryCard(
-    metrics: PortfolioMetrics,
+    metrics: PortfolioSummaryMetrics,
     currency: Currency,
     modifier: Modifier = Modifier
 ) {
@@ -341,43 +354,6 @@ private fun HoldingMetric(
             style = MaterialTheme.typography.bodyMedium
         )
     }
-}
-
-private data class PortfolioMetrics(
-    val holdingCount: Int,
-    val pricedHoldingCount: Int,
-    val investedValue: Double,
-    val currentValue: Double,
-    val profitLoss: Double,
-    val profitLossPercentage: Double
-) {
-    val unpricedHoldingCount: Int = holdingCount - pricedHoldingCount
-}
-
-private fun List<UserCrypto>.toPortfolioMetrics(
-    priceForCrypto: (String) -> Double?
-): PortfolioMetrics {
-    val investedValue = sumOf { it.purchasePrice * it.amount }
-    val pricedHoldings = filter { priceForCrypto(it.cryptoId) != null }
-    val currentValue = pricedHoldings.sumOf { holding ->
-        (priceForCrypto(holding.cryptoId) ?: 0.0) * holding.amount
-    }
-    val pricedInvestedValue = pricedHoldings.sumOf { it.purchasePrice * it.amount }
-    val profitLoss = currentValue - pricedInvestedValue
-    val profitLossPercentage = if (pricedInvestedValue == 0.0) {
-        0.0
-    } else {
-        (profitLoss / pricedInvestedValue) * 100
-    }
-
-    return PortfolioMetrics(
-        holdingCount = size,
-        pricedHoldingCount = pricedHoldings.size,
-        investedValue = investedValue,
-        currentValue = currentValue,
-        profitLoss = profitLoss,
-        profitLossPercentage = profitLossPercentage
-    )
 }
 
 private enum class ValueTone {

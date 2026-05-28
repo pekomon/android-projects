@@ -77,6 +77,52 @@ class PortfolioCalculatorTest {
         assertEquals(100.0, combined.first().purchasePrice, 0.0)
     }
 
+    @Test
+    fun holdingMetricsDeriveValueGainLossAndAllocation() {
+        val holdings = listOf(
+            holding("bitcoin", amount = 2.0, purchasePrice = 100.0),
+            holding("ethereum", amount = 1.0, purchasePrice = 50.0)
+        )
+
+        val metrics = PortfolioCalculator.holdingMetrics(holdings) { cryptoId ->
+            when (cryptoId) {
+                "bitcoin" -> 150.0
+                "ethereum" -> 100.0
+                else -> null
+            }
+        }
+        val bitcoin = metrics.first { it.cryptoId == "bitcoin" }
+
+        assertEquals(200.0, bitcoin.costBasis, 0.0)
+        assertEquals(300.0, bitcoin.currentValue ?: 0.0, 0.0)
+        assertEquals(100.0, bitcoin.profitLoss ?: 0.0, 0.0)
+        assertEquals(50.0, bitcoin.profitLossPercentage ?: 0.0, 0.0)
+        assertEquals(75.0, bitcoin.allocationPercentage, 0.0)
+    }
+
+    @Test
+    fun summaryMetricsExcludeUnpricedHoldingsFromProfitLoss() {
+        val holdings = listOf(
+            holding("bitcoin", amount = 2.0, purchasePrice = 100.0),
+            holding("ethereum", amount = 1.0, purchasePrice = 50.0)
+        )
+
+        val metrics = PortfolioCalculator.summaryMetrics(holdings) { cryptoId ->
+            when (cryptoId) {
+                "bitcoin" -> 150.0
+                else -> null
+            }
+        }
+
+        assertEquals(2, metrics.holdingCount)
+        assertEquals(1, metrics.pricedHoldingCount)
+        assertEquals(250.0, metrics.investedValue, 0.0)
+        assertEquals(300.0, metrics.currentValue, 0.0)
+        assertEquals(100.0, metrics.profitLoss, 0.0)
+        assertEquals(50.0, metrics.profitLossPercentage, 0.0)
+        assertEquals(1, metrics.unpricedHoldingCount)
+    }
+
     private fun holding(
         cryptoId: String,
         amount: Double,
