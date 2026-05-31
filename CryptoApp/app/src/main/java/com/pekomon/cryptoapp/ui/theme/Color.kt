@@ -2,21 +2,17 @@ package com.pekomon.cryptoapp.ui.theme
 
 import androidx.compose.ui.graphics.Color
 
-val Purple80 = Color(0xFFD0BCFF)
-val PurpleGrey80 = Color(0xFFCCC2DC)
-val Pink80 = Color(0xFFEFB8C8)
-
-val Purple40 = Color(0xFF6650a4)
-val PurpleGrey40 = Color(0xFF625b71)
-val Pink40 = Color(0xFF7D5260)
-
-val PositiveGreen = Color(0xFF4CAF50)
-val NegativeRed = Color(0xFFE57373)
-val SubtleText = Color(0x99000000) // Light mode
-val SubtleTextDark = Color(0x99FFFFFF) // Dark mode
-
-// Lisätään uudet värit
-val PositiveGreenLight = Color(0xFF4CAF50)
-val PositiveGreenDark = Color(0xFF81C784)
-val NegativeRedLight = Color(0xFFE57373)
-val NegativeRedDark = Color(0xFFEF9A9A)
+val Ink900 = Color(0xFF141719)
+val Ink800 = Color(0xFF20262A)
+val Ink700 = Color(0xFF30383D)
+val Paper50 = Color(0xFFF7F3EA)
+val Paper100 = Color(0xFFEDE7DA)
+val Chalk = Color(0xFFFFFCF5)
+val Copper = Color(0xFFB56A3C)
+val Teal = Color(0xFF0B7F78)
+val TealLight = Color(0xFF72D8CF)
+val Gold = Color(0xFFC79A3B)
+val PositiveGreenLight = Color(0xFF137A4B)
+val PositiveGreenDark = Color(0xFF75D59B)
+val NegativeRedLight = Color(0xFFB84642)
+val NegativeRedDark = Color(0xFFFF9B92)

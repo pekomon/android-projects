@@ -9,7 +9,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.dp
+import com.pekomon.cryptoapp.ui.theme.CryptoSpacing
 
 @Composable
 fun StateMessageCard(
@@ -21,8 +21,8 @@ fun StateMessageCard(
 ) {
     CommonCard(modifier = modifier.fillMaxWidth()) {
         Column(
-            modifier = Modifier.padding(20.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
+            modifier = Modifier.padding(CryptoSpacing.xLarge),
+            verticalArrangement = Arrangement.spacedBy(CryptoSpacing.medium)
         ) {
             Text(
                 text = title,
