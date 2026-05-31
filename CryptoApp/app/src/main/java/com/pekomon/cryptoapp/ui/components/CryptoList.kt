@@ -4,19 +4,20 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.unit.dp
+import androidx.compose.ui.Modifier
 import com.pekomon.cryptoapp.domain.model.CryptoAsset
 import com.pekomon.cryptoapp.ui.CryptoViewModel
+import com.pekomon.cryptoapp.ui.theme.CryptoSpacing
 
 @Composable
 fun CryptoList(
     cryptos: List<CryptoAsset>,
     viewModel: CryptoViewModel,
     onQuickAdd: (CryptoAsset) -> Unit,
-    modifier: androidx.compose.ui.Modifier = androidx.compose.ui.Modifier
+    modifier: Modifier = Modifier
 ) {
     LazyColumn(
-        verticalArrangement = Arrangement.spacedBy(8.dp),
+        verticalArrangement = Arrangement.spacedBy(CryptoSpacing.small),
         modifier = modifier
     ) {
         items(cryptos) { crypto ->

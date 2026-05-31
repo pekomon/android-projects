@@ -19,16 +19,17 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.dp
 import com.pekomon.cryptoapp.core.formatting.DisplayFormatters
 import com.pekomon.cryptoapp.domain.model.CryptoAsset
 import com.pekomon.cryptoapp.ui.MarketLoadState
 import com.pekomon.cryptoapp.ui.CryptoViewModel
+import com.pekomon.cryptoapp.ui.components.CommonCard
 import com.pekomon.cryptoapp.ui.components.CryptoList
 import com.pekomon.cryptoapp.ui.components.QuickAddDialog
 import com.pekomon.cryptoapp.ui.components.ScreenHeader
 import com.pekomon.cryptoapp.ui.components.SortMenu
 import com.pekomon.cryptoapp.ui.components.StateMessageCard
+import com.pekomon.cryptoapp.ui.theme.CryptoSpacing
 import com.google.accompanist.swiperefresh.SwipeRefresh
 import com.google.accompanist.swiperefresh.rememberSwipeRefreshState
 
@@ -41,10 +42,12 @@ fun FavoritesScreen(
     var showSortMenu by remember { mutableStateOf(false) }
     
     Column(
-        modifier = modifier.padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
+        modifier = modifier.padding(CryptoSpacing.large),
+        verticalArrangement = Arrangement.spacedBy(CryptoSpacing.large)
     ) {
         ScreenHeader(title = "Favorites")
+        val favorites = viewModel.sortedFavoriteCryptos
+        val pricedFavorites = favorites.count { crypto -> viewModel.getCryptoInfo(crypto.id) != null }
         
         OutlinedButton(
             onClick = { showSortMenu = true },
@@ -92,6 +95,11 @@ fun FavoritesScreen(
             )
         }
 
+        FavoritesSummaryCard(
+            favoriteCount = favorites.size,
+            pricedCount = pricedFavorites
+        )
+
         when {
             viewModel.isLoading -> {
                 CircularProgressIndicator(
@@ -108,8 +116,6 @@ fun FavoritesScreen(
                 )
             }
             else -> {
-                val favorites = viewModel.sortedFavoriteCryptos
-                
                 if (favorites.isEmpty()) {
                     StateMessageCard(
                         title = "No favorites yet",
@@ -145,6 +151,64 @@ fun FavoritesScreen(
                 viewModel.addUserCrypto(crypto.id, amount, price, dateTime)
                 quickAddCrypto = null
             }
+        )
+    }
+}
+
+@Composable
+private fun FavoritesSummaryCard(
+    favoriteCount: Int,
+    pricedCount: Int,
+    modifier: Modifier = Modifier
+) {
+    CommonCard(modifier = modifier) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(CryptoSpacing.large),
+            horizontalArrangement = Arrangement.spacedBy(CryptoSpacing.medium),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            FavoriteMetric(
+                label = "Favorites",
+                value = favoriteCount.toString(),
+                modifier = Modifier.weight(1f)
+            )
+            FavoriteMetric(
+                label = "Priced",
+                value = pricedCount.toString(),
+                modifier = Modifier.weight(1f)
+            )
+            FavoriteMetric(
+                label = "Watch",
+                value = (favoriteCount - pricedCount).coerceAtLeast(0).toString(),
+                modifier = Modifier.weight(1f),
+                emphasized = favoriteCount > pricedCount
+            )
+        }
+    }
+}
+
+@Composable
+private fun FavoriteMetric(
+    label: String,
+    value: String,
+    modifier: Modifier = Modifier,
+    emphasized: Boolean = false
+) {
+    Column(
+        modifier = modifier,
+        verticalArrangement = Arrangement.spacedBy(CryptoSpacing.xSmall)
+    ) {
+        Text(
+            text = value,
+            style = MaterialTheme.typography.titleLarge,
+            color = if (emphasized) MaterialTheme.colorScheme.tertiary else MaterialTheme.colorScheme.onSurface
+        )
+        Text(
+            text = label,
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
         )
     }
 }

@@ -13,6 +13,7 @@ import androidx.compose.ui.unit.dp
 import com.pekomon.cryptoapp.core.formatting.DisplayFormatters
 import com.pekomon.cryptoapp.data.Currency
 import com.pekomon.cryptoapp.domain.model.CryptoAsset
+import com.pekomon.cryptoapp.ui.theme.CryptoSpacing
 
 @Composable
 fun CryptoListItemRow(
@@ -31,25 +32,30 @@ fun CryptoListItemRow(
     ) {
         Row(
             modifier = Modifier
-                .padding(16.dp)
+                .padding(CryptoSpacing.large)
                 .fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
+            horizontalArrangement = Arrangement.spacedBy(CryptoSpacing.medium),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Column(modifier = Modifier.weight(1f)) {
+            Column(
+                modifier = Modifier.weight(1.15f),
+                verticalArrangement = Arrangement.spacedBy(CryptoSpacing.xSmall)
+            ) {
                 Text(
                     text = crypto.name,
                     style = MaterialTheme.typography.titleMedium
                 )
                 Text(
                     text = crypto.symbol.uppercase(),
-                    style = MaterialTheme.typography.bodyMedium
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.secondary
                 )
             }
             
             Column(
                 horizontalAlignment = Alignment.End,
-                modifier = Modifier.weight(1f)
+                modifier = Modifier.weight(1f),
+                verticalArrangement = Arrangement.spacedBy(CryptoSpacing.xSmall)
             ) {
                 if (currentPrice == null) {
                     Text(
@@ -65,7 +71,8 @@ fun CryptoListItemRow(
                 } else {
                     Text(
                         text = DisplayFormatters.currencyAmount(currentPrice, currency),
-                        style = MaterialTheme.typography.titleMedium
+                        style = MaterialTheme.typography.titleMedium,
+                        color = MaterialTheme.colorScheme.onSurface
                     )
                     Text(
                         text = DisplayFormatters.percentage(priceChangePercentage),
@@ -80,7 +87,7 @@ fun CryptoListItemRow(
             }
             
             Row(
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                horizontalArrangement = Arrangement.spacedBy(CryptoSpacing.xSmall),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 IconButton(
@@ -92,7 +99,8 @@ fun CryptoListItemRow(
                     Icon(
                         Icons.Default.Add,
                         contentDescription = "Quick add to portfolio",
-                        modifier = Modifier.size(24.dp)
+                        modifier = Modifier.size(22.dp),
+                        tint = MaterialTheme.colorScheme.secondary
                     )
                 }
                 
