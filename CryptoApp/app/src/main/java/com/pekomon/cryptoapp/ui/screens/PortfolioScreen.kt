@@ -14,6 +14,7 @@ import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -24,7 +25,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.dp
 import com.pekomon.cryptoapp.core.formatting.DisplayFormatters
 import com.pekomon.cryptoapp.data.Currency
 import com.pekomon.cryptoapp.data.UserCrypto
@@ -37,6 +37,7 @@ import com.pekomon.cryptoapp.ui.components.QuickAddDialog
 import com.pekomon.cryptoapp.ui.components.ScreenHeader
 import com.pekomon.cryptoapp.ui.components.StateMessageCard
 import com.pekomon.cryptoapp.ui.components.TransactionDialog
+import com.pekomon.cryptoapp.ui.theme.CryptoSpacing
 
 @Composable
 fun PortfolioScreen(
@@ -50,8 +51,8 @@ fun PortfolioScreen(
     Column(
         modifier = modifier
             .fillMaxSize()
-            .padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
+            .padding(CryptoSpacing.large),
+        verticalArrangement = Arrangement.spacedBy(CryptoSpacing.large)
     ) {
         ScreenHeader(title = "Portfolio")
 
@@ -79,7 +80,7 @@ fun PortfolioScreen(
             )
         } else {
             LazyColumn(
-                verticalArrangement = Arrangement.spacedBy(8.dp),
+                verticalArrangement = Arrangement.spacedBy(CryptoSpacing.small),
                 modifier = Modifier.weight(1f)
             ) {
                 items(holdings) { userCrypto ->
@@ -182,28 +183,33 @@ private fun PortfolioItem(
         onClick = onClick
     ) {
         Column(
-            modifier = Modifier.padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
+            modifier = Modifier.padding(CryptoSpacing.large),
+            verticalArrangement = Arrangement.spacedBy(CryptoSpacing.medium)
         ) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
+                horizontalArrangement = Arrangement.spacedBy(CryptoSpacing.medium),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Column(modifier = Modifier.weight(1f)) {
+                Column(
+                    modifier = Modifier.weight(1f),
+                    verticalArrangement = Arrangement.spacedBy(CryptoSpacing.xSmall)
+                ) {
                     Text(
                         text = cryptoName,
                         style = MaterialTheme.typography.titleMedium
                     )
                     Text(
                         text = "$cryptoSymbol • $amount held",
-                        style = MaterialTheme.typography.bodyMedium
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.secondary
                     )
                 }
                 
                 Column(
                     horizontalAlignment = Alignment.End,
-                    modifier = Modifier.weight(1f)
+                    modifier = Modifier.weight(1f),
+                    verticalArrangement = Arrangement.spacedBy(CryptoSpacing.xSmall)
                 ) {
                     val currentValue = metrics?.currentValue
                     val profitLoss = metrics?.profitLoss
@@ -249,7 +255,7 @@ private fun PortfolioItem(
 
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
+                horizontalArrangement = Arrangement.spacedBy(CryptoSpacing.medium)
             ) {
                 HoldingMetric(
                     label = "Cost basis",
@@ -269,11 +275,19 @@ private fun PortfolioItem(
             }
 
             if (metrics != null && metrics.currentValue != null) {
-                HoldingMetric(
-                    label = "Allocation",
-                    value = DisplayFormatters.percentage(metrics.allocationPercentage),
-                    modifier = Modifier.fillMaxWidth()
-                )
+                Column(verticalArrangement = Arrangement.spacedBy(CryptoSpacing.xSmall)) {
+                    LinearProgressIndicator(
+                        progress = { (metrics.allocationPercentage / 100.0).toFloat().coerceIn(0f, 1f) },
+                        modifier = Modifier.fillMaxWidth(),
+                        color = MaterialTheme.colorScheme.secondary,
+                        trackColor = MaterialTheme.colorScheme.surfaceVariant
+                    )
+                    HoldingMetric(
+                        label = "Allocation",
+                        value = DisplayFormatters.percentage(metrics.allocationPercentage),
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
             }
         }
     }
@@ -287,17 +301,19 @@ private fun PortfolioSummaryCard(
 ) {
     CommonCard(modifier = modifier) {
         Column(
-            modifier = Modifier.padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(14.dp)
+            modifier = Modifier.padding(CryptoSpacing.xLarge),
+            verticalArrangement = Arrangement.spacedBy(CryptoSpacing.large)
         ) {
-            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            Column(verticalArrangement = Arrangement.spacedBy(CryptoSpacing.xSmall)) {
                 Text(
                     text = "Portfolio Value",
-                    style = MaterialTheme.typography.titleMedium
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.secondary
                 )
                 Text(
                     text = DisplayFormatters.currencyAmount(metrics.currentValue, currency),
-                    style = MaterialTheme.typography.headlineMedium
+                    style = MaterialTheme.typography.headlineMedium,
+                    color = MaterialTheme.colorScheme.onSurface
                 )
                 Text(
                     text = "${metrics.holdingCount} active holdings • ${metrics.pricedHoldingCount} priced",
@@ -308,7 +324,7 @@ private fun PortfolioSummaryCard(
 
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween
+                horizontalArrangement = Arrangement.spacedBy(CryptoSpacing.medium)
             ) {
                 PortfolioMetric(
                     label = "Invested",
@@ -349,7 +365,7 @@ private fun PortfolioMetric(
 ) {
     Column(
         modifier = modifier,
-        verticalArrangement = Arrangement.spacedBy(2.dp)
+        verticalArrangement = Arrangement.spacedBy(CryptoSpacing.xSmall)
     ) {
         Text(
             text = value,
@@ -372,7 +388,7 @@ private fun HoldingMetric(
 ) {
     Column(
         modifier = modifier,
-        verticalArrangement = Arrangement.spacedBy(2.dp)
+        verticalArrangement = Arrangement.spacedBy(CryptoSpacing.xSmall)
     ) {
         Text(
             text = label,
