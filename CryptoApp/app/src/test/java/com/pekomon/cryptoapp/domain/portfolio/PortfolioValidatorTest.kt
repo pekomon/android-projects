@@ -25,4 +25,18 @@ class PortfolioValidatorTest {
 
         assertTrue(result is PortfolioValidationResult.Invalid)
     }
+
+    @Test
+    fun validateTransactionInputRejectsNegativeAmount() {
+        val result = PortfolioValidator.validateTransactionInput(amount = -1.0, price = 250.0)
+
+        assertTrue(result is PortfolioValidationResult.Invalid)
+    }
+
+    @Test
+    fun validateTransactionInputRejectsNegativePrice() {
+        val result = PortfolioValidator.validateTransactionInput(amount = 1.2, price = -250.0)
+
+        assertTrue(result is PortfolioValidationResult.Invalid)
+    }
 }

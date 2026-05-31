@@ -2,6 +2,7 @@ package com.pekomon.cryptoapp.data
 
 import com.pekomon.cryptoapp.domain.portfolio.PortfolioCalculator
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.time.LocalDateTime
 
@@ -123,6 +124,59 @@ class PortfolioCalculatorTest {
         assertEquals(1, metrics.unpricedHoldingCount)
     }
 
+    @Test
+    fun combineHoldingsRemovesFullySoldPositions() {
+        val dateTime = LocalDateTime.of(2026, 1, 1, 10, 0)
+        val holdings = listOf(
+            holdingWithTransactions(
+                cryptoId = "bitcoin",
+                transactions = listOf(
+                    Transaction(TransactionType.BUY, amount = 2.0, price = 100.0, dateTime = dateTime),
+                    Transaction(TransactionType.SELL, amount = 2.0, price = 120.0, dateTime = dateTime.plusDays(1))
+                )
+            )
+        )
+
+        assertTrue(PortfolioCalculator.combineHoldings(holdings).isEmpty())
+    }
+
+    @Test
+    fun normalizeHoldingsMergesTransactionsIntoSingleActiveHolding() {
+        val dateTime = LocalDateTime.of(2026, 1, 1, 10, 0)
+        val holdings = listOf(
+            holding("bitcoin", amount = 1.0, purchasePrice = 100.0, dateTime = dateTime),
+            holdingWithTransactions(
+                cryptoId = "bitcoin",
+                transactions = listOf(
+                    Transaction(TransactionType.BUY, amount = 2.0, price = 150.0, dateTime = dateTime.plusDays(1)),
+                    Transaction(TransactionType.SELL, amount = 1.0, price = 175.0, dateTime = dateTime.plusDays(2))
+                )
+            )
+        )
+
+        val normalized = PortfolioCalculator.normalizeHoldings(holdings)
+        val bitcoin = normalized.single()
+
+        assertEquals("bitcoin", bitcoin.cryptoId)
+        assertEquals(2.0, bitcoin.amount, 0.0)
+        assertEquals(3, bitcoin.transactions.size)
+        assertEquals(133.333333, bitcoin.purchasePrice, 0.000001)
+    }
+
+    @Test
+    fun holdingMetricsLeaveMissingMarketValuesNull() {
+        val holdings = listOf(holding("bitcoin", amount = 2.0, purchasePrice = 100.0))
+
+        val bitcoin = PortfolioCalculator.holdingMetrics(holdings) { null }.single()
+
+        assertEquals(200.0, bitcoin.costBasis, 0.0)
+        assertEquals(null, bitcoin.currentPrice)
+        assertEquals(null, bitcoin.currentValue)
+        assertEquals(null, bitcoin.profitLoss)
+        assertEquals(null, bitcoin.profitLossPercentage)
+        assertEquals(0.0, bitcoin.allocationPercentage, 0.0)
+    }
+
     private fun holding(
         cryptoId: String,
         amount: Double,
@@ -142,6 +196,19 @@ class PortfolioCalculatorTest {
                     dateTime = dateTime
                 )
             )
+        )
+    }
+
+    private fun holdingWithTransactions(
+        cryptoId: String,
+        transactions: List<Transaction>
+    ): UserCrypto {
+        return UserCrypto(
+            cryptoId = cryptoId,
+            amount = 999.0,
+            purchasePrice = 999.0,
+            purchaseDateTime = transactions.minOf { it.dateTime },
+            transactions = transactions
         )
     }
 }
