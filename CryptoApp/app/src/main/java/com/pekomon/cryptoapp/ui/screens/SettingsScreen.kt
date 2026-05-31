@@ -2,15 +2,14 @@ package com.pekomon.cryptoapp.ui.screens
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Card
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.RadioButton
@@ -23,12 +22,13 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.dp
 import com.pekomon.cryptoapp.data.Currency
 import com.pekomon.cryptoapp.ui.CryptoViewModel
+import com.pekomon.cryptoapp.ui.components.CommonCard
 import com.pekomon.cryptoapp.ui.components.CryptoSelector
 import com.pekomon.cryptoapp.ui.components.ScreenHeader
 import com.pekomon.cryptoapp.ui.components.SortMenu
+import com.pekomon.cryptoapp.ui.theme.CryptoSpacing
 
 @Composable
 fun SettingsScreen(
@@ -56,75 +56,52 @@ fun SettingsScreen(
         )
     }
 
-    Column(
+    LazyColumn(
         modifier = modifier
             .fillMaxSize()
-            .padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
+            .padding(CryptoSpacing.large),
+        verticalArrangement = Arrangement.spacedBy(CryptoSpacing.large)
     ) {
-        ScreenHeader(title = "Settings")
+        item {
+            ScreenHeader(title = "Settings")
+        }
 
-        Card(
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Column(
-                modifier = Modifier.padding(16.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
+        item {
+            SettingsSection(
+                title = "Currency",
+                subtitle = "Market values, portfolio totals, and transaction prices use this display currency."
             ) {
-                Text(
-                    text = "Currency",
-                    style = MaterialTheme.typography.titleMedium
-                )
-
                 Currency.entries.forEach { currency ->
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .selectable(
-                                selected = currency == viewModel.selectedCurrency,
-                                onClick = { viewModel.updateCurrency(currency) }
-                            )
-                            .padding(8.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        RadioButton(
-                            selected = currency == viewModel.selectedCurrency,
-                            onClick = { viewModel.updateCurrency(currency) }
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(
-                            text = "${currency.name} (${currency.symbol})",
-                            style = MaterialTheme.typography.bodyLarge
-                        )
-                    }
+                    CurrencyOption(
+                        currency = currency,
+                        selected = currency == viewModel.selectedCurrency,
+                        onClick = { viewModel.updateCurrency(currency) }
+                    )
                 }
             }
         }
 
-        Card(
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Column(
-                modifier = Modifier.padding(16.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
+        item {
+            SettingsSection(
+                title = "Sorting",
+                subtitle = "Used across Watchlist and Favorites."
             ) {
-                Text(
-                    text = "Sorting",
-                    style = MaterialTheme.typography.titleMedium
-                )
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
+                    horizontalArrangement = Arrangement.spacedBy(CryptoSpacing.medium),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Column {
+                    Column(
+                        modifier = Modifier.weight(1f),
+                        verticalArrangement = Arrangement.spacedBy(CryptoSpacing.xSmall)
+                    ) {
                         Text(
                             text = viewModel.currentSortOption.displayName,
-                            style = MaterialTheme.typography.bodyLarge
+                            style = MaterialTheme.typography.titleMedium
                         )
                         Text(
-                            text = "Used across Watchlist and Favorites",
-                            style = MaterialTheme.typography.bodyMedium,
+                            text = "Current order",
+                            style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
@@ -136,34 +113,22 @@ fun SettingsScreen(
             }
         }
 
-        Card(
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Column(
-                modifier = Modifier.padding(16.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
+        item {
+            SettingsSection(
+                title = "Watchlist",
+                subtitle = "Home shows these assets. Favorites are a separate quick-monitoring subset."
             ) {
                 Text(
-                    text = "Watchlist",
-                    style = MaterialTheme.typography.titleMedium
-                )
-                Text(
                     text = "${viewModel.selectedCryptos.size} assets selected",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    style = MaterialTheme.typography.titleMedium
                 )
                 viewModel.assetMetadataSource?.let { source ->
                     Text(
                         text = source.label,
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.secondary
                     )
                 }
-                Text(
-                    text = "Watchlist assets appear on Home. Favorites are marked separately with the heart action.",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
                 OutlinedButton(
                     onClick = { showCryptoSelector = true },
                     modifier = Modifier.fillMaxWidth()
@@ -171,6 +136,73 @@ fun SettingsScreen(
                     Text("Edit watchlist")
                 }
             }
+        }
+    }
+}
+
+@Composable
+private fun SettingsSection(
+    title: String,
+    subtitle: String,
+    modifier: Modifier = Modifier,
+    content: @Composable ColumnScope.() -> Unit
+) {
+    CommonCard(modifier = modifier.fillMaxWidth()) {
+        Column(
+            modifier = Modifier.padding(CryptoSpacing.large),
+            verticalArrangement = Arrangement.spacedBy(CryptoSpacing.medium)
+        ) {
+            Column(verticalArrangement = Arrangement.spacedBy(CryptoSpacing.xSmall)) {
+                Text(
+                    text = title,
+                    style = MaterialTheme.typography.titleMedium
+                )
+                Text(
+                    text = subtitle,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+            content()
+        }
+    }
+}
+
+@Composable
+private fun CurrencyOption(
+    currency: Currency,
+    selected: Boolean,
+    onClick: () -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .selectable(
+                selected = selected,
+                onClick = onClick
+            )
+            .padding(vertical = CryptoSpacing.small),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(CryptoSpacing.small)
+    ) {
+        RadioButton(
+            selected = selected,
+            onClick = onClick
+        )
+        Column(verticalArrangement = Arrangement.spacedBy(CryptoSpacing.xSmall)) {
+            Text(
+                text = "${currency.name} (${currency.symbol})",
+                style = MaterialTheme.typography.bodyLarge
+            )
+            Text(
+                text = if (selected) "Selected" else "Available",
+                style = MaterialTheme.typography.bodySmall,
+                color = if (selected) {
+                    MaterialTheme.colorScheme.secondary
+                } else {
+                    MaterialTheme.colorScheme.onSurfaceVariant
+                }
+            )
         }
     }
 }

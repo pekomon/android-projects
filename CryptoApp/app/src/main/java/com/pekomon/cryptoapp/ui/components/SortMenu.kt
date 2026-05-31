@@ -20,7 +20,8 @@ fun SortMenu(
         IconButton(onClick = { expanded = true }) {
             Icon(
                 imageVector = Icons.AutoMirrored.Filled.Sort,
-                contentDescription = "Sort options"
+                contentDescription = "Sort options",
+                tint = MaterialTheme.colorScheme.secondary
             )
         }
 

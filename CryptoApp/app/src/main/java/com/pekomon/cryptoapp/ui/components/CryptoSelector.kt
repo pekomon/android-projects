@@ -8,8 +8,8 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.dp
 import com.pekomon.cryptoapp.domain.model.CryptoAsset
+import com.pekomon.cryptoapp.ui.theme.CryptoSpacing
 
 @Composable
 fun CryptoSelector(
@@ -22,7 +22,7 @@ fun CryptoSelector(
     
     Column(
         modifier = modifier.fillMaxSize(),
-        verticalArrangement = Arrangement.spacedBy(8.dp)
+        verticalArrangement = Arrangement.spacedBy(CryptoSpacing.small)
     ) {
         OutlinedTextField(
             value = searchQuery,
@@ -38,7 +38,7 @@ fun CryptoSelector(
         )
 
         LazyColumn(
-            verticalArrangement = Arrangement.spacedBy(4.dp)
+            verticalArrangement = Arrangement.spacedBy(CryptoSpacing.xSmall)
         ) {
             val filteredCryptos = availableCryptos.filter {
                 it.name.contains(searchQuery, ignoreCase = true) ||
@@ -51,7 +51,7 @@ fun CryptoSelector(
                         text = "No assets match your search.",
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.padding(8.dp)
+                        modifier = Modifier.padding(CryptoSpacing.small)
                     )
                 }
             }
@@ -71,19 +71,22 @@ fun CryptoSelector(
                                 onSelectionChanged(newSelection)
                             }
                         )
-                        .padding(8.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween,
+                        .padding(vertical = CryptoSpacing.small),
+                    horizontalArrangement = Arrangement.spacedBy(CryptoSpacing.medium),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Column {
+                    Column(
+                        modifier = Modifier.weight(1f),
+                        verticalArrangement = Arrangement.spacedBy(CryptoSpacing.xSmall)
+                    ) {
                         Text(
                             text = crypto.name,
                             style = MaterialTheme.typography.bodyLarge
                         )
                         Text(
                             text = crypto.symbol.uppercase(),
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.secondary
                         )
                     }
                     Checkbox(
