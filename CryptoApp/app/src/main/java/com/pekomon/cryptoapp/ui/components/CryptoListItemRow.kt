@@ -59,7 +59,7 @@ fun CryptoListItemRow(
             ) {
                 if (currentPrice == null) {
                     Text(
-                        text = "Price unavailable",
+                        text = DisplayFormatters.UNAVAILABLE,
                         style = MaterialTheme.typography.titleMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -75,7 +75,7 @@ fun CryptoListItemRow(
                         color = MaterialTheme.colorScheme.onSurface
                     )
                     Text(
-                        text = DisplayFormatters.percentage(priceChangePercentage),
+                        text = DisplayFormatters.signedPercentage(priceChangePercentage),
                         color = if (priceChangePercentage >= 0) {
                             MaterialTheme.colorScheme.tertiary
                         } else {

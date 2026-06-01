@@ -53,7 +53,7 @@ fun TransactionDialog(
                             style = MaterialTheme.typography.bodyMedium
                         )
                         Text(
-                            text = "Change: ${DisplayFormatters.signedCurrencyAmount(priceChange, currency)} (${DisplayFormatters.percentage(priceChangePercentage)})",
+                            text = "Change: ${DisplayFormatters.signedCurrencyAmount(priceChange, currency)} (${DisplayFormatters.signedPercentage(priceChangePercentage)})",
                             style = MaterialTheme.typography.bodyMedium,
                             color = if (priceChange >= 0) MaterialTheme.colorScheme.tertiary else MaterialTheme.colorScheme.error
                         )
@@ -118,7 +118,7 @@ private fun TransactionItem(
             
             Column(horizontalAlignment = Alignment.End) {
                 Text(
-                    text = "${transaction.amount} units",
+                    text = "${DisplayFormatters.cryptoAmount(transaction.amount)} units",
                     style = MaterialTheme.typography.bodyMedium
                 )
                 Text(

@@ -200,7 +200,7 @@ private fun PortfolioItem(
                         style = MaterialTheme.typography.titleMedium
                     )
                     Text(
-                        text = "$cryptoSymbol • $amount held",
+                        text = "$cryptoSymbol • ${DisplayFormatters.cryptoAmount(amount)} held",
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.secondary
                     )
@@ -217,7 +217,7 @@ private fun PortfolioItem(
 
                     if (currentValue == null || profitLoss == null || profitLossPercentage == null) {
                         Text(
-                            text = "Value unavailable",
+                            text = DisplayFormatters.UNAVAILABLE,
                             style = MaterialTheme.typography.titleMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -232,7 +232,7 @@ private fun PortfolioItem(
                             style = MaterialTheme.typography.titleMedium
                         )
                         Text(
-                            text = "${DisplayFormatters.signedCurrencyAmount(profitLoss, currency)} (${DisplayFormatters.percentage(profitLossPercentage)})",
+                            text = "${DisplayFormatters.signedCurrencyAmount(profitLoss, currency)} (${DisplayFormatters.signedPercentage(profitLossPercentage)})",
                             style = MaterialTheme.typography.bodyMedium,
                             color = if (profitLoss >= 0) {
                                 MaterialTheme.colorScheme.tertiary
@@ -269,7 +269,7 @@ private fun PortfolioItem(
                 )
                 HoldingMetric(
                     label = "Current",
-                    value = metrics?.currentPrice?.let { DisplayFormatters.currencyAmount(it, currency) } ?: "Unavailable",
+                    value = metrics?.currentPrice?.let { DisplayFormatters.currencyAmount(it, currency) } ?: DisplayFormatters.UNAVAILABLE,
                     modifier = Modifier.weight(1f)
                 )
             }
@@ -339,7 +339,7 @@ private fun PortfolioSummaryCard(
                 )
                 PortfolioMetric(
                     label = "Return",
-                    value = DisplayFormatters.percentage(metrics.profitLossPercentage),
+                    value = DisplayFormatters.signedPercentage(metrics.profitLossPercentage),
                     modifier = Modifier.weight(1f),
                     valueTone = metrics.profitLoss.tone()
                 )
