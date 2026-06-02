@@ -12,6 +12,7 @@ import com.pekomon.cryptoapp.data.Currency
 import com.pekomon.cryptoapp.data.SortOption
 import com.pekomon.cryptoapp.data.UserCrypto
 import com.pekomon.cryptoapp.domain.model.CryptoAsset
+import com.pekomon.cryptoapp.domain.repository.UserPreferencesRepository
 import java.io.IOException
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
@@ -22,7 +23,7 @@ import kotlinx.serialization.json.Json
 
 private val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "settings")
 
-class PreferencesRepository(private val context: Context) {
+class PreferencesRepository(private val context: Context) : UserPreferencesRepository {
 
     private object PreferencesKeys {
         val SELECTED_CURRENCY = stringPreferencesKey("selected_currency")
@@ -33,7 +34,7 @@ class PreferencesRepository(private val context: Context) {
         val CACHED_CRYPTO_ASSETS = stringPreferencesKey("cached_crypto_assets")
     }
 
-    val selectedCurrency: Flow<Currency> = context.dataStore.data
+    override val selectedCurrency: Flow<Currency> = context.dataStore.data
         .catch { exception ->
             if (exception is IOException) {
                 emit(emptyPreferences())
@@ -46,7 +47,7 @@ class PreferencesRepository(private val context: Context) {
             enumValueOrDefault(currencyName, Currency.EUR)
         }
 
-    val sortOption: Flow<SortOption> = context.dataStore.data
+    override val sortOption: Flow<SortOption> = context.dataStore.data
         .catch { exception ->
             if (exception is IOException) {
                 emit(emptyPreferences())
@@ -59,7 +60,7 @@ class PreferencesRepository(private val context: Context) {
             enumValueOrDefault(sortOptionName, SortOption.DEFAULT)
         }
 
-    val favorites: Flow<Set<String>> = context.dataStore.data
+    override val favorites: Flow<Set<String>> = context.dataStore.data
         .catch { exception ->
             if (exception is IOException) {
                 emit(emptyPreferences())
@@ -71,7 +72,7 @@ class PreferencesRepository(private val context: Context) {
             preferences[PreferencesKeys.FAVORITES] ?: emptySet()
         }
 
-    val selectedCryptos: Flow<Set<String>> = context.dataStore.data
+    override val selectedCryptos: Flow<Set<String>> = context.dataStore.data
         .catch { exception ->
             if (exception is IOException) {
                 emit(emptyPreferences())
@@ -83,7 +84,7 @@ class PreferencesRepository(private val context: Context) {
             preferences[PreferencesKeys.SELECTED_CRYPTOS] ?: emptySet()
         }
 
-    val userCryptos: Flow<List<UserCrypto>> = context.dataStore.data
+    override val userCryptos: Flow<List<UserCrypto>> = context.dataStore.data
         .catch { exception ->
             if (exception is IOException) {
                 emit(emptyPreferences())
@@ -100,7 +101,7 @@ class PreferencesRepository(private val context: Context) {
             }
         }
 
-    val cachedCryptoAssets: Flow<List<CryptoAsset>> = context.dataStore.data
+    override val cachedCryptoAssets: Flow<List<CryptoAsset>> = context.dataStore.data
         .catch { exception ->
             if (exception is IOException) {
                 emit(emptyPreferences())
@@ -117,38 +118,38 @@ class PreferencesRepository(private val context: Context) {
             }
         }
 
-    suspend fun updateSelectedCurrency(currency: Currency) {
+    override suspend fun updateSelectedCurrency(currency: Currency) {
         context.dataStore.edit { preferences ->
             preferences[PreferencesKeys.SELECTED_CURRENCY] = currency.name
         }
     }
 
-    suspend fun updateSortOption(sortOption: SortOption) {
+    override suspend fun updateSortOption(sortOption: SortOption) {
         context.dataStore.edit { preferences ->
             preferences[PreferencesKeys.SORT_OPTION] = sortOption.name
         }
     }
 
-    suspend fun updateFavorites(favorites: Set<String>) {
+    override suspend fun updateFavorites(favorites: Set<String>) {
         context.dataStore.edit { preferences ->
             preferences[PreferencesKeys.FAVORITES] = favorites
         }
     }
 
-    suspend fun updateSelectedCryptos(cryptos: Set<String>) {
+    override suspend fun updateSelectedCryptos(cryptos: Set<String>) {
         context.dataStore.edit { preferences ->
             preferences[PreferencesKeys.SELECTED_CRYPTOS] = cryptos
         }
     }
 
-    suspend fun updateUserCryptos(cryptos: List<UserCrypto>) {
+    override suspend fun updateUserCryptos(cryptos: List<UserCrypto>) {
         val json = Json.encodeToString(cryptos)
         context.dataStore.edit { preferences ->
             preferences[PreferencesKeys.USER_CRYPTOS] = json
         }
     }
 
-    suspend fun updateCachedCryptoAssets(assets: List<CryptoAsset>) {
+    override suspend fun updateCachedCryptoAssets(assets: List<CryptoAsset>) {
         val json = Json.encodeToString(assets.map { CachedCryptoAsset.fromDomain(it) })
         context.dataStore.edit { preferences ->
             preferences[PreferencesKeys.CACHED_CRYPTO_ASSETS] = json

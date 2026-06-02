@@ -9,7 +9,6 @@ import com.pekomon.cryptoapp.core.logging.CryptoAppLogger
 import com.pekomon.cryptoapp.data.CryptoRepository
 import com.pekomon.cryptoapp.data.SortOption
 import com.pekomon.cryptoapp.data.Currency
-import com.pekomon.cryptoapp.data.local.PreferencesRepository
 import com.pekomon.cryptoapp.data.UserCrypto
 import com.pekomon.cryptoapp.data.Transaction
 import com.pekomon.cryptoapp.data.TransactionType
@@ -24,12 +23,13 @@ import com.pekomon.cryptoapp.domain.portfolio.PortfolioCalculator
 import com.pekomon.cryptoapp.domain.portfolio.PortfolioValidationResult
 import com.pekomon.cryptoapp.domain.portfolio.PortfolioValidator
 import com.pekomon.cryptoapp.domain.repository.MarketRepository
+import com.pekomon.cryptoapp.domain.repository.UserPreferencesRepository
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.flow.first
 import java.time.LocalDateTime
 
 class CryptoViewModel(
-    private val preferencesRepository: PreferencesRepository,
+    private val preferencesRepository: UserPreferencesRepository,
     private val repository: MarketRepository = CryptoRepository()
 ) : ViewModel() {
     var cryptos by mutableStateOf<List<MarketPrice>>(emptyList())
