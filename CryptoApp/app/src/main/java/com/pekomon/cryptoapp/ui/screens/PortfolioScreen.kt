@@ -25,6 +25,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import com.pekomon.cryptoapp.core.formatting.DisplayFormatters
 import com.pekomon.cryptoapp.data.Currency
 import com.pekomon.cryptoapp.data.UserCrypto
@@ -37,6 +38,7 @@ import com.pekomon.cryptoapp.ui.components.QuickAddDialog
 import com.pekomon.cryptoapp.ui.components.ScreenHeader
 import com.pekomon.cryptoapp.ui.components.StateMessageCard
 import com.pekomon.cryptoapp.ui.components.TransactionDialog
+import com.pekomon.cryptoapp.ui.testing.CryptoTestTags
 import com.pekomon.cryptoapp.ui.theme.CryptoSpacing
 
 @Composable
@@ -51,6 +53,7 @@ fun PortfolioScreen(
     Column(
         modifier = modifier
             .fillMaxSize()
+            .testTag(CryptoTestTags.PORTFOLIO_SCREEN)
             .padding(CryptoSpacing.large),
         verticalArrangement = Arrangement.spacedBy(CryptoSpacing.large)
     ) {
@@ -76,12 +79,15 @@ fun PortfolioScreen(
         if (holdings.isEmpty()) {
             StateMessageCard(
                 title = "No holdings yet",
-                message = "Add an asset from Watchlist to start tracking value, cost basis, and profit/loss."
+                message = "Add an asset from Watchlist to start tracking value, cost basis, and profit/loss.",
+                modifier = Modifier.testTag(CryptoTestTags.PORTFOLIO_EMPTY)
             )
         } else {
             LazyColumn(
                 verticalArrangement = Arrangement.spacedBy(CryptoSpacing.small),
-                modifier = Modifier.weight(1f)
+                modifier = Modifier
+                    .weight(1f)
+                    .testTag(CryptoTestTags.PORTFOLIO_LIST)
             ) {
                 items(holdings) { userCrypto ->
                     val crypto = viewModel.availableCryptos.find { it.id == userCrypto.cryptoId }
@@ -126,6 +132,7 @@ fun PortfolioScreen(
         val cryptoName = viewModel.availableCryptos.find { it.id == crypto.cryptoId }?.name ?: crypto.cryptoId
 
         AlertDialog(
+            modifier = Modifier.testTag(CryptoTestTags.PORTFOLIO_REMOVE_DIALOG),
             onDismissRequest = { pendingDeleteCrypto = null },
             title = { Text("Remove $cryptoName?") },
             text = {
@@ -133,6 +140,7 @@ fun PortfolioScreen(
             },
             confirmButton = {
                 TextButton(
+                    modifier = Modifier.testTag(CryptoTestTags.PORTFOLIO_REMOVE_CONFIRM),
                     onClick = {
                         viewModel.removeUserCrypto(crypto.cryptoId)
                         pendingDeleteCrypto = null
@@ -142,7 +150,10 @@ fun PortfolioScreen(
                 }
             },
             dismissButton = {
-                TextButton(onClick = { pendingDeleteCrypto = null }) {
+                TextButton(
+                    modifier = Modifier.testTag(CryptoTestTags.PORTFOLIO_REMOVE_CANCEL),
+                    onClick = { pendingDeleteCrypto = null }
+                ) {
                     Text("Cancel")
                 }
             }
@@ -299,7 +310,7 @@ private fun PortfolioSummaryCard(
     currency: Currency,
     modifier: Modifier = Modifier
 ) {
-    CommonCard(modifier = modifier) {
+    CommonCard(modifier = modifier.testTag(CryptoTestTags.PORTFOLIO_SUMMARY)) {
         Column(
             modifier = Modifier.padding(CryptoSpacing.xLarge),
             verticalArrangement = Arrangement.spacedBy(CryptoSpacing.large)

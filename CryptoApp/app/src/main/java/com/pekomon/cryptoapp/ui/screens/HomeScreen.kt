@@ -16,6 +16,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import com.pekomon.cryptoapp.core.formatting.DisplayFormatters
 import com.pekomon.cryptoapp.domain.model.CryptoAsset
 import com.pekomon.cryptoapp.ui.AssetMetadataSource
@@ -27,6 +28,7 @@ import com.pekomon.cryptoapp.ui.components.QuickAddDialog
 import com.pekomon.cryptoapp.ui.components.ScreenHeader
 import com.pekomon.cryptoapp.ui.components.SortMenu
 import com.pekomon.cryptoapp.ui.components.StateMessageCard
+import com.pekomon.cryptoapp.ui.testing.CryptoTestTags
 import com.pekomon.cryptoapp.ui.theme.CryptoSpacing
 import com.google.accompanist.swiperefresh.SwipeRefresh
 import com.google.accompanist.swiperefresh.rememberSwipeRefreshState
@@ -52,7 +54,9 @@ fun HomeScreen(
     }
     
     Column(
-        modifier = modifier.padding(CryptoSpacing.large),
+        modifier = modifier
+            .testTag(CryptoTestTags.WATCHLIST_SCREEN)
+            .padding(CryptoSpacing.large),
         verticalArrangement = Arrangement.spacedBy(CryptoSpacing.large)
     ) {
         ScreenHeader(title = "Watchlist")
@@ -65,39 +69,39 @@ fun HomeScreen(
                 horizontalArrangement = Arrangement.spacedBy(CryptoSpacing.medium),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = "Sort by: ${viewModel.currentSortOption.displayName}",
-                    style = MaterialTheme.typography.bodyLarge
-                )
-                (viewModel.marketLoadState as? MarketLoadState.Content)?.let { state ->
+                Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        text = DisplayFormatters.updateTime(state.lastUpdated),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        text = "Sort by: ${viewModel.currentSortOption.displayName}",
+                        style = MaterialTheme.typography.bodyLarge
                     )
-                    if (state.isStale || state.message != null) {
+                    (viewModel.marketLoadState as? MarketLoadState.Content)?.let { state ->
                         Text(
-                            text = state.message ?: "Using last successful prices.",
+                            text = DisplayFormatters.updateTime(state.lastUpdated),
                             style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.tertiary
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
+                        if (state.isStale || state.message != null) {
+                            Text(
+                                text = state.message ?: "Using last successful prices.",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.tertiary
+                            )
+                        }
                     }
+                    viewModel.assetMetadataSource
+                        ?.takeUnless { it == AssetMetadataSource.Live }
+                        ?.let { source ->
+                            Text(
+                                text = source.label,
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.tertiary
+                            )
+                        }
                 }
-                viewModel.assetMetadataSource
-                    ?.takeUnless { it == AssetMetadataSource.Live }
-                    ?.let { source ->
-                        Text(
-                            text = source.label,
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.tertiary
-                        )
-                    }
-            }
-            SortMenu(
-                currentSort = viewModel.currentSortOption,
-                onSortSelected = { viewModel.updateSortOption(it) }
-            )
+                SortMenu(
+                    currentSort = viewModel.currentSortOption,
+                    onSortSelected = { viewModel.updateSortOption(it) }
+                )
             }
         }
 
@@ -118,7 +122,9 @@ fun HomeScreen(
                     label = { Text("Search watchlist") },
                     placeholder = { Text("Bitcoin, ETH, SOL...") },
                     singleLine = true,
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .testTag(CryptoTestTags.WATCHLIST_SEARCH)
                 )
                 Text(
                     text = searchResultLabel(
@@ -135,7 +141,9 @@ fun HomeScreen(
         when {
             viewModel.isLoading -> {
                 CircularProgressIndicator(
-                    modifier = Modifier.align(Alignment.CenterHorizontally)
+                    modifier = Modifier
+                        .align(Alignment.CenterHorizontally)
+                        .testTag(CryptoTestTags.WATCHLIST_LOADING)
                 )
             }
             viewModel.marketLoadState is MarketLoadState.Error -> {
@@ -144,19 +152,22 @@ fun HomeScreen(
                     title = "Prices unavailable",
                     message = state.message,
                     actionLabel = "Retry",
-                    onAction = { viewModel.fetchPrices() }
+                    onAction = { viewModel.fetchPrices() },
+                    modifier = Modifier.testTag(CryptoTestTags.WATCHLIST_ERROR)
                 )
             }
             viewModel.sortedCryptos.isEmpty() -> {
                 StateMessageCard(
                     title = "No assets selected",
-                    message = "Open Settings and choose the cryptocurrencies you want on your watchlist."
+                    message = "Open Settings and choose the cryptocurrencies you want on your watchlist.",
+                    modifier = Modifier.testTag(CryptoTestTags.WATCHLIST_EMPTY)
                 )
             }
             visibleCryptos.isEmpty() -> {
                 StateMessageCard(
                     title = "No matches",
-                    message = "Try another asset name or symbol."
+                    message = "Try another asset name or symbol.",
+                    modifier = Modifier.testTag(CryptoTestTags.WATCHLIST_NO_MATCHES)
                 )
             }
             else -> {
@@ -168,7 +179,8 @@ fun HomeScreen(
                     CryptoList(
                         cryptos = visibleCryptos,
                         viewModel = viewModel,
-                        onQuickAdd = { crypto -> quickAddCrypto = crypto }
+                        onQuickAdd = { crypto -> quickAddCrypto = crypto },
+                        modifier = Modifier.testTag(CryptoTestTags.WATCHLIST_LIST)
                     )
                 }
             }
@@ -200,6 +212,7 @@ private fun WatchlistSummaryCard(
     CommonCard(modifier = modifier) {
         Row(
             modifier = Modifier
+                .testTag(CryptoTestTags.WATCHLIST_SUMMARY)
                 .padding(CryptoSpacing.large)
                 .fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(CryptoSpacing.medium),

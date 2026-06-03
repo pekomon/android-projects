@@ -19,6 +19,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import com.pekomon.cryptoapp.core.formatting.DisplayFormatters
 import com.pekomon.cryptoapp.domain.model.CryptoAsset
 import com.pekomon.cryptoapp.ui.MarketLoadState
@@ -29,6 +30,7 @@ import com.pekomon.cryptoapp.ui.components.QuickAddDialog
 import com.pekomon.cryptoapp.ui.components.ScreenHeader
 import com.pekomon.cryptoapp.ui.components.SortMenu
 import com.pekomon.cryptoapp.ui.components.StateMessageCard
+import com.pekomon.cryptoapp.ui.testing.CryptoTestTags
 import com.pekomon.cryptoapp.ui.theme.CryptoSpacing
 import com.google.accompanist.swiperefresh.SwipeRefresh
 import com.google.accompanist.swiperefresh.rememberSwipeRefreshState
@@ -42,7 +44,9 @@ fun FavoritesScreen(
     var showSortMenu by remember { mutableStateOf(false) }
     
     Column(
-        modifier = modifier.padding(CryptoSpacing.large),
+        modifier = modifier
+            .testTag(CryptoTestTags.FAVORITES_SCREEN)
+            .padding(CryptoSpacing.large),
         verticalArrangement = Arrangement.spacedBy(CryptoSpacing.large)
     ) {
         ScreenHeader(title = "Favorites")
@@ -103,7 +107,9 @@ fun FavoritesScreen(
         when {
             viewModel.isLoading -> {
                 CircularProgressIndicator(
-                    modifier = Modifier.align(Alignment.CenterHorizontally)
+                    modifier = Modifier
+                        .align(Alignment.CenterHorizontally)
+                        .testTag(CryptoTestTags.FAVORITES_LOADING)
                 )
             }
             viewModel.marketLoadState is MarketLoadState.Error -> {
@@ -112,14 +118,16 @@ fun FavoritesScreen(
                     title = "Favorites unavailable",
                     message = state.message,
                     actionLabel = "Retry",
-                    onAction = { viewModel.fetchPrices() }
+                    onAction = { viewModel.fetchPrices() },
+                    modifier = Modifier.testTag(CryptoTestTags.FAVORITES_ERROR)
                 )
             }
             else -> {
                 if (favorites.isEmpty()) {
                     StateMessageCard(
                         title = "No favorites yet",
-                        message = "Tap the heart icon on any asset to keep it here for quick monitoring."
+                        message = "Tap the heart icon on any asset to keep it here for quick monitoring.",
+                        modifier = Modifier.testTag(CryptoTestTags.FAVORITES_EMPTY)
                     )
                 } else {
                     SwipeRefresh(
@@ -130,9 +138,10 @@ fun FavoritesScreen(
                         CryptoList(
                             cryptos = favorites,
                             viewModel = viewModel,
-                            onQuickAdd = { crypto -> 
+                            onQuickAdd = { crypto ->
                                 quickAddCrypto = crypto
-                            }
+                            },
+                            modifier = Modifier.testTag(CryptoTestTags.FAVORITES_LIST)
                         )
                     }
                 }
@@ -165,6 +174,7 @@ private fun FavoritesSummaryCard(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
+                .testTag(CryptoTestTags.FAVORITES_SUMMARY)
                 .padding(CryptoSpacing.large),
             horizontalArrangement = Arrangement.spacedBy(CryptoSpacing.medium),
             verticalAlignment = Alignment.CenterVertically
