@@ -17,6 +17,7 @@ import com.pekomon.cryptoapp.domain.market.CryptoSelectionSanitizer
 import com.pekomon.cryptoapp.domain.market.DefaultCryptoAssets
 import com.pekomon.cryptoapp.domain.market.MarketDataError
 import com.pekomon.cryptoapp.domain.market.MarketDataResult
+import com.pekomon.cryptoapp.domain.market.MarketPriceMapper
 import com.pekomon.cryptoapp.domain.model.CryptoAsset
 import com.pekomon.cryptoapp.domain.model.MarketPrice
 import com.pekomon.cryptoapp.domain.portfolio.PortfolioCalculator
@@ -162,13 +163,13 @@ class CryptoViewModel(
                 CryptoAppLogger.debug(TAG, "fetchPrices start ids=${cryptosToFetch.distinct().joinToString(",")} currency=${selectedCurrency.code}")
                 when (val result = repository.getCryptoPricesResult(cryptosToFetch, selectedCurrency.code)) {
                     is MarketDataResult.Success -> {
-                        cryptoInfoMap = result.value.toMarketPriceMap()
+                        cryptoInfoMap = MarketPriceMapper.mapPrices(result.value).toMutableMap()
                         CryptoAppLogger.debug(TAG, "fetchPrices success count=${cryptoInfoMap.size}")
                         lastMarketUpdated = LocalDateTime.now()
                         marketLoadState = MarketLoadState.Content(lastUpdated = lastMarketUpdated ?: LocalDateTime.now())
                     }
                     is MarketDataResult.PartialSuccess -> {
-                        val fetchedPrices = result.value.toMarketPriceMap()
+                        val fetchedPrices = MarketPriceMapper.mapPrices(result.value)
                         cryptoInfoMap = cryptoInfoMap.toMutableMap().apply {
                             putAll(fetchedPrices)
                         }
@@ -368,16 +369,6 @@ class CryptoViewModel(
             "Unable to reach CoinGecko. Check your connection and try again."
         }
         is MarketDataError.Unknown -> "Unable to load prices. Check your connection and try again."
-    }
-
-    private fun Map<String, Double>.toMarketPriceMap(): MutableMap<String, MarketPrice> {
-        return mapValues { (id, price) ->
-            MarketPrice(
-                cryptoId = id,
-                currentPrice = price,
-                priceChangePercentage = 0.0
-            )
-        }.toMutableMap()
     }
 
     private fun partialPriceMessage(missingIds: Set<String>): String {
