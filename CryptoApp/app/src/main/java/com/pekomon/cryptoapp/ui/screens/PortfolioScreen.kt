@@ -29,7 +29,6 @@ import androidx.compose.ui.platform.testTag
 import com.pekomon.cryptoapp.core.formatting.DisplayFormatters
 import com.pekomon.cryptoapp.data.Currency
 import com.pekomon.cryptoapp.data.UserCrypto
-import com.pekomon.cryptoapp.domain.portfolio.PortfolioCalculator
 import com.pekomon.cryptoapp.domain.portfolio.PortfolioHoldingMetrics
 import com.pekomon.cryptoapp.domain.portfolio.PortfolioSummaryMetrics
 import com.pekomon.cryptoapp.ui.CryptoViewModel
@@ -49,6 +48,7 @@ fun PortfolioScreen(
     var editingCrypto by remember { mutableStateOf<UserCrypto?>(null) }
     var pendingDeleteCrypto by remember { mutableStateOf<UserCrypto?>(null) }
     var showTransactionDialog by remember { mutableStateOf<UserCrypto?>(null) }
+    val state = viewModel.portfolioUiState
     
     Column(
         modifier = modifier
@@ -60,20 +60,10 @@ fun PortfolioScreen(
         ScreenHeader(title = "Portfolio")
 
         val holdings = viewModel.getCombinedUserCryptos()
-        val portfolioMetrics = remember(holdings, viewModel.marketLoadState) {
-            PortfolioCalculator.summaryMetrics(holdings) { cryptoId ->
-                viewModel.getCryptoInfo(cryptoId)?.currentPrice
-            }
-        }
-        val holdingMetrics = remember(holdings, viewModel.marketLoadState) {
-            PortfolioCalculator.holdingMetrics(holdings) { cryptoId ->
-                viewModel.getCryptoInfo(cryptoId)?.currentPrice
-            }.associateBy { it.cryptoId }
-        }
 
         PortfolioSummaryCard(
-            metrics = portfolioMetrics,
-            currency = viewModel.selectedCurrency
+            metrics = state.summary,
+            currency = state.selectedCurrency
         )
 
         if (holdings.isEmpty()) {
@@ -97,8 +87,8 @@ fun PortfolioScreen(
                             cryptoName = crypto.name,
                             cryptoSymbol = crypto.symbol.uppercase(),
                             userCrypto = userCrypto,
-                            metrics = holdingMetrics[userCrypto.cryptoId],
-                            currency = viewModel.selectedCurrency,
+                            metrics = state.holdingMetrics[userCrypto.cryptoId],
+                            currency = state.selectedCurrency,
                             onEdit = { editingCrypto = userCrypto },
                             onDelete = { pendingDeleteCrypto = userCrypto },
                             onClick = { showTransactionDialog = userCrypto }
@@ -115,7 +105,7 @@ fun PortfolioScreen(
         QuickAddDialog(
             cryptoName = cryptoName,
             currentPrice = currentPrice,
-            currency = viewModel.selectedCurrency,
+            currency = state.selectedCurrency,
             onDismiss = { editingCrypto = null },
             onConfirm = { amount, price, dateTime ->
                 viewModel.updateUserCrypto(crypto.cryptoId, amount, price, dateTime)
@@ -169,7 +159,7 @@ fun PortfolioScreen(
             transactions = crypto.transactions,
             currentPrice = currentPrice,
             initialPrice = crypto.purchasePrice,
-            currency = viewModel.selectedCurrency,
+            currency = state.selectedCurrency,
             onDismiss = { showTransactionDialog = null }
         )
     }

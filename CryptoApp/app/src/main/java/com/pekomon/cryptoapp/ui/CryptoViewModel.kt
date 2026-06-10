@@ -12,6 +12,7 @@ import com.pekomon.cryptoapp.data.Currency
 import com.pekomon.cryptoapp.data.UserCrypto
 import com.pekomon.cryptoapp.data.Transaction
 import com.pekomon.cryptoapp.data.TransactionType
+import com.pekomon.cryptoapp.data.toPortfolioPosition
 import com.pekomon.cryptoapp.domain.market.CryptoAssetSorter
 import com.pekomon.cryptoapp.domain.market.CryptoSelectionSanitizer
 import com.pekomon.cryptoapp.domain.market.DefaultCryptoAssets
@@ -25,6 +26,10 @@ import com.pekomon.cryptoapp.domain.portfolio.PortfolioValidationResult
 import com.pekomon.cryptoapp.domain.portfolio.PortfolioValidator
 import com.pekomon.cryptoapp.domain.repository.MarketRepository
 import com.pekomon.cryptoapp.domain.repository.UserPreferencesRepository
+import com.pekomon.cryptoapp.ui.state.FavoritesUiState
+import com.pekomon.cryptoapp.ui.state.PortfolioUiState
+import com.pekomon.cryptoapp.ui.state.SettingsUiState
+import com.pekomon.cryptoapp.ui.state.WatchlistUiState
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.flow.first
 import java.time.LocalDateTime
@@ -144,6 +149,62 @@ class CryptoViewModel(
 
     val sortedFavoriteCryptos: List<CryptoAsset>
         get() = sortCryptos(availableCryptos.filter { it.id in favorites })
+
+    val watchlistUiState: WatchlistUiState
+        get() = WatchlistUiState(
+            assets = sortedCryptos,
+            prices = cryptoInfoMap,
+            favoriteIds = favorites,
+            selectedCurrency = selectedCurrency,
+            sortOption = currentSortOption,
+            marketLoadState = marketLoadState,
+            isLoading = isLoading,
+            errorMessage = error,
+            assetMetadataSource = assetMetadataSource
+        )
+
+    val favoritesUiState: FavoritesUiState
+        get() = FavoritesUiState(
+            assets = sortedFavoriteCryptos,
+            prices = cryptoInfoMap,
+            selectedCurrency = selectedCurrency,
+            sortOption = currentSortOption,
+            marketLoadState = marketLoadState,
+            isLoading = isLoading,
+            errorMessage = error
+        )
+
+    val portfolioUiState: PortfolioUiState
+        get() {
+            val positions = PortfolioCalculator.combinePositions(
+                userCryptos.map { it.toPortfolioPosition() }
+            )
+            return PortfolioUiState(
+                positions = positions,
+                summary = PortfolioCalculator.positionSummaryMetrics(positions) { cryptoId ->
+                    getCryptoInfo(cryptoId)?.currentPrice
+                },
+                holdingMetrics = PortfolioCalculator.positionMetrics(positions) { cryptoId ->
+                    getCryptoInfo(cryptoId)?.currentPrice
+                }.associateBy { it.cryptoId },
+                selectedCurrency = selectedCurrency,
+                marketLoadState = marketLoadState,
+                isLoading = isLoading,
+                errorMessage = error
+            )
+        }
+
+    val settingsUiState: SettingsUiState
+        get() = SettingsUiState(
+            availableAssets = availableCryptos,
+            selectedAssetIds = selectedCryptos,
+            favoriteIds = favorites,
+            selectedCurrency = selectedCurrency,
+            sortOption = currentSortOption,
+            assetMetadataSource = assetMetadataSource,
+            isLoading = isLoading,
+            errorMessage = error
+        )
 
     private fun sortCryptos(cryptos: List<CryptoAsset>): List<CryptoAsset> {
         return CryptoAssetSorter.sort(

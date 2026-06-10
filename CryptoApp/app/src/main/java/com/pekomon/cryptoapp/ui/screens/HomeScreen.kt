@@ -40,13 +40,14 @@ fun HomeScreen(
 ) {
     var quickAddCrypto by remember { mutableStateOf<CryptoAsset?>(null) }
     var searchQuery by remember { mutableStateOf("") }
-    val totalWatchlistAssets = viewModel.sortedCryptos.size
-    val pricedWatchlistAssets = viewModel.sortedCryptos.count { crypto ->
-        viewModel.getCryptoInfo(crypto.id) != null
+    val state = viewModel.watchlistUiState
+    val totalWatchlistAssets = state.assets.size
+    val pricedWatchlistAssets = state.assets.count { crypto ->
+        state.prices[crypto.id] != null
     }
     val missingPriceAssets = (totalWatchlistAssets - pricedWatchlistAssets).coerceAtLeast(0)
-    val visibleCryptos = remember(viewModel.sortedCryptos, searchQuery) {
-        viewModel.sortedCryptos.filter { crypto ->
+    val visibleCryptos = remember(state.assets, searchQuery) {
+        state.assets.filter { crypto ->
             searchQuery.isBlank() ||
                 crypto.name.contains(searchQuery, ignoreCase = true) ||
                 crypto.symbol.contains(searchQuery, ignoreCase = true)
@@ -71,24 +72,24 @@ fun HomeScreen(
             ) {
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        text = "Sort by: ${viewModel.currentSortOption.displayName}",
+                        text = "Sort by: ${state.sortOption.displayName}",
                         style = MaterialTheme.typography.bodyLarge
                     )
-                    (viewModel.marketLoadState as? MarketLoadState.Content)?.let { state ->
+                    (state.marketLoadState as? MarketLoadState.Content)?.let { loadState ->
                         Text(
-                            text = DisplayFormatters.updateTime(state.lastUpdated),
+                            text = DisplayFormatters.updateTime(loadState.lastUpdated),
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
-                        if (state.isStale || state.message != null) {
+                        if (loadState.isStale || loadState.message != null) {
                             Text(
-                                text = state.message ?: "Using last successful prices.",
+                                text = loadState.message ?: "Using last successful prices.",
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.tertiary
                             )
                         }
                     }
-                    viewModel.assetMetadataSource
+                    state.assetMetadataSource
                         ?.takeUnless { it == AssetMetadataSource.Live }
                         ?.let { source ->
                             Text(
@@ -99,7 +100,7 @@ fun HomeScreen(
                         }
                 }
                 SortMenu(
-                    currentSort = viewModel.currentSortOption,
+                    currentSort = state.sortOption,
                     onSortSelected = { viewModel.updateSortOption(it) }
                 )
             }
@@ -139,24 +140,24 @@ fun HomeScreen(
         }
 
         when {
-            viewModel.isLoading -> {
+            state.isLoading -> {
                 CircularProgressIndicator(
                     modifier = Modifier
                         .align(Alignment.CenterHorizontally)
                         .testTag(CryptoTestTags.WATCHLIST_LOADING)
                 )
             }
-            viewModel.marketLoadState is MarketLoadState.Error -> {
-                val state = viewModel.marketLoadState as MarketLoadState.Error
+            state.marketLoadState is MarketLoadState.Error -> {
+                val loadState = state.marketLoadState as MarketLoadState.Error
                 StateMessageCard(
                     title = "Prices unavailable",
-                    message = state.message,
+                    message = loadState.message,
                     actionLabel = "Retry",
                     onAction = { viewModel.fetchPrices() },
                     modifier = Modifier.testTag(CryptoTestTags.WATCHLIST_ERROR)
                 )
             }
-            viewModel.sortedCryptos.isEmpty() -> {
+            state.assets.isEmpty() -> {
                 StateMessageCard(
                     title = "No assets selected",
                     message = "Open Settings and choose the cryptocurrencies you want on your watchlist.",
@@ -172,7 +173,7 @@ fun HomeScreen(
             }
             else -> {
                 SwipeRefresh(
-                    state = rememberSwipeRefreshState(viewModel.isLoading),
+                    state = rememberSwipeRefreshState(state.isLoading),
                     onRefresh = { viewModel.fetchPrices() },
                     modifier = Modifier.weight(1f)
                 ) {
@@ -188,11 +189,11 @@ fun HomeScreen(
     }
     
     quickAddCrypto?.let { crypto ->
-        val currentPrice = viewModel.getCryptoInfo(crypto.id)?.currentPrice
+        val currentPrice = state.prices[crypto.id]?.currentPrice
         QuickAddDialog(
             cryptoName = crypto.name,
             currentPrice = currentPrice,
-            currency = viewModel.selectedCurrency,
+            currency = state.selectedCurrency,
             onDismiss = { quickAddCrypto = null },
             onConfirm = { amount, price, dateTime ->
                 viewModel.addUserCrypto(crypto.id, amount, price, dateTime)

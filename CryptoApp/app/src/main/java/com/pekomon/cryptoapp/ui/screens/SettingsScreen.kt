@@ -36,6 +36,7 @@ fun SettingsScreen(
     modifier: Modifier = Modifier
 ) {
     var showCryptoSelector by remember { mutableStateOf(false) }
+    val state = viewModel.settingsUiState
 
     if (showCryptoSelector) {
         AlertDialog(
@@ -43,8 +44,8 @@ fun SettingsScreen(
             title = { Text("Select cryptocurrencies") },
             text = {
                 CryptoSelector(
-                    availableCryptos = viewModel.availableCryptos,
-                    selectedCryptos = viewModel.selectedCryptos,
+                    availableCryptos = state.availableAssets,
+                    selectedCryptos = state.selectedAssetIds,
                     onSelectionChanged = { viewModel.updateSelectedCryptos(it) }
                 )
             },
@@ -74,7 +75,7 @@ fun SettingsScreen(
                 Currency.entries.forEach { currency ->
                     CurrencyOption(
                         currency = currency,
-                        selected = currency == viewModel.selectedCurrency,
+                        selected = currency == state.selectedCurrency,
                         onClick = { viewModel.updateCurrency(currency) }
                     )
                 }
@@ -96,7 +97,7 @@ fun SettingsScreen(
                         verticalArrangement = Arrangement.spacedBy(CryptoSpacing.xSmall)
                     ) {
                         Text(
-                            text = viewModel.currentSortOption.displayName,
+                            text = state.sortOption.displayName,
                             style = MaterialTheme.typography.titleMedium
                         )
                         Text(
@@ -106,7 +107,7 @@ fun SettingsScreen(
                         )
                     }
                     SortMenu(
-                        currentSort = viewModel.currentSortOption,
+                        currentSort = state.sortOption,
                         onSortSelected = { viewModel.updateSortOption(it) }
                     )
                 }
@@ -119,10 +120,10 @@ fun SettingsScreen(
                 subtitle = "Home shows these assets. Favorites are a separate quick-monitoring subset."
             ) {
                 Text(
-                    text = "${viewModel.selectedCryptos.size} assets selected",
+                    text = "${state.selectedAssetIds.size} assets selected",
                     style = MaterialTheme.typography.titleMedium
                 )
-                viewModel.assetMetadataSource?.let { source ->
+                state.assetMetadataSource?.let { source ->
                     Text(
                         text = source.label,
                         style = MaterialTheme.typography.bodySmall,

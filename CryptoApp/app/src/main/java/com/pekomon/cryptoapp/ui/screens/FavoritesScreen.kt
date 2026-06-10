@@ -42,6 +42,7 @@ fun FavoritesScreen(
 ) {
     var quickAddCrypto by remember { mutableStateOf<CryptoAsset?>(null) }
     var showSortMenu by remember { mutableStateOf(false) }
+    val state = viewModel.favoritesUiState
     
     Column(
         modifier = modifier
@@ -50,8 +51,8 @@ fun FavoritesScreen(
         verticalArrangement = Arrangement.spacedBy(CryptoSpacing.large)
     ) {
         ScreenHeader(title = "Favorites")
-        val favorites = viewModel.sortedFavoriteCryptos
-        val pricedFavorites = favorites.count { crypto -> viewModel.getCryptoInfo(crypto.id) != null }
+        val favorites = state.assets
+        val pricedFavorites = favorites.count { crypto -> state.prices[crypto.id] != null }
         
         OutlinedButton(
             onClick = { showSortMenu = true },
@@ -64,18 +65,18 @@ fun FavoritesScreen(
             ) {
                 Column {
                     Text(
-                        text = "Sort by: ${viewModel.currentSortOption.displayName}",
+                        text = "Sort by: ${state.sortOption.displayName}",
                         style = MaterialTheme.typography.bodyLarge
                     )
-                    (viewModel.marketLoadState as? MarketLoadState.Content)?.let { state ->
+                    (state.marketLoadState as? MarketLoadState.Content)?.let { loadState ->
                         Text(
-                            text = DisplayFormatters.updateTime(state.lastUpdated),
+                            text = DisplayFormatters.updateTime(loadState.lastUpdated),
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
-                        if (state.isStale || state.message != null) {
+                        if (loadState.isStale || loadState.message != null) {
                             Text(
-                                text = state.message ?: "Using last successful prices.",
+                                text = loadState.message ?: "Using last successful prices.",
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.tertiary
                             )
@@ -91,7 +92,7 @@ fun FavoritesScreen(
         
         if (showSortMenu) {
             SortMenu(
-                currentSort = viewModel.currentSortOption,
+                currentSort = state.sortOption,
                 onSortSelected = { 
                     viewModel.updateSortOption(it)
                     showSortMenu = false
@@ -105,18 +106,18 @@ fun FavoritesScreen(
         )
 
         when {
-            viewModel.isLoading -> {
+            state.isLoading -> {
                 CircularProgressIndicator(
                     modifier = Modifier
                         .align(Alignment.CenterHorizontally)
                         .testTag(CryptoTestTags.FAVORITES_LOADING)
                 )
             }
-            viewModel.marketLoadState is MarketLoadState.Error -> {
-                val state = viewModel.marketLoadState as MarketLoadState.Error
+            state.marketLoadState is MarketLoadState.Error -> {
+                val loadState = state.marketLoadState as MarketLoadState.Error
                 StateMessageCard(
                     title = "Favorites unavailable",
-                    message = state.message,
+                    message = loadState.message,
                     actionLabel = "Retry",
                     onAction = { viewModel.fetchPrices() },
                     modifier = Modifier.testTag(CryptoTestTags.FAVORITES_ERROR)
@@ -131,7 +132,7 @@ fun FavoritesScreen(
                     )
                 } else {
                     SwipeRefresh(
-                        state = rememberSwipeRefreshState(viewModel.isLoading),
+                        state = rememberSwipeRefreshState(state.isLoading),
                         onRefresh = { viewModel.fetchPrices() },
                         modifier = Modifier.weight(1f)
                     ) {
@@ -150,11 +151,11 @@ fun FavoritesScreen(
     }
     
     quickAddCrypto?.let { crypto ->
-        val currentPrice = viewModel.getCryptoInfo(crypto.id)?.currentPrice
+        val currentPrice = state.prices[crypto.id]?.currentPrice
         QuickAddDialog(
             cryptoName = crypto.name,
             currentPrice = currentPrice,
-            currency = viewModel.selectedCurrency,
+            currency = state.selectedCurrency,
             onDismiss = { quickAddCrypto = null },
             onConfirm = { amount, price, dateTime ->
                 viewModel.addUserCrypto(crypto.id, amount, price, dateTime)
