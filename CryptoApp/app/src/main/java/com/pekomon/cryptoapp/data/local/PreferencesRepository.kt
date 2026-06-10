@@ -11,11 +11,20 @@ import androidx.datastore.preferences.preferencesDataStore
 import com.pekomon.cryptoapp.data.Currency
 import com.pekomon.cryptoapp.data.SortOption
 import com.pekomon.cryptoapp.data.UserCrypto
+import com.pekomon.cryptoapp.data.toPortfolioPosition
+import com.pekomon.cryptoapp.data.toUserCrypto
+import com.pekomon.cryptoapp.domain.model.AppSettings
+import com.pekomon.cryptoapp.domain.model.AssetCollectionState
 import com.pekomon.cryptoapp.domain.model.CryptoAsset
+import com.pekomon.cryptoapp.domain.model.PortfolioPosition
+import com.pekomon.cryptoapp.domain.repository.AssetCollectionRepository
+import com.pekomon.cryptoapp.domain.repository.PortfolioRepository
+import com.pekomon.cryptoapp.domain.repository.SettingsRepository
 import com.pekomon.cryptoapp.domain.repository.UserPreferencesRepository
 import java.io.IOException
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.map
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.encodeToString
@@ -23,7 +32,11 @@ import kotlinx.serialization.json.Json
 
 private val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "settings")
 
-class PreferencesRepository(private val context: Context) : UserPreferencesRepository {
+class PreferencesRepository(private val context: Context) :
+    UserPreferencesRepository,
+    SettingsRepository,
+    AssetCollectionRepository,
+    PortfolioRepository {
 
     private object PreferencesKeys {
         val SELECTED_CURRENCY = stringPreferencesKey("selected_currency")
@@ -118,6 +131,34 @@ class PreferencesRepository(private val context: Context) : UserPreferencesRepos
             }
         }
 
+    override val appSettings: Flow<AppSettings> = combine(
+        selectedCurrency,
+        sortOption,
+        selectedCryptos,
+        favorites
+    ) { currency, sortOption, selectedCryptos, favorites ->
+        AppSettings(
+            selectedCurrency = currency,
+            sortOption = sortOption,
+            watchlistIds = selectedCryptos,
+            favoriteIds = favorites
+        )
+    }
+
+    override val assetCollectionState: Flow<AssetCollectionState> = combine(
+        selectedCryptos,
+        favorites
+    ) { selectedCryptos, favorites ->
+        AssetCollectionState(
+            watchlistIds = selectedCryptos,
+            favoriteIds = favorites
+        )
+    }
+
+    override val positions: Flow<List<PortfolioPosition>> = userCryptos.map { cryptos ->
+        cryptos.map { it.toPortfolioPosition() }
+    }
+
     override suspend fun updateSelectedCurrency(currency: Currency) {
         context.dataStore.edit { preferences ->
             preferences[PreferencesKeys.SELECTED_CURRENCY] = currency.name
@@ -128,6 +169,10 @@ class PreferencesRepository(private val context: Context) : UserPreferencesRepos
         context.dataStore.edit { preferences ->
             preferences[PreferencesKeys.SORT_OPTION] = sortOption.name
         }
+    }
+
+    override suspend fun updateCurrency(currency: Currency) {
+        updateSelectedCurrency(currency)
     }
 
     override suspend fun updateFavorites(favorites: Set<String>) {
@@ -142,6 +187,10 @@ class PreferencesRepository(private val context: Context) : UserPreferencesRepos
         }
     }
 
+    override suspend fun updateWatchlist(ids: Set<String>) {
+        updateSelectedCryptos(ids)
+    }
+
     override suspend fun updateUserCryptos(cryptos: List<UserCrypto>) {
         val json = Json.encodeToString(cryptos)
         context.dataStore.edit { preferences ->
@@ -154,6 +203,10 @@ class PreferencesRepository(private val context: Context) : UserPreferencesRepos
         context.dataStore.edit { preferences ->
             preferences[PreferencesKeys.CACHED_CRYPTO_ASSETS] = json
         }
+    }
+
+    override suspend fun updatePositions(positions: List<PortfolioPosition>) {
+        updateUserCryptos(positions.map { it.toUserCrypto() })
     }
 
     private inline fun <reified T : Enum<T>> enumValueOrDefault(
