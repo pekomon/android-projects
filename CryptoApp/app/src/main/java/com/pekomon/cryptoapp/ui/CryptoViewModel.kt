@@ -26,6 +26,7 @@ import com.pekomon.cryptoapp.domain.portfolio.PortfolioValidator
 import com.pekomon.cryptoapp.domain.repository.MarketRepository
 import com.pekomon.cryptoapp.domain.repository.UserPreferencesRepository
 import com.pekomon.cryptoapp.ui.state.FavoritesUiState
+import com.pekomon.cryptoapp.ui.state.FavoritesStateOwner
 import com.pekomon.cryptoapp.ui.state.PortfolioUiState
 import com.pekomon.cryptoapp.ui.state.SettingsUiState
 import com.pekomon.cryptoapp.ui.state.WatchlistStateOwner
@@ -70,6 +71,7 @@ class CryptoViewModel(
     
     private var isInitialized = false
     private val watchlistStateOwner = WatchlistStateOwner()
+    private val favoritesStateOwner = FavoritesStateOwner()
     
     private val defaultCryptos = DefaultCryptoAssets.assets.map { it.id }
     
@@ -154,9 +156,9 @@ class CryptoViewModel(
         )
 
     val sortedFavoriteCryptos: List<CryptoAsset>
-        get() = watchlistStateOwner.sortedAssets(
+        get() = favoritesStateOwner.sortedAssets(
             availableAssets = availableCryptos,
-            selectedAssetIds = favorites,
+            favoriteIds = favorites,
             sortOption = currentSortOption,
             priceForAsset = ::getCryptoInfo
         )
@@ -176,8 +178,9 @@ class CryptoViewModel(
         )
 
     val favoritesUiState: FavoritesUiState
-        get() = FavoritesUiState(
-            assets = sortedFavoriteCryptos,
+        get() = favoritesStateOwner.state(
+            availableAssets = availableCryptos,
+            favoriteIds = favorites,
             prices = cryptoInfoMap,
             selectedCurrency = selectedCurrency,
             sortOption = currentSortOption,
