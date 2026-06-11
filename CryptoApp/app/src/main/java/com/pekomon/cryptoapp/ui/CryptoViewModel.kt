@@ -13,7 +13,6 @@ import com.pekomon.cryptoapp.data.UserCrypto
 import com.pekomon.cryptoapp.data.Transaction
 import com.pekomon.cryptoapp.data.TransactionType
 import com.pekomon.cryptoapp.data.toPortfolioPosition
-import com.pekomon.cryptoapp.domain.market.CryptoAssetSorter
 import com.pekomon.cryptoapp.domain.market.CryptoSelectionSanitizer
 import com.pekomon.cryptoapp.domain.market.DefaultCryptoAssets
 import com.pekomon.cryptoapp.domain.market.MarketDataError
@@ -29,6 +28,7 @@ import com.pekomon.cryptoapp.domain.repository.UserPreferencesRepository
 import com.pekomon.cryptoapp.ui.state.FavoritesUiState
 import com.pekomon.cryptoapp.ui.state.PortfolioUiState
 import com.pekomon.cryptoapp.ui.state.SettingsUiState
+import com.pekomon.cryptoapp.ui.state.WatchlistStateOwner
 import com.pekomon.cryptoapp.ui.state.WatchlistUiState
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.flow.first
@@ -69,6 +69,7 @@ class CryptoViewModel(
         private set
     
     private var isInitialized = false
+    private val watchlistStateOwner = WatchlistStateOwner()
     
     private val defaultCryptos = DefaultCryptoAssets.assets.map { it.id }
     
@@ -145,16 +146,27 @@ class CryptoViewModel(
     }
     
     val sortedCryptos: List<CryptoAsset>
-        get() = sortCryptos(availableCryptos.filter { it.id in selectedCryptos })
+        get() = watchlistStateOwner.sortedAssets(
+            availableAssets = availableCryptos,
+            selectedAssetIds = selectedCryptos,
+            sortOption = currentSortOption,
+            priceForAsset = ::getCryptoInfo
+        )
 
     val sortedFavoriteCryptos: List<CryptoAsset>
-        get() = sortCryptos(availableCryptos.filter { it.id in favorites })
+        get() = watchlistStateOwner.sortedAssets(
+            availableAssets = availableCryptos,
+            selectedAssetIds = favorites,
+            sortOption = currentSortOption,
+            priceForAsset = ::getCryptoInfo
+        )
 
     val watchlistUiState: WatchlistUiState
-        get() = WatchlistUiState(
-            assets = sortedCryptos,
-            prices = cryptoInfoMap,
+        get() = watchlistStateOwner.state(
+            availableAssets = availableCryptos,
+            selectedAssetIds = selectedCryptos,
             favoriteIds = favorites,
+            prices = cryptoInfoMap,
             selectedCurrency = selectedCurrency,
             sortOption = currentSortOption,
             marketLoadState = marketLoadState,
@@ -206,14 +218,6 @@ class CryptoViewModel(
             errorMessage = error
         )
 
-    private fun sortCryptos(cryptos: List<CryptoAsset>): List<CryptoAsset> {
-        return CryptoAssetSorter.sort(
-            assets = cryptos,
-            sortOption = currentSortOption,
-            priceForAsset = ::getCryptoInfo
-        )
-    }
-    
     fun fetchPrices() {
         viewModelScope.launch {
             isLoading = true
