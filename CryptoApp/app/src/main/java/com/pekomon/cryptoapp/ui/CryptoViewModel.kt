@@ -12,7 +12,6 @@ import com.pekomon.cryptoapp.data.Currency
 import com.pekomon.cryptoapp.data.UserCrypto
 import com.pekomon.cryptoapp.data.Transaction
 import com.pekomon.cryptoapp.data.TransactionType
-import com.pekomon.cryptoapp.data.toPortfolioPosition
 import com.pekomon.cryptoapp.domain.market.CryptoSelectionSanitizer
 import com.pekomon.cryptoapp.domain.market.DefaultCryptoAssets
 import com.pekomon.cryptoapp.domain.market.MarketDataError
@@ -27,6 +26,7 @@ import com.pekomon.cryptoapp.domain.repository.MarketRepository
 import com.pekomon.cryptoapp.domain.repository.UserPreferencesRepository
 import com.pekomon.cryptoapp.ui.state.FavoritesUiState
 import com.pekomon.cryptoapp.ui.state.FavoritesStateOwner
+import com.pekomon.cryptoapp.ui.state.PortfolioStateOwner
 import com.pekomon.cryptoapp.ui.state.PortfolioUiState
 import com.pekomon.cryptoapp.ui.state.SettingsUiState
 import com.pekomon.cryptoapp.ui.state.WatchlistStateOwner
@@ -72,6 +72,7 @@ class CryptoViewModel(
     private var isInitialized = false
     private val watchlistStateOwner = WatchlistStateOwner()
     private val favoritesStateOwner = FavoritesStateOwner()
+    private val portfolioStateOwner = PortfolioStateOwner()
     
     private val defaultCryptos = DefaultCryptoAssets.assets.map { it.id }
     
@@ -190,24 +191,14 @@ class CryptoViewModel(
         )
 
     val portfolioUiState: PortfolioUiState
-        get() {
-            val positions = PortfolioCalculator.combinePositions(
-                userCryptos.map { it.toPortfolioPosition() }
-            )
-            return PortfolioUiState(
-                positions = positions,
-                summary = PortfolioCalculator.positionSummaryMetrics(positions) { cryptoId ->
-                    getCryptoInfo(cryptoId)?.currentPrice
-                },
-                holdingMetrics = PortfolioCalculator.positionMetrics(positions) { cryptoId ->
-                    getCryptoInfo(cryptoId)?.currentPrice
-                }.associateBy { it.cryptoId },
-                selectedCurrency = selectedCurrency,
-                marketLoadState = marketLoadState,
-                isLoading = isLoading,
-                errorMessage = error
-            )
-        }
+        get() = portfolioStateOwner.state(
+            userCryptos = userCryptos,
+            prices = cryptoInfoMap,
+            selectedCurrency = selectedCurrency,
+            marketLoadState = marketLoadState,
+            isLoading = isLoading,
+            errorMessage = error
+        )
 
     val settingsUiState: SettingsUiState
         get() = SettingsUiState(
