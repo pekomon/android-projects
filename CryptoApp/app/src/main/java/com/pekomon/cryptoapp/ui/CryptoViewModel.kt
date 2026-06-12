@@ -28,6 +28,7 @@ import com.pekomon.cryptoapp.ui.state.FavoritesUiState
 import com.pekomon.cryptoapp.ui.state.FavoritesStateOwner
 import com.pekomon.cryptoapp.ui.state.PortfolioStateOwner
 import com.pekomon.cryptoapp.ui.state.PortfolioUiState
+import com.pekomon.cryptoapp.ui.state.SettingsStateOwner
 import com.pekomon.cryptoapp.ui.state.SettingsUiState
 import com.pekomon.cryptoapp.ui.state.WatchlistStateOwner
 import com.pekomon.cryptoapp.ui.state.WatchlistUiState
@@ -73,6 +74,7 @@ class CryptoViewModel(
     private val watchlistStateOwner = WatchlistStateOwner()
     private val favoritesStateOwner = FavoritesStateOwner()
     private val portfolioStateOwner = PortfolioStateOwner()
+    private val settingsStateOwner = SettingsStateOwner()
     
     private val defaultCryptos = DefaultCryptoAssets.assets.map { it.id }
     
@@ -201,7 +203,7 @@ class CryptoViewModel(
         )
 
     val settingsUiState: SettingsUiState
-        get() = SettingsUiState(
+        get() = settingsStateOwner.state(
             availableAssets = availableCryptos,
             selectedAssetIds = selectedCryptos,
             favoriteIds = favorites,
