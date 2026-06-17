@@ -10,8 +10,6 @@ import com.pekomon.cryptoapp.data.CryptoRepository
 import com.pekomon.cryptoapp.data.SortOption
 import com.pekomon.cryptoapp.data.Currency
 import com.pekomon.cryptoapp.data.UserCrypto
-import com.pekomon.cryptoapp.data.Transaction
-import com.pekomon.cryptoapp.data.TransactionType
 import com.pekomon.cryptoapp.domain.market.CryptoSelectionSanitizer
 import com.pekomon.cryptoapp.domain.market.DefaultCryptoAssets
 import com.pekomon.cryptoapp.domain.market.MarketDataError
@@ -20,12 +18,11 @@ import com.pekomon.cryptoapp.domain.market.MarketPriceMapper
 import com.pekomon.cryptoapp.domain.model.CryptoAsset
 import com.pekomon.cryptoapp.domain.model.MarketPrice
 import com.pekomon.cryptoapp.domain.portfolio.PortfolioCalculator
-import com.pekomon.cryptoapp.domain.portfolio.PortfolioValidationResult
-import com.pekomon.cryptoapp.domain.portfolio.PortfolioValidator
 import com.pekomon.cryptoapp.domain.repository.MarketRepository
 import com.pekomon.cryptoapp.domain.repository.UserPreferencesRepository
 import com.pekomon.cryptoapp.ui.state.FavoritesUiState
 import com.pekomon.cryptoapp.ui.state.FavoritesStateOwner
+import com.pekomon.cryptoapp.ui.state.PortfolioMutationResult
 import com.pekomon.cryptoapp.ui.state.PortfolioStateOwner
 import com.pekomon.cryptoapp.ui.state.PortfolioUiState
 import com.pekomon.cryptoapp.ui.state.SettingsStateOwner
@@ -319,30 +316,20 @@ class CryptoViewModel(
         dateTime: LocalDateTime
     ) {
         viewModelScope.launch {
-            val validation = PortfolioValidator.validateTransactionInput(amount, price)
-            if (validation is PortfolioValidationResult.Invalid) {
-                error = validation.message
-                return@launch
-            }
-
-            val transaction = Transaction(
-                type = TransactionType.BUY,
+            when (val result = portfolioStateOwner.addHolding(
+                currentHoldings = userCryptos,
+                cryptoId = cryptoId,
                 amount = amount,
                 price = price,
                 dateTime = dateTime
-            )
-            
-            val newCrypto = UserCrypto(
-                cryptoId = cryptoId,
-                amount = amount,
-                purchasePrice = price,
-                purchaseDateTime = dateTime,
-                transactions = listOf(transaction)
-            )
-            
-            val newCryptos = PortfolioCalculator.normalizeHoldings(userCryptos + newCrypto)
-            preferencesRepository.updateUserCryptos(newCryptos)
-            fetchPrices()
+            )) {
+                is PortfolioMutationResult.Success -> {
+                    preferencesRepository.updateUserCryptos(result.holdings)
+                    fetchPrices()
+                }
+                is PortfolioMutationResult.Failure -> error = result.message
+                PortfolioMutationResult.NoChange -> error = null
+            }
         }
     }
     
@@ -357,54 +344,29 @@ class CryptoViewModel(
         dateTime: LocalDateTime
     ) {
         viewModelScope.launch {
-            val validation = PortfolioValidator.validateTransactionInput(amount, price)
-            if (validation is PortfolioValidationResult.Invalid) {
-                error = validation.message
-                return@launch
+            when (val result = portfolioStateOwner.updateHolding(
+                currentHoldings = userCryptos,
+                cryptoId = cryptoId,
+                amount = amount,
+                price = price,
+                dateTime = dateTime
+            )) {
+                is PortfolioMutationResult.Success -> {
+                    preferencesRepository.updateUserCryptos(result.holdings)
+                    fetchPrices()
+                }
+                is PortfolioMutationResult.Failure -> error = result.message
+                PortfolioMutationResult.NoChange -> error = null
             }
-
-            val existingCrypto = getCombinedUserCryptos().find { it.cryptoId == cryptoId }
-            if (existingCrypto == null) {
-                error = "This holding is no longer in your portfolio."
-                return@launch
-            }
-
-            val adjustment = amount - existingCrypto.amount
-            val adjustmentTransaction = when {
-                adjustment > 0.0 -> Transaction(
-                    type = TransactionType.BUY,
-                    amount = adjustment,
-                    price = price,
-                    dateTime = dateTime
-                )
-                adjustment < 0.0 -> Transaction(
-                    type = TransactionType.SELL,
-                    amount = -adjustment,
-                    price = price,
-                    dateTime = dateTime
-                )
-                else -> null
-            }
-
-            if (adjustmentTransaction == null) {
-                error = null
-                return@launch
-            }
-
-            val updatedCrypto = existingCrypto.copy(
-                transactions = existingCrypto.transactions + adjustmentTransaction
-            )
-            val newCryptos = PortfolioCalculator.normalizeHoldings(
-                userCryptos.filterNot { it.cryptoId == cryptoId } + updatedCrypto
-            )
-            preferencesRepository.updateUserCryptos(newCryptos)
-            fetchPrices()
         }
     }
     
     fun removeUserCrypto(cryptoId: String) {
         viewModelScope.launch {
-            val newCryptos = userCryptos.filter { it.cryptoId != cryptoId }
+            val newCryptos = portfolioStateOwner.removeHolding(
+                currentHoldings = userCryptos,
+                cryptoId = cryptoId
+            )
             preferencesRepository.updateUserCryptos(newCryptos)
             fetchPrices()
         }
