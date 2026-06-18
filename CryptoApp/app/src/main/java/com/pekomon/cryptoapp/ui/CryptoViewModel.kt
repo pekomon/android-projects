@@ -136,11 +136,10 @@ class CryptoViewModel(
     }
     
     fun toggleFavorite(cryptoId: String) {
-        val newFavorites = if (cryptoId in favorites) {
-            favorites - cryptoId
-        } else {
-            favorites + cryptoId
-        }
+        val newFavorites = favoritesStateOwner.toggleFavorite(
+            favoriteIds = favorites,
+            cryptoId = cryptoId
+        )
         viewModelScope.launch {
             preferencesRepository.updateFavorites(newFavorites)
             favorites = newFavorites
@@ -274,7 +273,12 @@ class CryptoViewModel(
         }
     }
     
-    fun isFavorite(cryptoId: String): Boolean = cryptoId in favorites
+    fun isFavorite(cryptoId: String): Boolean {
+        return favoritesStateOwner.isFavorite(
+            favoriteIds = favorites,
+            cryptoId = cryptoId
+        )
+    }
     
     private suspend fun loadAvailableCryptos() {
         try {

@@ -8,6 +8,24 @@ import com.pekomon.cryptoapp.domain.model.MarketPrice
 import com.pekomon.cryptoapp.ui.MarketLoadState
 
 class FavoritesStateOwner {
+    fun toggleFavorite(
+        favoriteIds: Set<String>,
+        cryptoId: String
+    ): Set<String> {
+        return if (cryptoId in favoriteIds) {
+            favoriteIds - cryptoId
+        } else {
+            favoriteIds + cryptoId
+        }
+    }
+
+    fun isFavorite(
+        favoriteIds: Set<String>,
+        cryptoId: String
+    ): Boolean {
+        return cryptoId in favoriteIds
+    }
+
     fun sortedAssets(
         availableAssets: List<CryptoAsset>,
         favoriteIds: Set<String>,
