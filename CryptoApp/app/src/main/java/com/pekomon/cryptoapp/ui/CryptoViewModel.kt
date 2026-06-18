@@ -11,9 +11,6 @@ import com.pekomon.cryptoapp.data.SortOption
 import com.pekomon.cryptoapp.data.Currency
 import com.pekomon.cryptoapp.data.UserCrypto
 import com.pekomon.cryptoapp.domain.market.DefaultCryptoAssets
-import com.pekomon.cryptoapp.domain.market.MarketDataError
-import com.pekomon.cryptoapp.domain.market.MarketDataResult
-import com.pekomon.cryptoapp.domain.market.MarketPriceMapper
 import com.pekomon.cryptoapp.domain.model.CryptoAsset
 import com.pekomon.cryptoapp.domain.model.MarketPrice
 import com.pekomon.cryptoapp.domain.portfolio.PortfolioCalculator
@@ -71,6 +68,7 @@ class CryptoViewModel(
     private val favoritesStateOwner = FavoritesStateOwner()
     private val portfolioStateOwner = PortfolioStateOwner()
     private val settingsStateOwner = SettingsStateOwner()
+    private val marketDataCoordinator = MarketDataCoordinator(repository)
     
     private val defaultCryptos = DefaultCryptoAssets.assets.map { it.id }
     
@@ -216,60 +214,16 @@ class CryptoViewModel(
             isLoading = true
             error = null
             marketLoadState = MarketLoadState.Loading
-            try {
-                val cryptosToFetch = (selectedCryptos + favorites + userCryptos.map { it.cryptoId }).toList()
-                CryptoAppLogger.debug(TAG, "fetchPrices start ids=${cryptosToFetch.distinct().joinToString(",")} currency=${selectedCurrency.code}")
-                when (val result = repository.getCryptoPricesResult(cryptosToFetch, selectedCurrency.code)) {
-                    is MarketDataResult.Success -> {
-                        cryptoInfoMap = MarketPriceMapper.mapPrices(result.value).toMutableMap()
-                        CryptoAppLogger.debug(TAG, "fetchPrices success count=${cryptoInfoMap.size}")
-                        lastMarketUpdated = LocalDateTime.now()
-                        marketLoadState = MarketLoadState.Content(lastUpdated = lastMarketUpdated ?: LocalDateTime.now())
-                    }
-                    is MarketDataResult.PartialSuccess -> {
-                        val fetchedPrices = MarketPriceMapper.mapPrices(result.value)
-                        cryptoInfoMap = cryptoInfoMap.toMutableMap().apply {
-                            putAll(fetchedPrices)
-                        }
-                        CryptoAppLogger.warning(
-                            TAG,
-                            "fetchPrices partial success count=${fetchedPrices.size} missingIds=${result.missingIds.joinToString(",")}"
-                        )
-                        lastMarketUpdated = LocalDateTime.now()
-                        marketLoadState = MarketLoadState.Content(
-                            lastUpdated = lastMarketUpdated ?: LocalDateTime.now(),
-                            isStale = result.missingIds.any { it in cryptoInfoMap },
-                            message = partialPriceMessage(result.missingIds)
-                        )
-                    }
-                    is MarketDataResult.Failure -> {
-                        val message = result.error.userMessage()
-                        error = message
-                        CryptoAppLogger.error(TAG, "fetchPrices failed ${result.error.technicalMessage}")
-                        marketLoadState = if (cryptoInfoMap.isNotEmpty() && lastMarketUpdated != null) {
-                            MarketLoadState.Content(
-                                lastUpdated = lastMarketUpdated ?: LocalDateTime.now(),
-                                isStale = true,
-                                message = message
-                            )
-                        } else {
-                            MarketLoadState.Error(message)
-                        }
-                    }
-                }
-            } catch (e: Exception) {
-                CryptoAppLogger.error(TAG, "fetchPrices failed", e)
-                error = MarketDataError.Unknown(e.message).userMessage()
-                marketLoadState = if (cryptoInfoMap.isNotEmpty() && lastMarketUpdated != null) {
-                    MarketLoadState.Content(
-                        lastUpdated = lastMarketUpdated ?: LocalDateTime.now(),
-                        isStale = true,
-                        message = error
-                    )
-                } else {
-                    MarketLoadState.Error(error ?: "Unable to load prices.")
-                }
-            }
+            val result = marketDataCoordinator.fetchPrices(
+                cryptoIds = (selectedCryptos + favorites + userCryptos.map { it.cryptoId }).toList(),
+                currencyCode = selectedCurrency.code,
+                currentPrices = cryptoInfoMap,
+                lastUpdated = lastMarketUpdated
+            )
+            cryptoInfoMap = result.prices.toMutableMap()
+            lastMarketUpdated = result.lastUpdated
+            marketLoadState = result.marketLoadState
+            error = result.errorMessage
             isLoading = false
         }
     }
@@ -381,30 +335,6 @@ class CryptoViewModel(
     
     fun getCombinedUserCryptos(): List<UserCrypto> {
         return PortfolioCalculator.combineHoldings(userCryptos)
-    }
-
-    private fun MarketDataError.userMessage(): String = when (this) {
-        is MarketDataError.Unauthorized -> {
-            "CoinGecko rejected the API key. Check COINGECKO_DEMO_API_KEY in local.properties."
-        }
-        is MarketDataError.Forbidden -> {
-            "CoinGecko access is forbidden. Check the API plan, key, or endpoint."
-        }
-        is MarketDataError.RateLimited -> {
-            "CoinGecko is rate limiting requests. Wait a moment and refresh again."
-        }
-        is MarketDataError.Network -> {
-            "Unable to reach CoinGecko. Check your connection and try again."
-        }
-        is MarketDataError.Unknown -> "Unable to load prices. Check your connection and try again."
-    }
-
-    private fun partialPriceMessage(missingIds: Set<String>): String {
-        return if (missingIds.size == 1) {
-            "1 price could not be updated."
-        } else {
-            "${missingIds.size} prices could not be updated."
-        }
     }
 
     private suspend fun sanitizeSelectedCryptos(savedSelection: Set<String>): Set<String> {
