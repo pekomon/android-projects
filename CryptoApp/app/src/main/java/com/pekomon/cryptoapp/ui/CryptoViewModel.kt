@@ -10,7 +10,6 @@ import com.pekomon.cryptoapp.data.CryptoRepository
 import com.pekomon.cryptoapp.data.SortOption
 import com.pekomon.cryptoapp.data.Currency
 import com.pekomon.cryptoapp.data.UserCrypto
-import com.pekomon.cryptoapp.domain.market.CryptoSelectionSanitizer
 import com.pekomon.cryptoapp.domain.market.DefaultCryptoAssets
 import com.pekomon.cryptoapp.domain.market.MarketDataError
 import com.pekomon.cryptoapp.domain.market.MarketDataResult
@@ -121,16 +120,18 @@ class CryptoViewModel(
     }
     
     fun updateSortOption(option: SortOption) {
+        val newSortOption = settingsStateOwner.updateSortOption(option)
         viewModelScope.launch {
-            preferencesRepository.updateSortOption(option)
-            currentSortOption = option
+            preferencesRepository.updateSortOption(newSortOption)
+            currentSortOption = newSortOption
         }
     }
     
     fun updateCurrency(currency: Currency) {
+        val newCurrency = settingsStateOwner.updateCurrency(currency)
         viewModelScope.launch {
-            preferencesRepository.updateSelectedCurrency(currency)
-            selectedCurrency = currency
+            preferencesRepository.updateSelectedCurrency(newCurrency)
+            selectedCurrency = newCurrency
             fetchPrices()
         }
     }
@@ -407,7 +408,7 @@ class CryptoViewModel(
     }
 
     private suspend fun sanitizeSelectedCryptos(savedSelection: Set<String>): Set<String> {
-        val sanitized = CryptoSelectionSanitizer.sanitizeSelection(
+        val sanitized = watchlistStateOwner.sanitizeSelectedAssetIds(
             selectedIds = savedSelection,
             availableAssets = availableCryptos,
             fallbackIds = defaultCryptos.toSet()

@@ -6,6 +6,14 @@ import com.pekomon.cryptoapp.domain.model.CryptoAsset
 import com.pekomon.cryptoapp.ui.AssetMetadataSource
 
 class SettingsStateOwner {
+    fun updateSortOption(option: SortOption): SortOption {
+        return option
+    }
+
+    fun updateCurrency(currency: Currency): Currency {
+        return currency
+    }
+
     fun state(
         availableAssets: List<CryptoAsset>,
         selectedAssetIds: Set<String>,
