@@ -26,7 +26,6 @@ import com.pekomon.cryptoapp.ui.state.SettingsUiState
 import com.pekomon.cryptoapp.ui.state.WatchlistStateOwner
 import com.pekomon.cryptoapp.ui.state.WatchlistUiState
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.flow.first
 import java.time.LocalDateTime
 
 class CryptoViewModel(
@@ -69,8 +68,14 @@ class CryptoViewModel(
     private val portfolioStateOwner = PortfolioStateOwner()
     private val settingsStateOwner = SettingsStateOwner()
     private val marketDataCoordinator = MarketDataCoordinator(repository)
-    
-    private val defaultCryptos = DefaultCryptoAssets.assets.map { it.id }
+    private val assetCatalogLoader = AssetCatalogLoader(repository, preferencesRepository)
+    private val bootstrapper = CryptoBootstrapper(
+        preferencesRepository = preferencesRepository,
+        assetCatalogLoader = assetCatalogLoader,
+        watchlistStateOwner = watchlistStateOwner,
+        defaultCryptoIds = DefaultCryptoAssets.assets.map { it.id }.toSet()
+    )
+    private val marketRefreshRequestBuilder = MarketRefreshRequestBuilder()
     
     var userCryptos by mutableStateOf<List<UserCrypto>>(emptyList())
         private set
@@ -97,17 +102,16 @@ class CryptoViewModel(
         try {
             isLoading = true
             error = null
-            
-            selectedCurrency = preferencesRepository.selectedCurrency.first()
-            currentSortOption = preferencesRepository.sortOption.first()
-            favorites = preferencesRepository.favorites.first()
-            
-            loadAvailableCryptos()
 
-            selectedCryptos = sanitizeSelectedCryptos(preferencesRepository.selectedCryptos.first())
-            
+            val bootstrapState = bootstrapper.load()
+            selectedCurrency = bootstrapState.selectedCurrency
+            currentSortOption = bootstrapState.sortOption
+            favorites = bootstrapState.favorites
+            availableCryptos = bootstrapState.availableCryptos
+            assetMetadataSource = bootstrapState.assetMetadataSource
+            selectedCryptos = bootstrapState.selectedCryptos
+
             fetchPrices()
-            
             isInitialized = true
         } catch (e: Exception) {
             CryptoAppLogger.error(TAG, "initialize failed", e)
@@ -215,7 +219,11 @@ class CryptoViewModel(
             error = null
             marketLoadState = MarketLoadState.Loading
             val result = marketDataCoordinator.fetchPrices(
-                cryptoIds = (selectedCryptos + favorites + userCryptos.map { it.cryptoId }).toList(),
+                cryptoIds = marketRefreshRequestBuilder.build(
+                    selectedCryptos = selectedCryptos,
+                    favorites = favorites,
+                    userCryptos = userCryptos
+                ),
                 currencyCode = selectedCurrency.code,
                 currentPrices = cryptoInfoMap,
                 lastUpdated = lastMarketUpdated
@@ -235,33 +243,12 @@ class CryptoViewModel(
         )
     }
     
-    private suspend fun loadAvailableCryptos() {
-        try {
-            CryptoAppLogger.debug(TAG, "loadAvailableCryptos using live API")
-            val liveAssets = repository.getAllAvailableCryptos()
-            availableCryptos = liveAssets
-            assetMetadataSource = AssetMetadataSource.Live
-            preferencesRepository.updateCachedCryptoAssets(liveAssets)
-            CryptoAppLogger.debug(TAG, "loadAvailableCryptos live success count=${liveAssets.size}")
-        } catch (e: Exception) {
-            CryptoAppLogger.error(TAG, "loadAvailableCryptos live failed; trying cache", e)
-            val cachedAssets = preferencesRepository.cachedCryptoAssets.first()
-            availableCryptos = cachedAssets.ifEmpty { DefaultCryptoAssets.assets }
-            assetMetadataSource = if (cachedAssets.isEmpty()) {
-                AssetMetadataSource.Default
-            } else {
-                AssetMetadataSource.Cache
-            }
-            CryptoAppLogger.debug(
-                TAG,
-                "loadAvailableCryptos fallback source=${if (cachedAssets.isEmpty()) "default" else "cache"} count=${availableCryptos.size}"
-            )
-        }
-    }
-    
     fun updateSelectedCryptos(cryptos: Set<String>) {
         viewModelScope.launch {
-            val sanitized = sanitizeSelectedCryptos(cryptos)
+            val sanitized = bootstrapper.sanitizeSelection(
+                selectedCryptos = cryptos,
+                availableCryptos = availableCryptos
+            )
             preferencesRepository.updateSelectedCryptos(sanitized)
             selectedCryptos = sanitized
             fetchPrices()
@@ -335,24 +322,6 @@ class CryptoViewModel(
     
     fun getCombinedUserCryptos(): List<UserCrypto> {
         return PortfolioCalculator.combineHoldings(userCryptos)
-    }
-
-    private suspend fun sanitizeSelectedCryptos(savedSelection: Set<String>): Set<String> {
-        val sanitized = watchlistStateOwner.sanitizeSelectedAssetIds(
-            selectedIds = savedSelection,
-            availableAssets = availableCryptos,
-            fallbackIds = defaultCryptos.toSet()
-        )
-
-        if (sanitized != savedSelection) {
-            CryptoAppLogger.debug(
-                TAG,
-                "sanitizeSelectedCryptos removed=${(savedSelection - sanitized).joinToString(",")} selected=${sanitized.joinToString(",")}"
-            )
-            preferencesRepository.updateSelectedCryptos(sanitized)
-        }
-
-        return sanitized
     }
 
     private companion object {
