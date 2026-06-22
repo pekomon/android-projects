@@ -32,7 +32,9 @@ import com.pekomon.cryptoapp.data.UserCrypto
 import com.pekomon.cryptoapp.domain.portfolio.PortfolioHoldingMetrics
 import com.pekomon.cryptoapp.domain.portfolio.PortfolioSummaryMetrics
 import com.pekomon.cryptoapp.ui.CryptoViewModel
+import com.pekomon.cryptoapp.ui.MarketLoadState
 import com.pekomon.cryptoapp.ui.components.CommonCard
+import com.pekomon.cryptoapp.ui.components.MarketStatusCard
 import com.pekomon.cryptoapp.ui.components.QuickAddDialog
 import com.pekomon.cryptoapp.ui.components.ScreenHeader
 import com.pekomon.cryptoapp.ui.components.StateMessageCard
@@ -61,10 +63,29 @@ fun PortfolioScreen(
 
         val holdings = viewModel.getCombinedUserCryptos()
 
+        MarketStatusCard(
+            title = "Live portfolio pricing",
+            subtitle = if (state.summary.unpricedHoldingCount > 0) {
+                "${state.summary.unpricedHoldingCount} holdings are waiting for a live price."
+            } else {
+                "Market prices feed portfolio value, allocation, and return metrics."
+            },
+            marketLoadState = state.marketLoadState,
+            isLoading = state.isLoading
+        )
+
         PortfolioSummaryCard(
             metrics = state.summary,
             currency = state.selectedCurrency
         )
+
+        if (state.errorMessage != null && state.marketLoadState !is MarketLoadState.Error) {
+            StateMessageCard(
+                title = "Portfolio update blocked",
+                message = state.errorMessage,
+                modifier = Modifier.testTag(CryptoTestTags.PORTFOLIO_MESSAGE)
+            )
+        }
 
         if (holdings.isEmpty()) {
             StateMessageCard(

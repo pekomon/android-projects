@@ -5,12 +5,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.Sort
-import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -20,12 +15,12 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
-import com.pekomon.cryptoapp.core.formatting.DisplayFormatters
 import com.pekomon.cryptoapp.domain.model.CryptoAsset
 import com.pekomon.cryptoapp.ui.MarketLoadState
 import com.pekomon.cryptoapp.ui.CryptoViewModel
 import com.pekomon.cryptoapp.ui.components.CommonCard
 import com.pekomon.cryptoapp.ui.components.CryptoList
+import com.pekomon.cryptoapp.ui.components.MarketStatusCard
 import com.pekomon.cryptoapp.ui.components.QuickAddDialog
 import com.pekomon.cryptoapp.ui.components.ScreenHeader
 import com.pekomon.cryptoapp.ui.components.SortMenu
@@ -41,7 +36,6 @@ fun FavoritesScreen(
     modifier: Modifier = Modifier
 ) {
     var quickAddCrypto by remember { mutableStateOf<CryptoAsset?>(null) }
-    var showSortMenu by remember { mutableStateOf(false) }
     val state = viewModel.favoritesUiState
     
     Column(
@@ -54,49 +48,14 @@ fun FavoritesScreen(
         val favorites = state.assets
         val pricedFavorites = favorites.count { crypto -> state.prices[crypto.id] != null }
         
-        OutlinedButton(
-            onClick = { showSortMenu = true },
-            modifier = Modifier.fillMaxWidth()
+        MarketStatusCard(
+            title = "Sort by: ${state.sortOption.displayName}",
+            marketLoadState = state.marketLoadState,
+            isLoading = state.isLoading
         ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Column {
-                    Text(
-                        text = "Sort by: ${state.sortOption.displayName}",
-                        style = MaterialTheme.typography.bodyLarge
-                    )
-                    (state.marketLoadState as? MarketLoadState.Content)?.let { loadState ->
-                        Text(
-                            text = DisplayFormatters.updateTime(loadState.lastUpdated),
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                        if (loadState.isStale || loadState.message != null) {
-                            Text(
-                                text = loadState.message ?: "Using last successful prices.",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.tertiary
-                            )
-                        }
-                    }
-                }
-                Icon(
-                    imageVector = Icons.AutoMirrored.Filled.Sort,
-                    contentDescription = "Sort"
-                )
-            }
-        }
-        
-        if (showSortMenu) {
             SortMenu(
                 currentSort = state.sortOption,
-                onSortSelected = { 
-                    viewModel.updateSortOption(it)
-                    showSortMenu = false
-                }
+                onSortSelected = { viewModel.updateSortOption(it) }
             )
         }
 
@@ -106,13 +65,6 @@ fun FavoritesScreen(
         )
 
         when {
-            state.isLoading -> {
-                CircularProgressIndicator(
-                    modifier = Modifier
-                        .align(Alignment.CenterHorizontally)
-                        .testTag(CryptoTestTags.FAVORITES_LOADING)
-                )
-            }
             state.marketLoadState is MarketLoadState.Error -> {
                 val loadState = state.marketLoadState as MarketLoadState.Error
                 StateMessageCard(

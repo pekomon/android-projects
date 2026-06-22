@@ -24,6 +24,7 @@ import com.pekomon.cryptoapp.ui.CryptoViewModel
 import com.pekomon.cryptoapp.ui.MarketLoadState
 import com.pekomon.cryptoapp.ui.components.CommonCard
 import com.pekomon.cryptoapp.ui.components.CryptoList
+import com.pekomon.cryptoapp.ui.components.MarketStatusCard
 import com.pekomon.cryptoapp.ui.components.QuickAddDialog
 import com.pekomon.cryptoapp.ui.components.ScreenHeader
 import com.pekomon.cryptoapp.ui.components.SortMenu
@@ -62,48 +63,17 @@ fun HomeScreen(
     ) {
         ScreenHeader(title = "Watchlist")
         
-        CommonCard {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(CryptoSpacing.large),
-                horizontalArrangement = Arrangement.spacedBy(CryptoSpacing.medium),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = "Sort by: ${state.sortOption.displayName}",
-                        style = MaterialTheme.typography.bodyLarge
-                    )
-                    (state.marketLoadState as? MarketLoadState.Content)?.let { loadState ->
-                        Text(
-                            text = DisplayFormatters.updateTime(loadState.lastUpdated),
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                        if (loadState.isStale || loadState.message != null) {
-                            Text(
-                                text = loadState.message ?: "Using last successful prices.",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.tertiary
-                            )
-                        }
-                    }
-                    state.assetMetadataSource
-                        ?.takeUnless { it == AssetMetadataSource.Live }
-                        ?.let { source ->
-                            Text(
-                                text = source.label,
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.tertiary
-                            )
-                        }
-                }
-                SortMenu(
-                    currentSort = state.sortOption,
-                    onSortSelected = { viewModel.updateSortOption(it) }
-                )
-            }
+        MarketStatusCard(
+            title = "Sort by: ${state.sortOption.displayName}",
+            marketLoadState = state.marketLoadState,
+            assetMetadataSource = state.assetMetadataSource
+                ?.takeUnless { it == AssetMetadataSource.Live },
+            isLoading = state.isLoading
+        ) {
+            SortMenu(
+                currentSort = state.sortOption,
+                onSortSelected = { viewModel.updateSortOption(it) }
+            )
         }
 
         WatchlistSummaryCard(
@@ -140,7 +110,7 @@ fun HomeScreen(
         }
 
         when {
-            state.isLoading -> {
+            state.isLoading && state.assets.isEmpty() -> {
                 CircularProgressIndicator(
                     modifier = Modifier
                         .align(Alignment.CenterHorizontally)

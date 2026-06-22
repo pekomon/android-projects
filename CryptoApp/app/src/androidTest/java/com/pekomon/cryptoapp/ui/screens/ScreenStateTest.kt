@@ -144,6 +144,24 @@ class ScreenStateTest {
         composeRule.onNodeWithTag(CryptoTestTags.PORTFOLIO_REMOVE_CONFIRM).assertIsDisplayed()
     }
 
+    @Test
+    fun settingsShowsWatchlistSourceSummary() {
+        val viewModel = initializedViewModel(
+            preferences = FakePreferencesRepository(selectedCryptos = setOf("bitcoin")),
+            market = FakeMarketRepository()
+        )
+
+        composeRule.setContent {
+            CryptoAppTheme(darkTheme = false) {
+                SettingsScreen(viewModel = viewModel)
+            }
+        }
+
+        composeRule.waitUntilExists(CryptoTestTags.SETTINGS_SUMMARY)
+        composeRule.onNodeWithTag(CryptoTestTags.SETTINGS_SCREEN).assertIsDisplayed()
+        composeRule.onNodeWithTag(CryptoTestTags.SETTINGS_SUMMARY).assertIsDisplayed()
+    }
+
     private fun initializedViewModel(
         preferences: FakePreferencesRepository,
         market: FakeMarketRepository

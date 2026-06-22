@@ -22,12 +22,15 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import com.pekomon.cryptoapp.data.Currency
 import com.pekomon.cryptoapp.ui.CryptoViewModel
 import com.pekomon.cryptoapp.ui.components.CommonCard
 import com.pekomon.cryptoapp.ui.components.CryptoSelector
+import com.pekomon.cryptoapp.ui.components.MarketStatusCard
 import com.pekomon.cryptoapp.ui.components.ScreenHeader
 import com.pekomon.cryptoapp.ui.components.SortMenu
+import com.pekomon.cryptoapp.ui.testing.CryptoTestTags
 import com.pekomon.cryptoapp.ui.theme.CryptoSpacing
 
 @Composable
@@ -60,11 +63,22 @@ fun SettingsScreen(
     LazyColumn(
         modifier = modifier
             .fillMaxSize()
+            .testTag(CryptoTestTags.SETTINGS_SCREEN)
             .padding(CryptoSpacing.large),
         verticalArrangement = Arrangement.spacedBy(CryptoSpacing.large)
     ) {
         item {
             ScreenHeader(title = "Settings")
+        }
+
+        item {
+            MarketStatusCard(
+                title = "Watchlist source",
+                subtitle = "${state.selectedAssetIds.size} assets selected • ${state.favoriteIds.size} favorites",
+                assetMetadataSource = state.assetMetadataSource,
+                isLoading = state.isLoading,
+                modifier = Modifier.testTag(CryptoTestTags.SETTINGS_SUMMARY)
+            )
         }
 
         item {
@@ -123,13 +137,6 @@ fun SettingsScreen(
                     text = "${state.selectedAssetIds.size} assets selected",
                     style = MaterialTheme.typography.titleMedium
                 )
-                state.assetMetadataSource?.let { source ->
-                    Text(
-                        text = source.label,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.secondary
-                    )
-                }
                 OutlinedButton(
                     onClick = { showCryptoSelector = true },
                     modifier = Modifier.fillMaxWidth()

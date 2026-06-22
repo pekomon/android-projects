@@ -19,9 +19,13 @@ object CryptoTestTags {
 
     const val PORTFOLIO_SCREEN = "portfolio_screen"
     const val PORTFOLIO_SUMMARY = "portfolio_summary"
+    const val PORTFOLIO_MESSAGE = "portfolio_message"
     const val PORTFOLIO_EMPTY = "portfolio_empty"
     const val PORTFOLIO_LIST = "portfolio_list"
     const val PORTFOLIO_REMOVE_DIALOG = "portfolio_remove_dialog"
     const val PORTFOLIO_REMOVE_CONFIRM = "portfolio_remove_confirm"
     const val PORTFOLIO_REMOVE_CANCEL = "portfolio_remove_cancel"
+
+    const val SETTINGS_SCREEN = "settings_screen"
+    const val SETTINGS_SUMMARY = "settings_summary"
 }
