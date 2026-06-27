@@ -30,6 +30,16 @@ The result is a compact crypto companion app that demonstrates:
 - Persistent settings for selected currency, favorites, watchlist, and holdings
 - Custom launcher icon and non-default visual styling
 
+## Screenshots
+
+| Watchlist | Favorites |
+| --- | --- |
+| ![Watchlist screen](docs/screenshots/home-phone.png) | ![Favorites screen](docs/screenshots/favorites-phone.png) |
+
+| Portfolio | Settings |
+| --- | --- |
+| ![Portfolio screen](docs/screenshots/portfolio-phone.png) | ![Settings screen](docs/screenshots/settings-phone.png) |
+
 ## Screens
 
 ### Watchlist
