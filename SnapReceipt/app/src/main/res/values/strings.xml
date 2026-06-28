@@ -1,3 +1,12 @@
 <resources>
     <string name="app_name">SnapReceipt</string>
+    <string name="home_eyebrow">LOCAL RECEIPT WORKSPACE</string>
+    <string name="home_title">Snap receipts, review the OCR, save only the clean result.</string>
+    <string name="home_subtitle">The capture, receipts, and settings flows will land here next. This shell replaces the Android Studio sample and establishes the product voice.</string>
+    <string name="capture_title">Capture</string>
+    <string name="capture_description">Camera and import entry point for the next milestone.</string>
+    <string name="receipts_title">Receipts</string>
+    <string name="receipts_description">Saved items, thumbnails, totals, and detail navigation.</string>
+    <string name="settings_title">Settings</string>
+    <string name="settings_description">Defaults for currency, image handling, and local storage behavior.</string>
 </resources>
