@@ -1,12 +1,24 @@
 <resources>
     <string name="app_name">SnapReceipt</string>
-    <string name="home_eyebrow">LOCAL RECEIPT WORKSPACE</string>
-    <string name="home_title">Snap receipts, review the OCR, save only the clean result.</string>
-    <string name="home_subtitle">The capture, receipts, and settings flows will land here next. This shell replaces the Android Studio sample and establishes the product voice.</string>
+    <string name="capture_eyebrow">CAPTURE</string>
     <string name="capture_title">Capture</string>
-    <string name="capture_description">Camera and import entry point for the next milestone.</string>
+    <string name="capture_subtitle">Import and camera flows will start here. This placeholder defines the product entry point before OCR and parsing arrive.</string>
+    <string name="capture_card_primary_title">Import flow</string>
+    <string name="capture_card_primary_body">Photo Picker and files import will land here first so OCR can be built without camera complexity.</string>
+    <string name="capture_card_secondary_title">Camera flow</string>
+    <string name="capture_card_secondary_body">CameraX capture will follow as a dedicated slice once the import path is stable.</string>
+    <string name="receipts_eyebrow">RECEIPTS</string>
     <string name="receipts_title">Receipts</string>
-    <string name="receipts_description">Saved items, thumbnails, totals, and detail navigation.</string>
+    <string name="receipts_subtitle">Saved receipts, thumbnails, totals, and detail navigation will live here after local persistence is added.</string>
+    <string name="receipts_card_primary_title">Saved list</string>
+    <string name="receipts_card_primary_body">This screen will show local receipt history with thumbnails, merchant names, dates, and totals.</string>
+    <string name="receipts_card_secondary_title">Receipt detail</string>
+    <string name="receipts_card_secondary_body">The next product slice will add detail navigation, preview images, and delete actions.</string>
+    <string name="settings_eyebrow">SETTINGS</string>
     <string name="settings_title">Settings</string>
-    <string name="settings_description">Defaults for currency, image handling, and local storage behavior.</string>
+    <string name="settings_subtitle">Defaults for currency, image handling, and local storage behavior will be configured here once persistence exists.</string>
+    <string name="settings_card_primary_title">User defaults</string>
+    <string name="settings_card_primary_body">Default currency and import behavior will become the first real settings values.</string>
+    <string name="settings_card_secondary_title">Storage notes</string>
+    <string name="settings_card_secondary_body">Later this area will explain local storage usage and image cleanup behavior.</string>
 </resources>
