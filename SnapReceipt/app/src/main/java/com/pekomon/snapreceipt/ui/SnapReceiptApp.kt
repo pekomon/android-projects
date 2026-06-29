@@ -14,7 +14,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
-import com.pekomon.snapreceipt.feature.capture.CapturePlaceholderScreen
+import com.pekomon.snapreceipt.feature.capture.CaptureScreen
 import com.pekomon.snapreceipt.feature.receipts.ReceiptsPlaceholderScreen
 import com.pekomon.snapreceipt.feature.settings.SettingsPlaceholderScreen
 import com.pekomon.snapreceipt.ui.navigation.SnapReceiptDestination
@@ -70,7 +70,7 @@ fun SnapReceiptApp(modifier: Modifier = Modifier) {
             modifier = Modifier.fillMaxSize()
         ) {
             composable(SnapReceiptDestination.Capture.route) {
-                CapturePlaceholderScreen(
+                CaptureScreen(
                     modifier = Modifier.fillMaxSize(),
                     contentPadding = innerPadding
                 )
