@@ -27,10 +27,8 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -41,36 +39,31 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
 import com.pekomon.snapreceipt.R
-import com.pekomon.snapreceipt.core.ocr.MlKitReceiptOcrEngine
 import com.pekomon.snapreceipt.domain.model.ReceiptDraft
 import com.pekomon.snapreceipt.domain.model.ReceiptImage
 import com.pekomon.snapreceipt.domain.model.ReceiptSource
 
 @Composable
 fun CaptureScreen(
+    uiState: CaptureUiState,
+    onImageImported: (String, ReceiptSource, String?) -> Unit,
+    onClearImportedImage: () -> Unit,
+    onReviewDraft: () -> Unit,
     modifier: Modifier = Modifier,
     contentPadding: PaddingValues = PaddingValues()
 ) {
     val context = LocalContext.current
-    val ocrEngine = remember(context) {
-        MlKitReceiptOcrEngine(context.applicationContext)
-    }
-    val viewModel: CaptureViewModel = viewModel(
-        factory = CaptureViewModel.factory(ocrEngine)
-    )
-    val uiState by viewModel.uiState.collectAsState()
 
     val photoPickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.PickVisualMedia()
     ) { uri ->
         if (uri != null) {
-            viewModel.onImageImported(
-                uriString = uri.toString(),
-                source = ReceiptSource.PHOTO_PICKER,
-                mimeType = context.contentResolver.getType(uri)
+            onImageImported(
+                uri.toString(),
+                ReceiptSource.PHOTO_PICKER,
+                context.contentResolver.getType(uri)
             )
         }
     }
@@ -79,10 +72,10 @@ fun CaptureScreen(
         contract = ActivityResultContracts.OpenDocument()
     ) { uri ->
         if (uri != null) {
-            viewModel.onImageImported(
-                uriString = uri.toString(),
-                source = ReceiptSource.FILE_IMPORT,
-                mimeType = context.contentResolver.getType(uri)
+            onImageImported(
+                uri.toString(),
+                ReceiptSource.FILE_IMPORT,
+                context.contentResolver.getType(uri)
             )
         }
     }
@@ -165,7 +158,8 @@ fun CaptureScreen(
                         draft = uiState.draft,
                         isRunningOcr = uiState.isRunningOcr,
                         ocrErrorMessage = uiState.ocrErrorMessage,
-                        onClear = viewModel::clearImportedImage
+                        onReviewDraft = onReviewDraft,
+                        onClear = onClearImportedImage
                     )
                 } else {
                     CaptureInfoCard(
@@ -184,6 +178,7 @@ private fun ImportedReceiptPreview(
     draft: ReceiptDraft?,
     isRunningOcr: Boolean,
     ocrErrorMessage: String?,
+    onReviewDraft: () -> Unit,
     onClear: () -> Unit
 ) {
     Card(
@@ -223,7 +218,8 @@ private fun ImportedReceiptPreview(
             OcrStatusPanel(
                 draft = draft,
                 isRunningOcr = isRunningOcr,
-                ocrErrorMessage = ocrErrorMessage
+                ocrErrorMessage = ocrErrorMessage,
+                onReviewDraft = onReviewDraft
             )
             OutlinedButton(onClick = onClear) {
                 Text(text = stringResource(R.string.capture_action_clear))
@@ -266,7 +262,8 @@ private fun CaptureInfoCard(
 private fun OcrStatusPanel(
     draft: ReceiptDraft?,
     isRunningOcr: Boolean,
-    ocrErrorMessage: String?
+    ocrErrorMessage: String?,
+    onReviewDraft: () -> Unit
 ) {
     Card(
         shape = RoundedCornerShape(22.dp),
@@ -324,6 +321,9 @@ private fun OcrStatusPanel(
                         maxLines = 8,
                         overflow = TextOverflow.Ellipsis
                     )
+                    Button(onClick = onReviewDraft) {
+                        Text(text = stringResource(R.string.capture_action_review_draft))
+                    }
                 }
             }
         }

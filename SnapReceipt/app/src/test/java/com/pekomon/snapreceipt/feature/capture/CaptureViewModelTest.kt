@@ -1,10 +1,14 @@
 package com.pekomon.snapreceipt.feature.capture
 
+import com.pekomon.snapreceipt.domain.model.ParsedReceiptFields
 import com.pekomon.snapreceipt.domain.model.ReceiptCurrency
 import com.pekomon.snapreceipt.domain.model.ReceiptImage
 import com.pekomon.snapreceipt.domain.model.ReceiptOcrResult
 import com.pekomon.snapreceipt.domain.model.ReceiptSource
 import com.pekomon.snapreceipt.domain.ocr.ReceiptOcrEngine
+import com.pekomon.snapreceipt.domain.parsing.ReceiptParser
+import java.math.BigDecimal
+import java.time.LocalDate
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
@@ -43,7 +47,8 @@ class CaptureViewModelTest {
                         lineBlocks = listOf("Cafe Central", "12.80 EUR")
                     )
                 }
-            }
+            },
+            receiptParser = FakeReceiptParser()
         )
 
         viewModel.onImageImported(
@@ -57,8 +62,10 @@ class CaptureViewModelTest {
         val uiState = viewModel.uiState.value
         assertNotNull(uiState.selectedImage)
         assertNotNull(uiState.draft)
+        assertNotNull(uiState.reviewForm)
         assertNull(uiState.ocrErrorMessage)
         assertEquals(2, uiState.draft?.ocrResult?.lineBlocks?.size)
+        assertEquals("Cafe Central", uiState.draft?.parsedFields?.merchantName)
     }
 
     @Test
@@ -68,7 +75,8 @@ class CaptureViewModelTest {
                 override suspend fun extractText(image: ReceiptImage): ReceiptOcrResult {
                     error("OCR unavailable")
                 }
-            }
+            },
+            receiptParser = FakeReceiptParser()
         )
 
         viewModel.onImageImported(
@@ -84,5 +92,19 @@ class CaptureViewModelTest {
         assertNull(uiState.draft)
         assertEquals("OCR unavailable", uiState.ocrErrorMessage)
         assertTrue(!uiState.isRunningOcr)
+    }
+
+    private class FakeReceiptParser : ReceiptParser {
+        override fun parse(
+            ocrResult: ReceiptOcrResult,
+            fallbackCurrency: ReceiptCurrency?
+        ): ParsedReceiptFields {
+            return ParsedReceiptFields(
+                merchantName = "Cafe Central",
+                transactionDate = LocalDate.of(2026, 6, 30),
+                totalAmount = BigDecimal("12.80"),
+                currency = fallbackCurrency ?: ReceiptCurrency.EUR
+            )
+        }
     }
 }

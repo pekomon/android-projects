@@ -2,6 +2,7 @@ package com.pekomon.snapreceipt.ui.navigation
 
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ReceiptLong
+import androidx.compose.material.icons.outlined.EditNote
 import androidx.compose.material.icons.outlined.PhotoCamera
 import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -27,5 +28,11 @@ sealed class SnapReceiptDestination(
         route = "settings",
         label = "Settings",
         icon = Icons.Outlined.Settings
+    )
+
+    data object Review : SnapReceiptDestination(
+        route = "review",
+        label = "Review",
+        icon = Icons.Outlined.EditNote
     )
 }

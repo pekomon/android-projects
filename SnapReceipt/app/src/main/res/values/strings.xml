@@ -21,6 +21,7 @@
     <string name="capture_source_file_import">Source: File import</string>
     <string name="capture_source_camera">Source: Camera</string>
     <string name="capture_action_clear">Clear</string>
+    <string name="capture_action_review_draft">Review draft</string>
     <string name="capture_ocr_title">OCR draft</string>
     <string name="capture_ocr_running">Scanning the imported receipt with ML Kit on-device OCR.</string>
     <string name="capture_ocr_success">%1$d text lines extracted into the current draft.</string>
