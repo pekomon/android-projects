@@ -1,6 +1,7 @@
 package com.pekomon.snapreceipt.ui
 
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
@@ -10,6 +11,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -20,6 +22,9 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.pekomon.snapreceipt.core.ocr.MlKitReceiptOcrEngine
 import com.pekomon.snapreceipt.core.parsing.HeuristicReceiptParser
+import com.pekomon.snapreceipt.data.local.SnapReceiptDatabase
+import com.pekomon.snapreceipt.data.repository.RoomReceiptRepository
+import com.pekomon.snapreceipt.data.storage.LocalReceiptImageStorage
 import com.pekomon.snapreceipt.feature.capture.CaptureScreen
 import com.pekomon.snapreceipt.feature.capture.CaptureViewModel
 import com.pekomon.snapreceipt.feature.receipts.ReceiptsPlaceholderScreen
@@ -27,7 +32,6 @@ import com.pekomon.snapreceipt.feature.review.ReviewScreen
 import com.pekomon.snapreceipt.feature.settings.SettingsPlaceholderScreen
 import com.pekomon.snapreceipt.ui.navigation.SnapReceiptDestination
 import com.pekomon.snapreceipt.ui.theme.SnapReceiptTheme
-import androidx.compose.ui.platform.LocalContext
 
 @Composable
 fun SnapReceiptApp(modifier: Modifier = Modifier) {
@@ -39,16 +43,35 @@ fun SnapReceiptApp(modifier: Modifier = Modifier) {
     )
     val ocrEngine = remember(context) { MlKitReceiptOcrEngine(context.applicationContext) }
     val parser = remember { HeuristicReceiptParser() }
+    val imageStorage = remember(context) { LocalReceiptImageStorage(context.applicationContext) }
+    val database = remember(context) { SnapReceiptDatabase.create(context.applicationContext) }
+    val receiptRepository = remember(database, imageStorage) {
+        RoomReceiptRepository(
+            receiptDao = database.receiptDao(),
+            imageStorage = imageStorage
+        )
+    }
     val captureViewModel: CaptureViewModel = viewModel(
         factory = CaptureViewModel.factory(
             ocrEngine = ocrEngine,
-            receiptParser = parser
+            receiptParser = parser,
+            receiptRepository = receiptRepository
         )
     )
     val captureUiState by captureViewModel.uiState.collectAsStateWithLifecycle()
     val navController = rememberNavController()
     val backStackEntry = navController.currentBackStackEntryAsState().value
     val currentRoute = backStackEntry?.destination?.route
+
+    LaunchedEffect(captureUiState.lastSavedReceipt?.id, currentRoute) {
+        if (
+            currentRoute == SnapReceiptDestination.Review.route &&
+            captureUiState.lastSavedReceipt != null &&
+            captureUiState.draft == null
+        ) {
+            navController.popBackStack(SnapReceiptDestination.Capture.route, false)
+        }
+    }
 
     Scaffold(
         modifier = modifier.fillMaxSize(),
@@ -102,6 +125,7 @@ fun SnapReceiptApp(modifier: Modifier = Modifier) {
                 ReviewScreen(
                     uiState = captureUiState,
                     onBackToCapture = { navController.popBackStack() },
+                    onSaveDraft = captureViewModel::saveReviewedReceipt,
                     onMerchantNameChange = captureViewModel::updateMerchantName,
                     onTransactionDateChange = captureViewModel::updateTransactionDate,
                     onTotalAmountChange = captureViewModel::updateTotalAmount,

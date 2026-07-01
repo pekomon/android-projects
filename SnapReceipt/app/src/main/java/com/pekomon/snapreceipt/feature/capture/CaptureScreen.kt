@@ -332,6 +332,7 @@ private fun OcrStatusPanel(
 
 @Composable
 private fun captureStatusText(uiState: CaptureUiState): String = when {
+    uiState.lastSavedReceipt != null -> "Saved ${uiState.lastSavedReceipt.merchantName} locally."
     uiState.selectedImage == null -> stringResource(R.string.capture_idle_hint)
     uiState.isRunningOcr -> stringResource(R.string.capture_import_success_ocr_running)
     uiState.ocrErrorMessage != null -> stringResource(R.string.capture_import_success_ocr_failed)

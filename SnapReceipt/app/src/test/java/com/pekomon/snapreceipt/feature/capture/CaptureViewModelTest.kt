@@ -2,13 +2,19 @@ package com.pekomon.snapreceipt.feature.capture
 
 import com.pekomon.snapreceipt.domain.model.ParsedReceiptFields
 import com.pekomon.snapreceipt.domain.model.ReceiptCurrency
+import com.pekomon.snapreceipt.domain.model.Receipt
 import com.pekomon.snapreceipt.domain.model.ReceiptImage
 import com.pekomon.snapreceipt.domain.model.ReceiptOcrResult
 import com.pekomon.snapreceipt.domain.model.ReceiptSource
+import com.pekomon.snapreceipt.domain.model.SaveReceiptRequest
 import com.pekomon.snapreceipt.domain.ocr.ReceiptOcrEngine
 import com.pekomon.snapreceipt.domain.parsing.ReceiptParser
+import com.pekomon.snapreceipt.domain.repository.ReceiptRepository
 import java.math.BigDecimal
+import java.time.Instant
 import java.time.LocalDate
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
@@ -48,7 +54,8 @@ class CaptureViewModelTest {
                     )
                 }
             },
-            receiptParser = FakeReceiptParser()
+            receiptParser = FakeReceiptParser(),
+            receiptRepository = FakeReceiptRepository()
         )
 
         viewModel.onImageImported(
@@ -76,7 +83,8 @@ class CaptureViewModelTest {
                     error("OCR unavailable")
                 }
             },
-            receiptParser = FakeReceiptParser()
+            receiptParser = FakeReceiptParser(),
+            receiptRepository = FakeReceiptRepository()
         )
 
         viewModel.onImageImported(
@@ -94,6 +102,37 @@ class CaptureViewModelTest {
         assertTrue(!uiState.isRunningOcr)
     }
 
+    @Test
+    fun saveReviewedReceipt_persistsReadyDraft() = runTest(dispatcher) {
+        val repository = FakeReceiptRepository()
+        val viewModel = CaptureViewModel(
+            ocrEngine = object : ReceiptOcrEngine {
+                override suspend fun extractText(image: ReceiptImage): ReceiptOcrResult {
+                    return ReceiptOcrResult(
+                        fullText = "Cafe Central\n12.80 EUR",
+                        lineBlocks = listOf("Cafe Central", "12.80 EUR")
+                    )
+                }
+            },
+            receiptParser = FakeReceiptParser(),
+            receiptRepository = repository
+        )
+
+        viewModel.onImageImported(
+            uriString = "content://receipt/3",
+            source = ReceiptSource.PHOTO_PICKER,
+            mimeType = "image/jpeg"
+        )
+        dispatcher.scheduler.advanceUntilIdle()
+
+        viewModel.saveReviewedReceipt()
+        dispatcher.scheduler.advanceUntilIdle()
+
+        assertNotNull(repository.savedRequest)
+        assertNotNull(viewModel.uiState.value.lastSavedReceipt)
+        assertNull(viewModel.uiState.value.draft)
+    }
+
     private class FakeReceiptParser : ReceiptParser {
         override fun parse(
             ocrResult: ReceiptOcrResult,
@@ -106,5 +145,31 @@ class CaptureViewModelTest {
                 currency = fallbackCurrency ?: ReceiptCurrency.EUR
             )
         }
+    }
+
+    private class FakeReceiptRepository : ReceiptRepository {
+        var savedRequest: SaveReceiptRequest? = null
+
+        override fun observeReceipts(): Flow<List<Receipt>> = flowOf(emptyList())
+
+        override suspend fun getReceipt(receiptId: String): Receipt? = null
+
+        override suspend fun saveReceipt(request: SaveReceiptRequest): Receipt {
+            savedRequest = request
+            return Receipt(
+                id = "saved-1",
+                merchantName = request.draft.parsedFields.merchantName ?: "Cafe Central",
+                transactionDate = request.draft.parsedFields.transactionDate ?: LocalDate.of(2026, 7, 1),
+                totalAmount = request.draft.parsedFields.totalAmount ?: BigDecimal("12.80"),
+                currency = request.draft.parsedFields.currency ?: ReceiptCurrency.EUR,
+                image = request.draft.image,
+                rawOcrText = request.draft.ocrResult?.cleanedText.orEmpty(),
+                notes = request.draft.notes,
+                createdAt = Instant.ofEpochMilli(1_000),
+                updatedAt = Instant.ofEpochMilli(1_000)
+            )
+        }
+
+        override suspend fun deleteReceipt(receiptId: String) = Unit
     }
 }

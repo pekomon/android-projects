@@ -8,8 +8,10 @@ import com.pekomon.snapreceipt.domain.model.ReceiptDraft
 import com.pekomon.snapreceipt.domain.model.ReceiptImage
 import com.pekomon.snapreceipt.domain.model.ReceiptCurrency
 import com.pekomon.snapreceipt.domain.model.ReceiptSource
+import com.pekomon.snapreceipt.domain.model.SaveReceiptRequest
 import com.pekomon.snapreceipt.domain.ocr.ReceiptOcrEngine
 import com.pekomon.snapreceipt.domain.parsing.ReceiptParser
+import com.pekomon.snapreceipt.domain.repository.ReceiptRepository
 import com.pekomon.snapreceipt.feature.review.ReviewDraftFormState
 import java.math.BigDecimal
 import java.time.LocalDate
@@ -23,7 +25,8 @@ import kotlinx.coroutines.launch
 
 class CaptureViewModel(
     private val ocrEngine: ReceiptOcrEngine,
-    private val receiptParser: ReceiptParser
+    private val receiptParser: ReceiptParser,
+    private val receiptRepository: ReceiptRepository
 ) : ViewModel() {
     private val _uiState = MutableStateFlow(CaptureUiState())
     val uiState: StateFlow<CaptureUiState> = _uiState.asStateFlow()
@@ -71,7 +74,7 @@ class CaptureViewModel(
     }
 
     fun clearImportedImage() {
-        _uiState.value = CaptureUiState()
+        _uiState.value = CaptureUiState(lastSavedReceipt = _uiState.value.lastSavedReceipt)
     }
 
     fun updateMerchantName(value: String) {
@@ -94,6 +97,37 @@ class CaptureViewModel(
         updateReviewForm { it.copy(notes = value) }
     }
 
+    fun saveReviewedReceipt() {
+        val currentState = _uiState.value
+        val draft = currentState.draft ?: return
+        if (!draft.isReadyToSave) {
+            _uiState.value = currentState.copy(
+                saveErrorMessage = "Merchant, date, total, and currency must all be valid before saving."
+            )
+            return
+        }
+
+        _uiState.value = currentState.copy(
+            isSaving = true,
+            saveErrorMessage = null
+        )
+
+        viewModelScope.launch {
+            runCatching {
+                receiptRepository.saveReceipt(SaveReceiptRequest(draft))
+            }.onSuccess { savedReceipt ->
+                _uiState.value = CaptureUiState(
+                    lastSavedReceipt = savedReceipt
+                )
+            }.onFailure { throwable ->
+                _uiState.value = currentState.copy(
+                    isSaving = false,
+                    saveErrorMessage = throwable.message ?: "Unable to save the reviewed receipt locally."
+                )
+            }
+        }
+    }
+
     private fun updateReviewForm(transform: (ReviewDraftFormState) -> ReviewDraftFormState) {
         val currentState = _uiState.value
         val draft = currentState.draft ?: return
@@ -110,7 +144,8 @@ class CaptureViewModel(
         )
         _uiState.value = currentState.copy(
             draft = nextDraft,
-            reviewForm = nextForm
+            reviewForm = nextForm,
+            saveErrorMessage = null
         )
     }
 
@@ -146,11 +181,12 @@ class CaptureViewModel(
 
         fun factory(
             ocrEngine: ReceiptOcrEngine,
-            receiptParser: ReceiptParser
+            receiptParser: ReceiptParser,
+            receiptRepository: ReceiptRepository
         ): ViewModelProvider.Factory = object : ViewModelProvider.Factory {
             @Suppress("UNCHECKED_CAST")
             override fun <T : ViewModel> create(modelClass: Class<T>): T {
-                return CaptureViewModel(ocrEngine, receiptParser) as T
+                return CaptureViewModel(ocrEngine, receiptParser, receiptRepository) as T
             }
         }
     }

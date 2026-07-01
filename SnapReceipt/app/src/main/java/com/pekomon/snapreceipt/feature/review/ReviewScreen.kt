@@ -25,6 +25,7 @@ import com.pekomon.snapreceipt.feature.capture.CaptureUiState
 fun ReviewScreen(
     uiState: CaptureUiState,
     onBackToCapture: () -> Unit,
+    onSaveDraft: () -> Unit,
     onMerchantNameChange: (String) -> Unit,
     onTransactionDateChange: (String) -> Unit,
     onTotalAmountChange: (String) -> Unit,
@@ -118,6 +119,14 @@ fun ReviewScreen(
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
 
+            if (uiState.saveErrorMessage != null) {
+                Text(
+                    text = uiState.saveErrorMessage,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+
             Text(
                 text = "OCR preview",
                 style = MaterialTheme.typography.titleMedium,
@@ -128,6 +137,13 @@ fun ReviewScreen(
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
+
+            Button(
+                onClick = onSaveDraft,
+                enabled = !uiState.isSaving
+            ) {
+                Text(if (uiState.isSaving) "Saving..." else "Save receipt locally")
+            }
 
             Button(onClick = onBackToCapture) {
                 Text("Back to capture")
