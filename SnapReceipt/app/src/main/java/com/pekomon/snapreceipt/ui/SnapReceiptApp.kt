@@ -26,6 +26,7 @@ import com.pekomon.snapreceipt.core.ocr.MlKitReceiptOcrEngine
 import com.pekomon.snapreceipt.core.parsing.HeuristicReceiptParser
 import com.pekomon.snapreceipt.data.local.SnapReceiptDatabase
 import com.pekomon.snapreceipt.data.repository.RoomReceiptRepository
+import com.pekomon.snapreceipt.data.settings.DataStoreSnapReceiptSettingsRepository
 import com.pekomon.snapreceipt.data.storage.LocalReceiptImageStorage
 import com.pekomon.snapreceipt.feature.capture.CaptureScreen
 import com.pekomon.snapreceipt.feature.capture.CaptureViewModel
@@ -34,7 +35,8 @@ import com.pekomon.snapreceipt.feature.detail.ReceiptDetailViewModel
 import com.pekomon.snapreceipt.feature.receipts.ReceiptsScreen
 import com.pekomon.snapreceipt.feature.receipts.ReceiptsViewModel
 import com.pekomon.snapreceipt.feature.review.ReviewScreen
-import com.pekomon.snapreceipt.feature.settings.SettingsPlaceholderScreen
+import com.pekomon.snapreceipt.feature.settings.SettingsScreen
+import com.pekomon.snapreceipt.feature.settings.SettingsViewModel
 import com.pekomon.snapreceipt.ui.navigation.SnapReceiptDestination
 import com.pekomon.snapreceipt.ui.theme.SnapReceiptTheme
 
@@ -50,6 +52,9 @@ fun SnapReceiptApp(modifier: Modifier = Modifier) {
     val parser = remember { HeuristicReceiptParser() }
     val imageStorage = remember(context) { LocalReceiptImageStorage(context.applicationContext) }
     val database = remember(context) { SnapReceiptDatabase.create(context.applicationContext) }
+    val settingsRepository = remember(context) {
+        DataStoreSnapReceiptSettingsRepository(context.applicationContext)
+    }
     val receiptRepository = remember(database, imageStorage) {
         RoomReceiptRepository(
             receiptDao = database.receiptDao(),
@@ -68,6 +73,13 @@ fun SnapReceiptApp(modifier: Modifier = Modifier) {
         factory = ReceiptsViewModel.factory(receiptRepository = receiptRepository)
     )
     val receiptsUiState by receiptsViewModel.uiState.collectAsStateWithLifecycle()
+    val settingsViewModel: SettingsViewModel = viewModel(
+        factory = SettingsViewModel.factory(
+            settingsRepository = settingsRepository,
+            receiptRepository = receiptRepository
+        )
+    )
+    val settingsUiState by settingsViewModel.uiState.collectAsStateWithLifecycle()
     val navController = rememberNavController()
     val backStackEntry = navController.currentBackStackEntryAsState().value
     val currentRoute = backStackEntry?.destination?.route
@@ -180,7 +192,10 @@ fun SnapReceiptApp(modifier: Modifier = Modifier) {
                 )
             }
             composable(SnapReceiptDestination.Settings.route) {
-                SettingsPlaceholderScreen(
+                SettingsScreen(
+                    uiState = settingsUiState,
+                    onDefaultCurrencySelected = settingsViewModel::updateDefaultCurrency,
+                    onImageCompressionQualityChange = settingsViewModel::updateImageCompressionQuality,
                     modifier = Modifier.fillMaxSize(),
                     contentPadding = innerPadding
                 )
