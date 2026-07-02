@@ -27,7 +27,10 @@ class RoomReceiptRepository(
     }
 
     override suspend fun saveReceipt(request: SaveReceiptRequest): Receipt {
-        val persistedImage = imageStorage.persistImportedImage(request.draft.image)
+        val persistedImage = imageStorage.persistImportedImage(
+            image = request.draft.image,
+            compressionQuality = request.imageCompressionQuality
+        )
         val now = Instant.now()
         val receipt = Receipt(
             id = UUID.randomUUID().toString(),

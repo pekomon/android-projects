@@ -65,7 +65,8 @@ fun SnapReceiptApp(modifier: Modifier = Modifier) {
         factory = CaptureViewModel.factory(
             ocrEngine = ocrEngine,
             receiptParser = parser,
-            receiptRepository = receiptRepository
+            receiptRepository = receiptRepository,
+            settingsRepository = settingsRepository
         )
     )
     val captureUiState by captureViewModel.uiState.collectAsStateWithLifecycle()

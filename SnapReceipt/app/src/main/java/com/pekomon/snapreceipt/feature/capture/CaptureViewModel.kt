@@ -9,9 +9,11 @@ import com.pekomon.snapreceipt.domain.model.ReceiptImage
 import com.pekomon.snapreceipt.domain.model.ReceiptCurrency
 import com.pekomon.snapreceipt.domain.model.ReceiptSource
 import com.pekomon.snapreceipt.domain.model.SaveReceiptRequest
+import com.pekomon.snapreceipt.domain.model.SnapReceiptSettings
 import com.pekomon.snapreceipt.domain.ocr.ReceiptOcrEngine
 import com.pekomon.snapreceipt.domain.parsing.ReceiptParser
 import com.pekomon.snapreceipt.domain.repository.ReceiptRepository
+import com.pekomon.snapreceipt.domain.repository.SnapReceiptSettingsRepository
 import com.pekomon.snapreceipt.feature.review.ReviewDraftFormState
 import java.math.BigDecimal
 import java.time.LocalDate
@@ -26,10 +28,21 @@ import kotlinx.coroutines.launch
 class CaptureViewModel(
     private val ocrEngine: ReceiptOcrEngine,
     private val receiptParser: ReceiptParser,
-    private val receiptRepository: ReceiptRepository
+    private val receiptRepository: ReceiptRepository,
+    private val settingsRepository: SnapReceiptSettingsRepository
 ) : ViewModel() {
     private val _uiState = MutableStateFlow(CaptureUiState())
     val uiState: StateFlow<CaptureUiState> = _uiState.asStateFlow()
+    private var currentSettings = SnapReceiptSettings()
+
+    init {
+        viewModelScope.launch {
+            settingsRepository.observeSettings().collect { settings ->
+                currentSettings = settings
+                _uiState.value = _uiState.value.copy(settings = settings)
+            }
+        }
+    }
 
     fun onImageImported(
         uriString: String,
@@ -43,7 +56,8 @@ class CaptureViewModel(
         )
         _uiState.value = CaptureUiState(
             selectedImage = image,
-            isRunningOcr = true
+            isRunningOcr = true,
+            settings = currentSettings
         )
 
         viewModelScope.launch {
@@ -52,7 +66,7 @@ class CaptureViewModel(
             }.onSuccess { ocrResult ->
                 val parsedFields = receiptParser.parse(
                     ocrResult = ocrResult,
-                    fallbackCurrency = ReceiptCurrency.EUR
+                    fallbackCurrency = currentSettings.defaultCurrency
                 )
                 val draft = ReceiptDraft(
                     image = image,
@@ -62,19 +76,24 @@ class CaptureViewModel(
                 _uiState.value = CaptureUiState(
                     selectedImage = image,
                     draft = draft,
-                    reviewForm = draft.toReviewForm()
+                    reviewForm = draft.toReviewForm(),
+                    settings = currentSettings
                 )
             }.onFailure { throwable ->
                 _uiState.value = CaptureUiState(
                     selectedImage = image,
-                    ocrErrorMessage = throwable.message ?: "Unable to read text from the selected receipt."
+                    ocrErrorMessage = throwable.message ?: "Unable to read text from the selected receipt.",
+                    settings = currentSettings
                 )
             }
         }
     }
 
     fun clearImportedImage() {
-        _uiState.value = CaptureUiState(lastSavedReceipt = _uiState.value.lastSavedReceipt)
+        _uiState.value = CaptureUiState(
+            lastSavedReceipt = _uiState.value.lastSavedReceipt,
+            settings = currentSettings
+        )
     }
 
     fun updateMerchantName(value: String) {
@@ -114,10 +133,16 @@ class CaptureViewModel(
 
         viewModelScope.launch {
             runCatching {
-                receiptRepository.saveReceipt(SaveReceiptRequest(draft))
+                receiptRepository.saveReceipt(
+                    SaveReceiptRequest(
+                        draft = draft,
+                        imageCompressionQuality = currentSettings.imageCompressionQuality
+                    )
+                )
             }.onSuccess { savedReceipt ->
                 _uiState.value = CaptureUiState(
-                    lastSavedReceipt = savedReceipt
+                    lastSavedReceipt = savedReceipt,
+                    settings = currentSettings
                 )
             }.onFailure { throwable ->
                 _uiState.value = currentState.copy(
@@ -182,11 +207,17 @@ class CaptureViewModel(
         fun factory(
             ocrEngine: ReceiptOcrEngine,
             receiptParser: ReceiptParser,
-            receiptRepository: ReceiptRepository
+            receiptRepository: ReceiptRepository,
+            settingsRepository: SnapReceiptSettingsRepository
         ): ViewModelProvider.Factory = object : ViewModelProvider.Factory {
             @Suppress("UNCHECKED_CAST")
             override fun <T : ViewModel> create(modelClass: Class<T>): T {
-                return CaptureViewModel(ocrEngine, receiptParser, receiptRepository) as T
+                return CaptureViewModel(
+                    ocrEngine = ocrEngine,
+                    receiptParser = receiptParser,
+                    receiptRepository = receiptRepository,
+                    settingsRepository = settingsRepository
+                ) as T
             }
         }
     }

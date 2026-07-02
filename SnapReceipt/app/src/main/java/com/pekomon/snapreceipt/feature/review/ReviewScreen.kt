@@ -73,6 +73,11 @@ fun ReviewScreen(
                 style = MaterialTheme.typography.bodyLarge,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
+            Text(
+                text = "Default currency fallback: ${uiState.settings.defaultCurrency.code}. Saved JPG quality: ${uiState.settings.imageCompressionQuality}%.",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
 
             OutlinedTextField(
                 value = reviewForm.merchantName,

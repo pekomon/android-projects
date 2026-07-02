@@ -7,9 +7,11 @@ import com.pekomon.snapreceipt.domain.model.ReceiptImage
 import com.pekomon.snapreceipt.domain.model.ReceiptOcrResult
 import com.pekomon.snapreceipt.domain.model.ReceiptSource
 import com.pekomon.snapreceipt.domain.model.SaveReceiptRequest
+import com.pekomon.snapreceipt.domain.model.SnapReceiptSettings
 import com.pekomon.snapreceipt.domain.ocr.ReceiptOcrEngine
 import com.pekomon.snapreceipt.domain.parsing.ReceiptParser
 import com.pekomon.snapreceipt.domain.repository.ReceiptRepository
+import com.pekomon.snapreceipt.domain.repository.SnapReceiptSettingsRepository
 import java.math.BigDecimal
 import java.time.Instant
 import java.time.LocalDate
@@ -55,7 +57,8 @@ class CaptureViewModelTest {
                 }
             },
             receiptParser = FakeReceiptParser(),
-            receiptRepository = FakeReceiptRepository()
+            receiptRepository = FakeReceiptRepository(),
+            settingsRepository = FakeSettingsRepository()
         )
 
         viewModel.onImageImported(
@@ -84,7 +87,8 @@ class CaptureViewModelTest {
                 }
             },
             receiptParser = FakeReceiptParser(),
-            receiptRepository = FakeReceiptRepository()
+            receiptRepository = FakeReceiptRepository(),
+            settingsRepository = FakeSettingsRepository()
         )
 
         viewModel.onImageImported(
@@ -115,7 +119,8 @@ class CaptureViewModelTest {
                 }
             },
             receiptParser = FakeReceiptParser(),
-            receiptRepository = repository
+            receiptRepository = repository,
+            settingsRepository = FakeSettingsRepository()
         )
 
         viewModel.onImageImported(
@@ -171,5 +176,11 @@ class CaptureViewModelTest {
         }
 
         override suspend fun deleteReceipt(receiptId: String) = Unit
+    }
+
+    private class FakeSettingsRepository : SnapReceiptSettingsRepository {
+        override fun observeSettings(): Flow<SnapReceiptSettings> = flowOf(SnapReceiptSettings())
+
+        override suspend fun updateSettings(settings: SnapReceiptSettings) = Unit
     }
 }

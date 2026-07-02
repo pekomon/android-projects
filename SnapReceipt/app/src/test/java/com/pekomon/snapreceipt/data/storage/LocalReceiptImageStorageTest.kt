@@ -13,6 +13,13 @@ class LocalReceiptImageStorageTest {
     @Test
     fun extensionFromMimeType_usesSupportedAlternatives() {
         assertEquals("png", LocalReceiptImageStorage.extensionFromMimeType("image/png"))
-        assertEquals("webp", LocalReceiptImageStorage.extensionFromMimeType("image/webp"))
+        assertEquals("jpg", LocalReceiptImageStorage.extensionFromMimeType("image/webp"))
+    }
+
+    @Test
+    fun persistedFormatFor_keepsPngAndNormalizesOthersToJpeg() {
+        assertEquals(PersistedFormat.PNG, LocalReceiptImageStorage.persistedFormatFor("image/png"))
+        assertEquals(PersistedFormat.JPEG, LocalReceiptImageStorage.persistedFormatFor("image/webp"))
+        assertEquals(PersistedFormat.JPEG, LocalReceiptImageStorage.persistedFormatFor("image/jpeg"))
     }
 }
