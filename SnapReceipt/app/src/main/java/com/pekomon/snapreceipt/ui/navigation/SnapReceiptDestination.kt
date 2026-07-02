@@ -35,4 +35,11 @@ sealed class SnapReceiptDestination(
         label = "Review",
         icon = Icons.Outlined.EditNote
     )
+
+    companion object {
+        const val receiptIdArgument = "receiptId"
+        const val receiptDetailPattern = "receipt-detail/{$receiptIdArgument}"
+
+        fun receiptDetailRoute(receiptId: String): String = "receipt-detail/$receiptId"
+    }
 }

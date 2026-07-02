@@ -16,10 +16,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navArgument
 import com.pekomon.snapreceipt.core.ocr.MlKitReceiptOcrEngine
 import com.pekomon.snapreceipt.core.parsing.HeuristicReceiptParser
 import com.pekomon.snapreceipt.data.local.SnapReceiptDatabase
@@ -27,7 +29,10 @@ import com.pekomon.snapreceipt.data.repository.RoomReceiptRepository
 import com.pekomon.snapreceipt.data.storage.LocalReceiptImageStorage
 import com.pekomon.snapreceipt.feature.capture.CaptureScreen
 import com.pekomon.snapreceipt.feature.capture.CaptureViewModel
-import com.pekomon.snapreceipt.feature.receipts.ReceiptsPlaceholderScreen
+import com.pekomon.snapreceipt.feature.detail.ReceiptDetailScreen
+import com.pekomon.snapreceipt.feature.detail.ReceiptDetailViewModel
+import com.pekomon.snapreceipt.feature.receipts.ReceiptsScreen
+import com.pekomon.snapreceipt.feature.receipts.ReceiptsViewModel
 import com.pekomon.snapreceipt.feature.review.ReviewScreen
 import com.pekomon.snapreceipt.feature.settings.SettingsPlaceholderScreen
 import com.pekomon.snapreceipt.ui.navigation.SnapReceiptDestination
@@ -59,6 +64,10 @@ fun SnapReceiptApp(modifier: Modifier = Modifier) {
         )
     )
     val captureUiState by captureViewModel.uiState.collectAsStateWithLifecycle()
+    val receiptsViewModel: ReceiptsViewModel = viewModel(
+        factory = ReceiptsViewModel.factory(receiptRepository = receiptRepository)
+    )
+    val receiptsUiState by receiptsViewModel.uiState.collectAsStateWithLifecycle()
     val navController = rememberNavController()
     val backStackEntry = navController.currentBackStackEntryAsState().value
     val currentRoute = backStackEntry?.destination?.route
@@ -136,7 +145,36 @@ fun SnapReceiptApp(modifier: Modifier = Modifier) {
                 )
             }
             composable(SnapReceiptDestination.Receipts.route) {
-                ReceiptsPlaceholderScreen(
+                ReceiptsScreen(
+                    uiState = receiptsUiState,
+                    onReceiptSelected = { receiptId ->
+                        navController.navigate(SnapReceiptDestination.receiptDetailRoute(receiptId))
+                    },
+                    modifier = Modifier.fillMaxSize(),
+                    contentPadding = innerPadding
+                )
+            }
+            composable(
+                route = SnapReceiptDestination.receiptDetailPattern,
+                arguments = listOf(
+                    navArgument(SnapReceiptDestination.receiptIdArgument) {
+                        type = NavType.StringType
+                    }
+                )
+            ) { entry ->
+                val receiptId = entry.arguments?.getString(SnapReceiptDestination.receiptIdArgument).orEmpty()
+                val detailViewModel: ReceiptDetailViewModel = viewModel(
+                    key = "receipt-detail-$receiptId",
+                    factory = ReceiptDetailViewModel.factory(
+                        receiptId = receiptId,
+                        receiptRepository = receiptRepository
+                    )
+                )
+                val detailUiState by detailViewModel.uiState.collectAsStateWithLifecycle()
+                ReceiptDetailScreen(
+                    uiState = detailUiState,
+                    onBack = { navController.popBackStack() },
+                    onDeleteReceipt = detailViewModel::deleteReceipt,
                     modifier = Modifier.fillMaxSize(),
                     contentPadding = innerPadding
                 )
