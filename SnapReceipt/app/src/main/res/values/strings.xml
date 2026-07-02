@@ -2,13 +2,13 @@
     <string name="app_name">SnapReceipt</string>
     <string name="capture_eyebrow">CAPTURE</string>
     <string name="capture_title">Capture</string>
-    <string name="capture_subtitle">Start by importing a receipt image. This screen now accepts images from the Photo Picker or document picker before camera and OCR slices arrive.</string>
+    <string name="capture_subtitle">Import a receipt image, run on-device OCR, review the parsed fields, and save the result locally.</string>
     <string name="capture_action_photo">Choose Photo</string>
     <string name="capture_action_file">Choose File</string>
     <string name="capture_card_primary_title">Import status</string>
-    <string name="capture_card_primary_body">Photo Picker and files import are the first stable path into the app.</string>
-    <string name="capture_card_secondary_title">Next milestone</string>
-    <string name="capture_card_secondary_body">Once an image is imported, OCR and draft review will be connected on top of this capture flow.</string>
+    <string name="capture_card_primary_body">Photo Picker and file import are active, OCR runs on-device, and reviewed drafts can now be saved locally.</string>
+    <string name="capture_card_secondary_title">Current workflow</string>
+    <string name="capture_card_secondary_body">The remaining product gaps are camera capture, Compose UI tests, screenshots, and final showcase polish.</string>
     <string name="capture_idle_hint">No receipt selected yet. Import a receipt image to preview the first real app flow.</string>
     <string name="capture_import_success_photo">Imported receipt from the Android Photo Picker. The preview below confirms the capture entry path is working.</string>
     <string name="capture_import_success_file">Imported receipt from the document picker. The preview below confirms file-based import is working.</string>
