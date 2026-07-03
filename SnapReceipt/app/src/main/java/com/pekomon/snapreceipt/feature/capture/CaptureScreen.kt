@@ -1,9 +1,18 @@
 package com.pekomon.snapreceipt.feature.capture
 
+import android.Manifest
+import android.content.Context
+import android.content.pm.PackageManager
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.camera.core.CameraSelector
+import androidx.camera.core.ImageCapture
+import androidx.camera.core.ImageCaptureException
+import androidx.camera.view.CameraController
+import androidx.camera.view.LifecycleCameraController
+import androidx.camera.view.PreviewView
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -19,6 +28,7 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -29,6 +39,12 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -39,11 +55,15 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.viewinterop.AndroidView
+import androidx.core.content.ContextCompat
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import coil.compose.AsyncImage
 import com.pekomon.snapreceipt.R
 import com.pekomon.snapreceipt.domain.model.ReceiptDraft
 import com.pekomon.snapreceipt.domain.model.ReceiptImage
 import com.pekomon.snapreceipt.domain.model.ReceiptSource
+import java.io.File
 
 @Composable
 fun CaptureScreen(
@@ -55,11 +75,29 @@ fun CaptureScreen(
     contentPadding: PaddingValues = PaddingValues()
 ) {
     val context = LocalContext.current
+    val lifecycleOwner = LocalLifecycleOwner.current
+    val cameraController = remember(context) {
+        LifecycleCameraController(context).apply {
+            cameraSelector = CameraSelector.DEFAULT_BACK_CAMERA
+            setEnabledUseCases(CameraController.IMAGE_CAPTURE)
+        }
+    }
+    var isCameraMode by rememberSaveable { mutableStateOf(false) }
+    var isCapturingPhoto by rememberSaveable { mutableStateOf(false) }
+    var cameraFeedbackMessage by rememberSaveable { mutableStateOf<String?>(null) }
+
+    DisposableEffect(cameraController, lifecycleOwner) {
+        cameraController.bindToLifecycle(lifecycleOwner)
+        onDispose {
+            cameraController.unbind()
+        }
+    }
 
     val photoPickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.PickVisualMedia()
     ) { uri ->
         if (uri != null) {
+            isCameraMode = false
             onImageImported(
                 uri.toString(),
                 ReceiptSource.PHOTO_PICKER,
@@ -72,11 +110,24 @@ fun CaptureScreen(
         contract = ActivityResultContracts.OpenDocument()
     ) { uri ->
         if (uri != null) {
+            isCameraMode = false
             onImageImported(
                 uri.toString(),
                 ReceiptSource.FILE_IMPORT,
                 context.contentResolver.getType(uri)
             )
+        }
+    }
+
+    val cameraPermissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission()
+    ) { granted ->
+        if (granted) {
+            cameraFeedbackMessage = null
+            isCameraMode = true
+        } else {
+            cameraFeedbackMessage = context.getString(R.string.capture_camera_permission_denied)
+            isCameraMode = false
         }
     }
 
@@ -130,6 +181,23 @@ fun CaptureScreen(
                 ) {
                     Button(
                         onClick = {
+                            if (ContextCompat.checkSelfPermission(context, Manifest.permission.CAMERA) ==
+                                PackageManager.PERMISSION_GRANTED
+                            ) {
+                                cameraFeedbackMessage = null
+                                isCameraMode = true
+                            } else {
+                                cameraPermissionLauncher.launch(Manifest.permission.CAMERA)
+                            }
+                        },
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        Text(text = stringResource(R.string.capture_action_camera))
+                    }
+                    OutlinedButton(
+                        onClick = {
+                            cameraFeedbackMessage = null
+                            isCameraMode = false
                             photoPickerLauncher.launch(
                                 PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
                             )
@@ -138,11 +206,25 @@ fun CaptureScreen(
                     ) {
                         Text(text = stringResource(R.string.capture_action_photo))
                     }
+                }
+
+                OutlinedButton(
+                    onClick = {
+                        cameraFeedbackMessage = null
+                        isCameraMode = false
+                        filePickerLauncher.launch(arrayOf("image/*"))
+                    },
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text(text = stringResource(R.string.capture_action_file))
+                }
+
+                if (cameraFeedbackMessage != null) {
                     OutlinedButton(
-                        onClick = { filePickerLauncher.launch(arrayOf("image/*")) },
-                        modifier = Modifier.weight(1f)
+                        onClick = { cameraFeedbackMessage = null },
+                        modifier = Modifier.fillMaxWidth()
                     ) {
-                        Text(text = stringResource(R.string.capture_action_file))
+                        Text(text = cameraFeedbackMessage.orEmpty())
                     }
                 }
 
@@ -150,6 +232,34 @@ fun CaptureScreen(
                     title = stringResource(R.string.capture_card_primary_title),
                     body = captureStatusText(uiState)
                 )
+
+                if (isCameraMode) {
+                    CameraCaptureCard(
+                        cameraController = cameraController,
+                        isCapturingPhoto = isCapturingPhoto,
+                        onCapturePhoto = {
+                            isCapturingPhoto = true
+                            captureReceiptPhoto(
+                                context = context,
+                                cameraController = cameraController,
+                                onSuccess = { capturedUri ->
+                                    isCapturingPhoto = false
+                                    isCameraMode = false
+                                    cameraFeedbackMessage = null
+                                    onImageImported(
+                                        capturedUri.toString(),
+                                        ReceiptSource.CAMERA,
+                                        "image/jpeg"
+                                    )
+                                },
+                                onFailure = { message ->
+                                    isCapturingPhoto = false
+                                    cameraFeedbackMessage = message
+                                }
+                            )
+                        }
+                    )
+                }
 
                 val selectedImage = uiState.selectedImage
                 if (selectedImage != null) {
@@ -167,6 +277,63 @@ fun CaptureScreen(
                         body = stringResource(R.string.capture_card_secondary_body)
                     )
                 }
+            }
+        }
+    }
+}
+
+@Composable
+private fun CameraCaptureCard(
+    cameraController: LifecycleCameraController,
+    isCapturingPhoto: Boolean,
+    onCapturePhoto: () -> Unit
+) {
+    Card(
+        shape = RoundedCornerShape(28.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surface,
+            contentColor = MaterialTheme.colorScheme.onSurface
+        )
+    ) {
+        Column(
+            modifier = Modifier.padding(20.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            Text(
+                text = stringResource(R.string.capture_camera_title),
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.SemiBold
+            )
+            Text(
+                text = stringResource(R.string.capture_camera_body),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            AndroidView(
+                factory = { viewContext ->
+                    PreviewView(viewContext).apply {
+                        implementationMode = PreviewView.ImplementationMode.COMPATIBLE
+                        scaleType = PreviewView.ScaleType.FILL_CENTER
+                        controller = cameraController
+                    }
+                },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(320.dp)
+                    .clip(RoundedCornerShape(22.dp))
+            )
+            Button(
+                onClick = onCapturePhoto,
+                enabled = !isCapturingPhoto,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text(
+                    text = if (isCapturingPhoto) {
+                        stringResource(R.string.capture_camera_capturing)
+                    } else {
+                        stringResource(R.string.capture_camera_take_photo)
+                    }
+                )
             }
         }
     }
@@ -334,8 +501,44 @@ private fun OcrStatusPanel(
 private fun captureStatusText(uiState: CaptureUiState): String = when {
     uiState.lastSavedReceipt != null -> "Saved ${uiState.lastSavedReceipt.merchantName} locally."
     uiState.selectedImage == null -> stringResource(R.string.capture_idle_hint)
+    uiState.selectedImage.source == ReceiptSource.CAMERA && uiState.isRunningOcr.not() && uiState.ocrErrorMessage == null && uiState.draft == null ->
+        stringResource(R.string.capture_import_success_camera)
     uiState.isRunningOcr -> stringResource(R.string.capture_import_success_ocr_running)
     uiState.ocrErrorMessage != null -> stringResource(R.string.capture_import_success_ocr_failed)
     uiState.draft != null -> stringResource(R.string.capture_import_success_ocr_done)
     else -> stringResource(R.string.capture_idle_hint)
+}
+
+private fun captureReceiptPhoto(
+    context: Context,
+    cameraController: LifecycleCameraController,
+    onSuccess: (Uri) -> Unit,
+    onFailure: (String) -> Unit
+) {
+    val outputFile = createCameraCaptureFile(context)
+    val outputOptions = ImageCapture.OutputFileOptions.Builder(outputFile).build()
+
+    cameraController.takePicture(
+        outputOptions,
+        ContextCompat.getMainExecutor(context),
+        object : ImageCapture.OnImageSavedCallback {
+            override fun onImageSaved(outputFileResults: ImageCapture.OutputFileResults) {
+                onSuccess(outputFileResults.savedUri ?: Uri.fromFile(outputFile))
+            }
+
+            override fun onError(exception: ImageCaptureException) {
+                onFailure(
+                    exception.message
+                        ?: context.getString(R.string.capture_camera_capture_failed)
+                )
+            }
+        }
+    )
+}
+
+private fun createCameraCaptureFile(context: Context): File {
+    val captureDirectory = File(context.cacheDir, "camera-captures").apply {
+        mkdirs()
+    }
+    return File(captureDirectory, "receipt-capture-${System.currentTimeMillis()}.jpg")
 }
