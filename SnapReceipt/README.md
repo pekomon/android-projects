@@ -6,6 +6,7 @@ Android showcase app in progress.
 
 The app now supports the core local-first loop:
 
+- capture receipt images with CameraX
 - import receipt images from Photo Picker or file picker
 - run on-device OCR with ML Kit
 - parse merchant, date, total, and currency heuristically
@@ -17,20 +18,28 @@ The app now supports the core local-first loop:
 
 Still missing:
 
-- CameraX capture flow
-- Compose UI tests
+- deterministic demo data for screenshots
 - showcase screenshots and final README assets
-- final visual polish and manual QA
+- final manual QA pass and any resulting polish
 
 ## Architecture
 
 - Kotlin + Jetpack Compose
 - single-activity navigation with manual `ViewModel` factories
+- CameraX for on-device capture
 - ML Kit Text Recognition for local OCR
 - heuristic parser for receipt fields
 - Room for receipt metadata
 - app-private file storage for saved images
 - DataStore Preferences for settings
+
+## Verification
+
+The current project verification commands are:
+
+- `./gradlew :app:assembleDebug`
+- `./gradlew :app:testDebugUnitTest`
+- `./gradlew :app:compileDebugAndroidTestKotlin`
 
 ## Build
 
