@@ -1,5 +1,6 @@
 package com.pekomon.snapreceipt.ui
 
+import android.content.pm.ApplicationInfo
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.material3.Icon
@@ -22,6 +23,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import com.pekomon.snapreceipt.core.demo.SnapReceiptDemoDataService
 import com.pekomon.snapreceipt.core.ocr.MlKitReceiptOcrEngine
 import com.pekomon.snapreceipt.core.parsing.HeuristicReceiptParser
 import com.pekomon.snapreceipt.data.local.SnapReceiptDatabase
@@ -43,6 +45,9 @@ import com.pekomon.snapreceipt.ui.theme.SnapReceiptTheme
 @Composable
 fun SnapReceiptApp(modifier: Modifier = Modifier) {
     val context = LocalContext.current
+    val isDebugBuild = remember(context) {
+        context.applicationInfo.flags and ApplicationInfo.FLAG_DEBUGGABLE != 0
+    }
     val destinations = listOf(
         SnapReceiptDestination.Capture,
         SnapReceiptDestination.Receipts,
@@ -55,6 +60,13 @@ fun SnapReceiptApp(modifier: Modifier = Modifier) {
     val settingsRepository = remember(context) {
         DataStoreSnapReceiptSettingsRepository(context.applicationContext)
     }
+    val demoDataService = remember(context, database, settingsRepository) {
+        SnapReceiptDemoDataService(
+            context = context.applicationContext,
+            receiptDao = database.receiptDao(),
+            settingsRepository = settingsRepository
+        )
+    }
     val receiptRepository = remember(database, imageStorage) {
         RoomReceiptRepository(
             receiptDao = database.receiptDao(),
@@ -66,7 +78,8 @@ fun SnapReceiptApp(modifier: Modifier = Modifier) {
             ocrEngine = ocrEngine,
             receiptParser = parser,
             receiptRepository = receiptRepository,
-            settingsRepository = settingsRepository
+            settingsRepository = settingsRepository,
+            demoDataService = demoDataService
         )
     )
     val captureUiState by captureViewModel.uiState.collectAsStateWithLifecycle()
@@ -77,7 +90,8 @@ fun SnapReceiptApp(modifier: Modifier = Modifier) {
     val settingsViewModel: SettingsViewModel = viewModel(
         factory = SettingsViewModel.factory(
             settingsRepository = settingsRepository,
-            receiptRepository = receiptRepository
+            receiptRepository = receiptRepository,
+            demoDataService = demoDataService
         )
     )
     val settingsUiState by settingsViewModel.uiState.collectAsStateWithLifecycle()
@@ -139,6 +153,8 @@ fun SnapReceiptApp(modifier: Modifier = Modifier) {
                     onImageImported = captureViewModel::onImageImported,
                     onClearImportedImage = captureViewModel::clearImportedImage,
                     onReviewDraft = { navController.navigate(SnapReceiptDestination.Review.route) },
+                    onLoadDemoDraft = captureViewModel::loadDemoDraft,
+                    showDemoTools = isDebugBuild,
                     modifier = Modifier.fillMaxSize(),
                     contentPadding = innerPadding
                 )
@@ -197,6 +213,8 @@ fun SnapReceiptApp(modifier: Modifier = Modifier) {
                     uiState = settingsUiState,
                     onDefaultCurrencySelected = settingsViewModel::updateDefaultCurrency,
                     onImageCompressionQualityChange = settingsViewModel::updateImageCompressionQuality,
+                    onSeedDemoData = settingsViewModel::seedDeterministicDemoData,
+                    showDemoTools = isDebugBuild,
                     modifier = Modifier.fillMaxSize(),
                     contentPadding = innerPadding
                 )

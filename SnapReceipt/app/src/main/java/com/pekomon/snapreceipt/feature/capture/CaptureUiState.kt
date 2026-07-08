@@ -15,5 +15,6 @@ data class CaptureUiState(
     val isSaving: Boolean = false,
     val saveErrorMessage: String? = null,
     val lastSavedReceipt: Receipt? = null,
-    val settings: SnapReceiptSettings = SnapReceiptSettings()
+    val settings: SnapReceiptSettings = SnapReceiptSettings(),
+    val isLoadingDemoDraft: Boolean = false
 )

@@ -70,6 +70,8 @@ fun CaptureScreen(
     onImageImported: (String, ReceiptSource, String?) -> Unit,
     onClearImportedImage: () -> Unit,
     onReviewDraft: () -> Unit,
+    onLoadDemoDraft: () -> Unit,
+    showDemoTools: Boolean,
     modifier: Modifier = Modifier,
     contentPadding: PaddingValues = PaddingValues()
 ) {
@@ -232,6 +234,13 @@ fun CaptureScreen(
                     body = captureStatusText(uiState)
                 )
 
+                if (showDemoTools) {
+                    DemoDraftCard(
+                        isLoadingDemoDraft = uiState.isLoadingDemoDraft,
+                        onLoadDemoDraft = onLoadDemoDraft
+                    )
+                }
+
                 if (isCameraMode) {
                     CameraCaptureCard(
                         cameraController = cameraController,
@@ -276,6 +285,48 @@ fun CaptureScreen(
                         body = stringResource(R.string.capture_card_secondary_body)
                     )
                 }
+            }
+        }
+    }
+}
+
+@Composable
+private fun DemoDraftCard(
+    isLoadingDemoDraft: Boolean,
+    onLoadDemoDraft: () -> Unit
+) {
+    Card(
+        shape = RoundedCornerShape(28.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surface,
+            contentColor = MaterialTheme.colorScheme.onSurface
+        )
+    ) {
+        Column(
+            modifier = Modifier.padding(20.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
+            Text(
+                text = stringResource(R.string.capture_demo_title),
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.SemiBold
+            )
+            Text(
+                text = stringResource(R.string.capture_demo_body),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            Button(
+                onClick = onLoadDemoDraft,
+                enabled = !isLoadingDemoDraft
+            ) {
+                Text(
+                    text = if (isLoadingDemoDraft) {
+                        stringResource(R.string.capture_demo_loading)
+                    } else {
+                        stringResource(R.string.capture_demo_action)
+                    }
+                )
             }
         }
     }
@@ -502,6 +553,7 @@ private fun captureStatusText(uiState: CaptureUiState): String = when {
     uiState.selectedImage == null -> stringResource(R.string.capture_idle_hint)
     uiState.selectedImage.source == ReceiptSource.CAMERA && uiState.isRunningOcr.not() && uiState.ocrErrorMessage == null && uiState.draft == null ->
         stringResource(R.string.capture_import_success_camera)
+    uiState.isLoadingDemoDraft -> stringResource(R.string.capture_demo_loading)
     uiState.isRunningOcr -> stringResource(R.string.capture_import_success_ocr_running)
     uiState.ocrErrorMessage != null -> stringResource(R.string.capture_import_success_ocr_failed)
     uiState.draft != null -> stringResource(R.string.capture_import_success_ocr_done)

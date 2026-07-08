@@ -34,6 +34,8 @@ fun SettingsScreen(
     uiState: SettingsUiState,
     onDefaultCurrencySelected: (ReceiptCurrency) -> Unit,
     onImageCompressionQualityChange: (Int) -> Unit,
+    onSeedDemoData: () -> Unit,
+    showDemoTools: Boolean,
     modifier: Modifier = Modifier,
     contentPadding: PaddingValues = PaddingValues()
 ) {
@@ -116,6 +118,25 @@ fun SettingsScreen(
                             style = MaterialTheme.typography.titleMedium,
                             color = MaterialTheme.colorScheme.onSurface
                         )
+                    }
+                    if (showDemoTools) {
+                        SettingsCard(
+                            title = "Screenshot demo data",
+                            body = "Reset local state into a deterministic gallery and settings profile for README screenshots."
+                        ) {
+                            androidx.compose.material3.Button(
+                                onClick = onSeedDemoData,
+                                enabled = !uiState.isSeedingDemoData
+                            ) {
+                                Text(
+                                    if (uiState.isSeedingDemoData) {
+                                        "Seeding demo data..."
+                                    } else {
+                                        "Load deterministic demo data"
+                                    }
+                                )
+                            }
+                        }
                     }
                 }
             }

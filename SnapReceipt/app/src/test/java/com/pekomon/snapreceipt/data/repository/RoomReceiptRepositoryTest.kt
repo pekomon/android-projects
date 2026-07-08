@@ -123,6 +123,11 @@ private class FakeReceiptDao : ReceiptDao {
         publish()
     }
 
+    override suspend fun deleteAllReceipts() {
+        receipts.clear()
+        publish()
+    }
+
     private fun publish() {
         receiptsFlow.value = receipts.values.toList()
     }

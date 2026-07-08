@@ -147,7 +147,9 @@ class SnapReceiptScreenStateTest {
                         isLoading = false
                     ),
                     onDefaultCurrencySelected = {},
-                    onImageCompressionQualityChange = {}
+                    onImageCompressionQualityChange = {},
+                    onSeedDemoData = {},
+                    showDemoTools = true
                 )
             }
         }

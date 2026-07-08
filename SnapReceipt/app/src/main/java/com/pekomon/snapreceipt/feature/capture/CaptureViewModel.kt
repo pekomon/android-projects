@@ -3,6 +3,7 @@ package com.pekomon.snapreceipt.feature.capture
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
+import com.pekomon.snapreceipt.core.demo.SnapReceiptDemoDataService
 import com.pekomon.snapreceipt.domain.model.ParsedReceiptFields
 import com.pekomon.snapreceipt.domain.model.ReceiptDraft
 import com.pekomon.snapreceipt.domain.model.ReceiptImage
@@ -29,7 +30,8 @@ class CaptureViewModel(
     private val ocrEngine: ReceiptOcrEngine,
     private val receiptParser: ReceiptParser,
     private val receiptRepository: ReceiptRepository,
-    private val settingsRepository: SnapReceiptSettingsRepository
+    private val settingsRepository: SnapReceiptSettingsRepository,
+    private val demoDataService: SnapReceiptDemoDataService? = null
 ) : ViewModel() {
     private val _uiState = MutableStateFlow(CaptureUiState())
     val uiState: StateFlow<CaptureUiState> = _uiState.asStateFlow()
@@ -153,6 +155,33 @@ class CaptureViewModel(
         }
     }
 
+    fun loadDemoDraft() {
+        val service = demoDataService ?: return
+        _uiState.value = _uiState.value.copy(
+            isLoadingDemoDraft = true,
+            ocrErrorMessage = null,
+            saveErrorMessage = null
+        )
+        viewModelScope.launch {
+            runCatching {
+                service.createDeterministicReviewDraft()
+            }.onSuccess { draft ->
+                currentSettings = SnapReceiptDemoDataService.DEMO_SETTINGS
+                _uiState.value = CaptureUiState(
+                    selectedImage = draft.image,
+                    draft = draft,
+                    reviewForm = draft.toReviewForm(),
+                    settings = currentSettings
+                )
+            }.onFailure { throwable ->
+                _uiState.value = _uiState.value.copy(
+                    isLoadingDemoDraft = false,
+                    ocrErrorMessage = throwable.message ?: "Unable to load deterministic demo draft."
+                )
+            }
+        }
+    }
+
     private fun updateReviewForm(transform: (ReviewDraftFormState) -> ReviewDraftFormState) {
         val currentState = _uiState.value
         val draft = currentState.draft ?: return
@@ -208,7 +237,8 @@ class CaptureViewModel(
             ocrEngine: ReceiptOcrEngine,
             receiptParser: ReceiptParser,
             receiptRepository: ReceiptRepository,
-            settingsRepository: SnapReceiptSettingsRepository
+            settingsRepository: SnapReceiptSettingsRepository,
+            demoDataService: SnapReceiptDemoDataService? = null
         ): ViewModelProvider.Factory = object : ViewModelProvider.Factory {
             @Suppress("UNCHECKED_CAST")
             override fun <T : ViewModel> create(modelClass: Class<T>): T {
@@ -216,7 +246,8 @@ class CaptureViewModel(
                     ocrEngine = ocrEngine,
                     receiptParser = receiptParser,
                     receiptRepository = receiptRepository,
-                    settingsRepository = settingsRepository
+                    settingsRepository = settingsRepository,
+                    demoDataService = demoDataService
                 ) as T
             }
         }

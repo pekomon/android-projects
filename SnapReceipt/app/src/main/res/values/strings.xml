@@ -19,6 +19,10 @@
     <string name="capture_camera_preview_description">Live receipt camera preview</string>
     <string name="capture_camera_take_photo">Capture Receipt</string>
     <string name="capture_camera_capturing">Capturing receipt…</string>
+    <string name="capture_demo_title">Screenshot demo draft</string>
+    <string name="capture_demo_body">Load a deterministic review-ready draft so screenshots can be recaptured with the same merchant, values, and OCR preview.</string>
+    <string name="capture_demo_action">Load demo review draft</string>
+    <string name="capture_demo_loading">Loading deterministic demo draft…</string>
     <string name="capture_import_success_photo">Imported receipt from the Android Photo Picker. The preview below confirms the capture entry path is working.</string>
     <string name="capture_import_success_file">Imported receipt from the document picker. The preview below confirms file-based import is working.</string>
     <string name="capture_import_success_camera">Captured receipt from the on-device camera preview.</string>
