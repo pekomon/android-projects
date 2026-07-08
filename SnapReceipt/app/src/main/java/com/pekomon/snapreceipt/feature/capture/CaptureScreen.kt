@@ -22,6 +22,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.widthIn
@@ -86,7 +87,6 @@ fun CaptureScreen(
     var isCameraMode by rememberSaveable { mutableStateOf(false) }
     var isCapturingPhoto by rememberSaveable { mutableStateOf(false) }
     var cameraFeedbackMessage by rememberSaveable { mutableStateOf<String?>(null) }
-
     DisposableEffect(cameraController, lifecycleOwner) {
         cameraController.bindToLifecycle(lifecycleOwner)
         onDispose {
@@ -209,6 +209,34 @@ fun CaptureScreen(
                     }
                 }
 
+                if (isCameraMode) {
+                    CameraCaptureCard(
+                        cameraController = cameraController,
+                        isCapturingPhoto = isCapturingPhoto,
+                        onCapturePhoto = {
+                            isCapturingPhoto = true
+                            captureReceiptPhoto(
+                                context = context,
+                                cameraController = cameraController,
+                                onSuccess = { capturedUri ->
+                                    isCapturingPhoto = false
+                                    isCameraMode = false
+                                    cameraFeedbackMessage = null
+                                    onImageImported(
+                                        capturedUri.toString(),
+                                        ReceiptSource.CAMERA,
+                                        "image/jpeg"
+                                    )
+                                },
+                                onFailure = { message ->
+                                    isCapturingPhoto = false
+                                    cameraFeedbackMessage = message
+                                }
+                            )
+                        }
+                    )
+                }
+
                 OutlinedButton(
                     onClick = {
                         cameraFeedbackMessage = null
@@ -238,34 +266,6 @@ fun CaptureScreen(
                     DemoDraftCard(
                         isLoadingDemoDraft = uiState.isLoadingDemoDraft,
                         onLoadDemoDraft = onLoadDemoDraft
-                    )
-                }
-
-                if (isCameraMode) {
-                    CameraCaptureCard(
-                        cameraController = cameraController,
-                        isCapturingPhoto = isCapturingPhoto,
-                        onCapturePhoto = {
-                            isCapturingPhoto = true
-                            captureReceiptPhoto(
-                                context = context,
-                                cameraController = cameraController,
-                                onSuccess = { capturedUri ->
-                                    isCapturingPhoto = false
-                                    isCameraMode = false
-                                    cameraFeedbackMessage = null
-                                    onImageImported(
-                                        capturedUri.toString(),
-                                        ReceiptSource.CAMERA,
-                                        "image/jpeg"
-                                    )
-                                },
-                                onFailure = { message ->
-                                    isCapturingPhoto = false
-                                    cameraFeedbackMessage = message
-                                }
-                            )
-                        }
                     )
                 }
 
@@ -369,7 +369,7 @@ private fun CameraCaptureCard(
                 },
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(320.dp)
+                    .heightIn(min = 220.dp, max = 260.dp)
                     .clip(RoundedCornerShape(22.dp))
             )
             Button(
