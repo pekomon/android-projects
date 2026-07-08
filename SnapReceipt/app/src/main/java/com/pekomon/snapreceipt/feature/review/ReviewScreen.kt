@@ -7,15 +7,18 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
@@ -55,7 +58,8 @@ fun ReviewScreen(
                 .fillMaxSize()
                 .statusBarsPadding()
                 .verticalScroll(rememberScrollState())
-                .padding(horizontal = 24.dp, vertical = 20.dp),
+                .padding(horizontal = 24.dp, vertical = 20.dp)
+                .padding(bottom = 24.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             Text(
@@ -132,6 +136,29 @@ fun ReviewScreen(
                 )
             }
 
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .widthIn(max = 560.dp)
+                    .align(Alignment.CenterHorizontally),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                Button(
+                    onClick = onSaveDraft,
+                    enabled = !uiState.isSaving,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text(if (uiState.isSaving) "Saving..." else "Save receipt locally")
+                }
+
+                OutlinedButton(
+                    onClick = onBackToCapture,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text("Back to capture")
+                }
+            }
+
             Text(
                 text = "OCR preview",
                 style = MaterialTheme.typography.titleMedium,
@@ -142,17 +169,6 @@ fun ReviewScreen(
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
-
-            Button(
-                onClick = onSaveDraft,
-                enabled = !uiState.isSaving
-            ) {
-                Text(if (uiState.isSaving) "Saving..." else "Save receipt locally")
-            }
-
-            Button(onClick = onBackToCapture) {
-                Text("Back to capture")
-            }
         }
     }
 }
