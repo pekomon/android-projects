@@ -78,19 +78,26 @@ fun CaptureScreen(
 ) {
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
-    val cameraController = remember(context) {
-        LifecycleCameraController(context).apply {
-            cameraSelector = CameraSelector.DEFAULT_BACK_CAMERA
-            setEnabledUseCases(CameraController.IMAGE_CAPTURE)
-        }
-    }
     var isCameraMode by rememberSaveable { mutableStateOf(false) }
     var isCapturingPhoto by rememberSaveable { mutableStateOf(false) }
     var cameraFeedbackMessage by rememberSaveable { mutableStateOf<String?>(null) }
+    val hasCameraHardware = remember(context) {
+        context.packageManager.hasSystemFeature(PackageManager.FEATURE_CAMERA_ANY)
+    }
+    val cameraController = remember(context, isCameraMode) {
+        if (!isCameraMode) {
+            null
+        } else {
+            LifecycleCameraController(context).apply {
+                cameraSelector = CameraSelector.DEFAULT_BACK_CAMERA
+                setEnabledUseCases(CameraController.IMAGE_CAPTURE)
+            }
+        }
+    }
     DisposableEffect(cameraController, lifecycleOwner) {
-        cameraController.bindToLifecycle(lifecycleOwner)
+        cameraController?.bindToLifecycle(lifecycleOwner)
         onDispose {
-            cameraController.unbind()
+            cameraController?.unbind()
         }
     }
 
@@ -182,7 +189,11 @@ fun CaptureScreen(
                 ) {
                     Button(
                         onClick = {
-                            if (ContextCompat.checkSelfPermission(context, Manifest.permission.CAMERA) ==
+                            if (!hasCameraHardware) {
+                                cameraFeedbackMessage = context.getString(R.string.capture_camera_capture_failed)
+                                isCameraMode = false
+                            } else if (
+                                ContextCompat.checkSelfPermission(context, Manifest.permission.CAMERA) ==
                                 PackageManager.PERMISSION_GRANTED
                             ) {
                                 cameraFeedbackMessage = null
@@ -209,7 +220,7 @@ fun CaptureScreen(
                     }
                 }
 
-                if (isCameraMode) {
+                if (isCameraMode && cameraController != null) {
                     CameraCaptureCard(
                         cameraController = cameraController,
                         isCapturingPhoto = isCapturingPhoto,
