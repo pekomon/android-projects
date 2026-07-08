@@ -4,6 +4,7 @@ import androidx.activity.ComponentActivity
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performClick
 import com.pekomon.snapreceipt.domain.model.ParsedReceiptFields
 import com.pekomon.snapreceipt.domain.model.Receipt
@@ -129,8 +130,11 @@ class SnapReceiptScreenStateTest {
         }
 
         composeRule.onNodeWithText("Review parsed receipt fields before save.").assertIsDisplayed()
-        composeRule.onNodeWithText("Default currency fallback: USD. Saved JPG quality: 68%.").assertIsDisplayed()
-        composeRule.onNodeWithText("Save receipt locally").assertIsDisplayed()
+        composeRule
+            .onNodeWithText("Default currency fallback: USD. Saved JPG quality: 68%.")
+            .performScrollTo()
+            .assertIsDisplayed()
+        composeRule.onNodeWithText("Save receipt locally").performScrollTo().assertIsDisplayed()
     }
 
     @Test
@@ -155,9 +159,9 @@ class SnapReceiptScreenStateTest {
         }
 
         composeRule.onNodeWithText("Local defaults").assertIsDisplayed()
-        composeRule.onNodeWithText("73%").assertIsDisplayed()
-        composeRule.onNodeWithText("3 saved receipt(s)").assertIsDisplayed()
-        composeRule.onNodeWithText("GBP").assertIsDisplayed()
+        composeRule.onNodeWithText("73%").performScrollTo().assertIsDisplayed()
+        composeRule.onNodeWithText("3 saved receipt(s)").performScrollTo().assertIsDisplayed()
+        composeRule.onNodeWithText("GBP").performScrollTo().assertIsDisplayed()
     }
 
     private fun sampleDraft() = ReceiptDraft(
