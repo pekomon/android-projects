@@ -9,7 +9,7 @@
     <string name="capture_card_primary_title">Import status</string>
     <string name="capture_card_primary_body">CameraX capture, Photo Picker import, and file import all feed the same OCR and review flow.</string>
     <string name="capture_card_secondary_title">Current workflow</string>
-    <string name="capture_card_secondary_body">The remaining product gaps are Compose UI tests, screenshots, and final showcase polish.</string>
+    <string name="capture_card_secondary_body">The full local-first workflow is in place: capture or import, run OCR, review the draft, and save the result locally.</string>
     <string name="capture_idle_hint">No receipt selected yet. Import a receipt image to preview the first real app flow.</string>
     <string name="capture_camera_title">Live camera capture</string>
     <string name="capture_camera_body">Frame the receipt, capture a photo, and send it directly into the OCR draft flow.</string>
@@ -42,16 +42,16 @@
     <string name="capture_ocr_empty_result">OCR completed, but no readable text was extracted from the image.</string>
     <string name="receipts_eyebrow">RECEIPTS</string>
     <string name="receipts_title">Receipts</string>
-    <string name="receipts_subtitle">Saved receipts, thumbnails, totals, and detail navigation will live here after local persistence is added.</string>
+    <string name="receipts_subtitle">Every reviewed receipt saved locally appears here with a thumbnail, date, total, and detail navigation.</string>
     <string name="receipts_card_primary_title">Saved list</string>
-    <string name="receipts_card_primary_body">This screen will show local receipt history with thumbnails, merchant names, dates, and totals.</string>
+    <string name="receipts_card_primary_body">Saved receipt history stays on-device with thumbnails, merchant names, dates, totals, and direct access to detail screens.</string>
     <string name="receipts_card_secondary_title">Receipt detail</string>
     <string name="receipts_card_secondary_body">The next product slice will add detail navigation, preview images, and delete actions.</string>
     <string name="settings_eyebrow">SETTINGS</string>
     <string name="settings_title">Settings</string>
-    <string name="settings_subtitle">Defaults for currency, image handling, and local storage behavior will be configured here once persistence exists.</string>
+    <string name="settings_subtitle">Manage the local defaults that feed the active receipt workflow, including fallback currency, JPEG quality, and storage state.</string>
     <string name="settings_card_primary_title">User defaults</string>
-    <string name="settings_card_primary_body">Default currency and import behavior will become the first real settings values.</string>
+    <string name="settings_card_primary_body">Default currency and JPEG quality are persisted locally and used when reviewed receipts are saved.</string>
     <string name="settings_card_secondary_title">Storage notes</string>
-    <string name="settings_card_secondary_body">Later this area will explain local storage usage and image cleanup behavior.</string>
+    <string name="settings_card_secondary_body">Local storage stays on-device, and deleting a receipt also removes its stored image file.</string>
 </resources>
