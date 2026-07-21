@@ -3,8 +3,11 @@ package com.pekomon.cryptoapp.ui.screens
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
@@ -23,7 +26,7 @@ import com.pekomon.cryptoapp.ui.AssetMetadataSource
 import com.pekomon.cryptoapp.ui.CryptoViewModel
 import com.pekomon.cryptoapp.ui.MarketLoadState
 import com.pekomon.cryptoapp.ui.components.CommonCard
-import com.pekomon.cryptoapp.ui.components.CryptoList
+import com.pekomon.cryptoapp.ui.components.CryptoListItemRow
 import com.pekomon.cryptoapp.ui.components.MarketStatusCard
 import com.pekomon.cryptoapp.ui.components.QuickAddDialog
 import com.pekomon.cryptoapp.ui.components.ScreenHeader
@@ -55,104 +58,131 @@ fun HomeScreen(
         }
     }
     
-    Column(
+    SwipeRefresh(
+        state = rememberSwipeRefreshState(state.isLoading),
+        onRefresh = { viewModel.fetchPrices() },
         modifier = modifier
+            .fillMaxSize()
             .testTag(CryptoTestTags.WATCHLIST_SCREEN)
-            .padding(CryptoSpacing.large),
-        verticalArrangement = Arrangement.spacedBy(CryptoSpacing.large)
     ) {
-        ScreenHeader(title = "Watchlist")
-        
-        MarketStatusCard(
-            title = "Sort by: ${state.sortOption.displayName}",
-            marketLoadState = state.marketLoadState,
-            assetMetadataSource = state.assetMetadataSource
-                ?.takeUnless { it == AssetMetadataSource.Live },
-            isLoading = state.isLoading
+        LazyColumn(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(CryptoSpacing.large)
+                .testTag(CryptoTestTags.WATCHLIST_LIST),
+            verticalArrangement = Arrangement.spacedBy(CryptoSpacing.large)
         ) {
-            SortMenu(
-                currentSort = state.sortOption,
-                onSortSelected = { viewModel.updateSortOption(it) }
-            )
-        }
+            item {
+                ScreenHeader(title = "Watchlist")
+            }
 
-        WatchlistSummaryCard(
-            totalAssets = totalWatchlistAssets,
-            pricedAssets = pricedWatchlistAssets,
-            missingPriceAssets = missingPriceAssets
-        )
-
-        CommonCard {
-            Column(
-                modifier = Modifier.padding(CryptoSpacing.large),
-                verticalArrangement = Arrangement.spacedBy(CryptoSpacing.small)
-            ) {
-                OutlinedTextField(
-                    value = searchQuery,
-                    onValueChange = { searchQuery = it },
-                    label = { Text("Search watchlist") },
-                    placeholder = { Text("Bitcoin, ETH, SOL...") },
-                    singleLine = true,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .testTag(CryptoTestTags.WATCHLIST_SEARCH)
-                )
-                Text(
-                    text = searchResultLabel(
-                        visibleCount = visibleCryptos.size,
-                        totalCount = totalWatchlistAssets,
-                        searchQuery = searchQuery
-                    ),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
-        }
-
-        when {
-            state.isLoading && state.assets.isEmpty() -> {
-                CircularProgressIndicator(
-                    modifier = Modifier
-                        .align(Alignment.CenterHorizontally)
-                        .testTag(CryptoTestTags.WATCHLIST_LOADING)
-                )
-            }
-            state.marketLoadState is MarketLoadState.Error -> {
-                val loadState = state.marketLoadState as MarketLoadState.Error
-                StateMessageCard(
-                    title = "Prices unavailable",
-                    message = loadState.message,
-                    actionLabel = "Retry",
-                    onAction = { viewModel.fetchPrices() },
-                    modifier = Modifier.testTag(CryptoTestTags.WATCHLIST_ERROR)
-                )
-            }
-            state.assets.isEmpty() -> {
-                StateMessageCard(
-                    title = "No assets selected",
-                    message = "Open Settings and choose the cryptocurrencies you want on your watchlist.",
-                    modifier = Modifier.testTag(CryptoTestTags.WATCHLIST_EMPTY)
-                )
-            }
-            visibleCryptos.isEmpty() -> {
-                StateMessageCard(
-                    title = "No matches",
-                    message = "Try another asset name or symbol.",
-                    modifier = Modifier.testTag(CryptoTestTags.WATCHLIST_NO_MATCHES)
-                )
-            }
-            else -> {
-                SwipeRefresh(
-                    state = rememberSwipeRefreshState(state.isLoading),
-                    onRefresh = { viewModel.fetchPrices() },
-                    modifier = Modifier.weight(1f)
+            item {
+                MarketStatusCard(
+                    title = "Sort by: ${state.sortOption.displayName}",
+                    marketLoadState = state.marketLoadState,
+                    assetMetadataSource = state.assetMetadataSource
+                        ?.takeUnless { it == AssetMetadataSource.Live },
+                    isLoading = state.isLoading
                 ) {
-                    CryptoList(
-                        cryptos = visibleCryptos,
-                        viewModel = viewModel,
-                        onQuickAdd = { crypto -> quickAddCrypto = crypto },
-                        modifier = Modifier.testTag(CryptoTestTags.WATCHLIST_LIST)
+                    SortMenu(
+                        currentSort = state.sortOption,
+                        onSortSelected = { viewModel.updateSortOption(it) }
                     )
+                }
+            }
+
+            item {
+                WatchlistSummaryCard(
+                    totalAssets = totalWatchlistAssets,
+                    pricedAssets = pricedWatchlistAssets,
+                    missingPriceAssets = missingPriceAssets,
+                    modifier = Modifier.testTag(CryptoTestTags.WATCHLIST_SUMMARY)
+                )
+            }
+
+            item {
+                CommonCard(
+                    modifier = Modifier.testTag(CryptoTestTags.WATCHLIST_SEARCH)
+                ) {
+                    Column(
+                        modifier = Modifier.padding(CryptoSpacing.large),
+                        verticalArrangement = Arrangement.spacedBy(CryptoSpacing.small)
+                    ) {
+                        OutlinedTextField(
+                            value = searchQuery,
+                            onValueChange = { searchQuery = it },
+                            label = { Text("Search watchlist") },
+                            placeholder = { Text("Bitcoin, ETH, SOL...") },
+                            singleLine = true,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                        )
+                        Text(
+                            text = searchResultLabel(
+                                visibleCount = visibleCryptos.size,
+                                totalCount = totalWatchlistAssets,
+                                searchQuery = searchQuery
+                            ),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+            }
+
+            when {
+                state.isLoading && state.assets.isEmpty() -> {
+                    item {
+                        CircularProgressIndicator(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .testTag(CryptoTestTags.WATCHLIST_LOADING)
+                        )
+                    }
+                }
+                state.marketLoadState is MarketLoadState.Error -> {
+                    item {
+                        val loadState = state.marketLoadState as MarketLoadState.Error
+                        StateMessageCard(
+                            title = "Prices unavailable",
+                            message = loadState.message,
+                            actionLabel = "Retry",
+                            onAction = { viewModel.fetchPrices() },
+                            modifier = Modifier.testTag(CryptoTestTags.WATCHLIST_ERROR)
+                        )
+                    }
+                }
+                state.assets.isEmpty() -> {
+                    item {
+                        StateMessageCard(
+                            title = "No assets selected",
+                            message = "Open Settings and choose the cryptocurrencies you want on your watchlist.",
+                            modifier = Modifier.testTag(CryptoTestTags.WATCHLIST_EMPTY)
+                        )
+                    }
+                }
+                visibleCryptos.isEmpty() -> {
+                    item {
+                        StateMessageCard(
+                            title = "No matches",
+                            message = "Try another asset name or symbol.",
+                            modifier = Modifier.testTag(CryptoTestTags.WATCHLIST_NO_MATCHES)
+                        )
+                    }
+                }
+                else -> {
+                    items(visibleCryptos) { crypto ->
+                        val cryptoInfo = viewModel.getCryptoInfo(crypto.id)
+                        CryptoListItemRow(
+                            crypto = crypto,
+                            currentPrice = cryptoInfo?.currentPrice,
+                            priceChangePercentage = cryptoInfo?.priceChangePercentage ?: 0.0,
+                            currency = viewModel.selectedCurrency,
+                            isFavorite = viewModel.isFavorite(crypto.id),
+                            onFavoriteClick = { viewModel.toggleFavorite(crypto.id) },
+                            onQuickAdd = { quickAddCrypto = crypto }
+                        )
+                    }
                 }
             }
         }
@@ -183,7 +213,6 @@ private fun WatchlistSummaryCard(
     CommonCard(modifier = modifier) {
         Row(
             modifier = Modifier
-                .testTag(CryptoTestTags.WATCHLIST_SUMMARY)
                 .padding(CryptoSpacing.large)
                 .fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(CryptoSpacing.medium),

@@ -3,8 +3,11 @@ package com.pekomon.cryptoapp.ui.screens
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -19,7 +22,7 @@ import com.pekomon.cryptoapp.domain.model.CryptoAsset
 import com.pekomon.cryptoapp.ui.MarketLoadState
 import com.pekomon.cryptoapp.ui.CryptoViewModel
 import com.pekomon.cryptoapp.ui.components.CommonCard
-import com.pekomon.cryptoapp.ui.components.CryptoList
+import com.pekomon.cryptoapp.ui.components.CryptoListItemRow
 import com.pekomon.cryptoapp.ui.components.MarketStatusCard
 import com.pekomon.cryptoapp.ui.components.QuickAddDialog
 import com.pekomon.cryptoapp.ui.components.ScreenHeader
@@ -38,63 +41,81 @@ fun FavoritesScreen(
     var quickAddCrypto by remember { mutableStateOf<CryptoAsset?>(null) }
     val state = viewModel.favoritesUiState
     
-    Column(
+    val favorites = state.assets
+    val pricedFavorites = favorites.count { crypto -> state.prices[crypto.id] != null }
+
+    SwipeRefresh(
+        state = rememberSwipeRefreshState(state.isLoading),
+        onRefresh = { viewModel.fetchPrices() },
         modifier = modifier
+            .fillMaxSize()
             .testTag(CryptoTestTags.FAVORITES_SCREEN)
-            .padding(CryptoSpacing.large),
-        verticalArrangement = Arrangement.spacedBy(CryptoSpacing.large)
     ) {
-        ScreenHeader(title = "Favorites")
-        val favorites = state.assets
-        val pricedFavorites = favorites.count { crypto -> state.prices[crypto.id] != null }
-        
-        MarketStatusCard(
-            title = "Sort by: ${state.sortOption.displayName}",
-            marketLoadState = state.marketLoadState,
-            isLoading = state.isLoading
+        LazyColumn(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(CryptoSpacing.large)
+                .testTag(CryptoTestTags.FAVORITES_LIST),
+            verticalArrangement = Arrangement.spacedBy(CryptoSpacing.large)
         ) {
-            SortMenu(
-                currentSort = state.sortOption,
-                onSortSelected = { viewModel.updateSortOption(it) }
-            )
-        }
+            item {
+                ScreenHeader(title = "Favorites")
+            }
 
-        FavoritesSummaryCard(
-            favoriteCount = favorites.size,
-            pricedCount = pricedFavorites
-        )
+            item {
+                MarketStatusCard(
+                    title = "Sort by: ${state.sortOption.displayName}",
+                    marketLoadState = state.marketLoadState,
+                    isLoading = state.isLoading
+                ) {
+                    SortMenu(
+                        currentSort = state.sortOption,
+                        onSortSelected = { viewModel.updateSortOption(it) }
+                    )
+                }
+            }
 
-        when {
-            state.marketLoadState is MarketLoadState.Error -> {
-                val loadState = state.marketLoadState as MarketLoadState.Error
-                StateMessageCard(
-                    title = "Favorites unavailable",
-                    message = loadState.message,
-                    actionLabel = "Retry",
-                    onAction = { viewModel.fetchPrices() },
-                    modifier = Modifier.testTag(CryptoTestTags.FAVORITES_ERROR)
+            item {
+                FavoritesSummaryCard(
+                    favoriteCount = favorites.size,
+                    pricedCount = pricedFavorites,
+                    modifier = Modifier.testTag(CryptoTestTags.FAVORITES_SUMMARY)
                 )
             }
-            else -> {
-                if (favorites.isEmpty()) {
-                    StateMessageCard(
-                        title = "No favorites yet",
-                        message = "Tap the heart icon on any asset to keep it here for quick monitoring.",
-                        modifier = Modifier.testTag(CryptoTestTags.FAVORITES_EMPTY)
-                    )
-                } else {
-                    SwipeRefresh(
-                        state = rememberSwipeRefreshState(state.isLoading),
-                        onRefresh = { viewModel.fetchPrices() },
-                        modifier = Modifier.weight(1f)
-                    ) {
-                        CryptoList(
-                            cryptos = favorites,
-                            viewModel = viewModel,
-                            onQuickAdd = { crypto ->
-                                quickAddCrypto = crypto
-                            },
-                            modifier = Modifier.testTag(CryptoTestTags.FAVORITES_LIST)
+
+            when {
+                state.marketLoadState is MarketLoadState.Error -> {
+                    item {
+                        val loadState = state.marketLoadState as MarketLoadState.Error
+                        StateMessageCard(
+                            title = "Favorites unavailable",
+                            message = loadState.message,
+                            actionLabel = "Retry",
+                            onAction = { viewModel.fetchPrices() },
+                            modifier = Modifier.testTag(CryptoTestTags.FAVORITES_ERROR)
+                        )
+                    }
+                }
+                favorites.isEmpty() -> {
+                    item {
+                        StateMessageCard(
+                            title = "No favorites yet",
+                            message = "Tap the heart icon on any asset to keep it here for quick monitoring.",
+                            modifier = Modifier.testTag(CryptoTestTags.FAVORITES_EMPTY)
+                        )
+                    }
+                }
+                else -> {
+                    items(favorites) { crypto ->
+                        val cryptoInfo = viewModel.getCryptoInfo(crypto.id)
+                        CryptoListItemRow(
+                            crypto = crypto,
+                            currentPrice = cryptoInfo?.currentPrice,
+                            priceChangePercentage = cryptoInfo?.priceChangePercentage ?: 0.0,
+                            currency = viewModel.selectedCurrency,
+                            isFavorite = viewModel.isFavorite(crypto.id),
+                            onFavoriteClick = { viewModel.toggleFavorite(crypto.id) },
+                            onQuickAdd = { quickAddCrypto = crypto }
                         )
                     }
                 }
@@ -127,7 +148,6 @@ private fun FavoritesSummaryCard(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .testTag(CryptoTestTags.FAVORITES_SUMMARY)
                 .padding(CryptoSpacing.large),
             horizontalArrangement = Arrangement.spacedBy(CryptoSpacing.medium),
             verticalAlignment = Alignment.CenterVertically

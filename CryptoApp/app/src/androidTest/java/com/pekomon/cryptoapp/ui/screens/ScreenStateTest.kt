@@ -1,11 +1,13 @@
 package com.pekomon.cryptoapp.ui.screens
 
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollToNode
 import com.pekomon.cryptoapp.data.Currency
 import com.pekomon.cryptoapp.data.SortOption
 import com.pekomon.cryptoapp.data.Transaction
@@ -44,7 +46,11 @@ class ScreenStateTest {
 
         composeRule.waitUntilExists(CryptoTestTags.WATCHLIST_LIST)
         composeRule.onNodeWithTag(CryptoTestTags.WATCHLIST_SCREEN).assertIsDisplayed()
+        composeRule.onNodeWithTag(CryptoTestTags.WATCHLIST_LIST)
+            .performScrollToNode(hasTestTag(CryptoTestTags.WATCHLIST_SUMMARY))
         composeRule.onNodeWithTag(CryptoTestTags.WATCHLIST_SUMMARY).assertIsDisplayed()
+        composeRule.onNodeWithTag(CryptoTestTags.WATCHLIST_LIST)
+            .performScrollToNode(hasTestTag(CryptoTestTags.WATCHLIST_SEARCH))
         composeRule.onNodeWithTag(CryptoTestTags.WATCHLIST_SEARCH).assertIsDisplayed()
     }
 
@@ -82,7 +88,11 @@ class ScreenStateTest {
 
         composeRule.waitUntilExists(CryptoTestTags.FAVORITES_EMPTY)
         composeRule.onNodeWithTag(CryptoTestTags.FAVORITES_SCREEN).assertIsDisplayed()
+        composeRule.onNodeWithTag(CryptoTestTags.FAVORITES_LIST)
+            .performScrollToNode(hasTestTag(CryptoTestTags.FAVORITES_SUMMARY))
         composeRule.onNodeWithTag(CryptoTestTags.FAVORITES_SUMMARY).assertIsDisplayed()
+        composeRule.onNodeWithTag(CryptoTestTags.FAVORITES_LIST)
+            .performScrollToNode(hasTestTag(CryptoTestTags.FAVORITES_EMPTY))
         composeRule.onNodeWithTag(CryptoTestTags.FAVORITES_EMPTY).assertIsDisplayed()
     }
 
