@@ -4,11 +4,11 @@ plugins {
 }
 
 android {
-    namespace = "com.example.pekomon.weatherly"
+    namespace = "com.pekomon.weatherly"
     compileSdk = 36
 
     defaultConfig {
-        applicationId = "com.example.pekomon.weatherly"
+        applicationId = "com.pekomon.weatherly"
         minSdk = 28
         targetSdk = 36
         versionCode = 1
