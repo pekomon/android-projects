@@ -11,6 +11,8 @@ import java.util.Locale
 class OpenMeteoLocationSearchRepository(
     private val api: OpenMeteoGeocodingApi = OpenMeteoGeocodingApi(),
 ) : LocationSearchRepository {
+    private val mapper = OpenMeteoLocationMapper()
+
     override suspend fun searchLocations(query: String): List<Location> = withContext(Dispatchers.IO) {
         val normalizedQuery = query.trim()
         if (normalizedQuery.length < 2) {
@@ -18,10 +20,16 @@ class OpenMeteoLocationSearchRepository(
         }
 
         val payload = api.searchLocations(normalizedQuery)
-        val root = JSONObject(payload)
-        val results = root.optJSONArray("results") ?: return@withContext emptyList()
+        mapper.map(payload)
+    }
+}
 
-        List(results.length()) { index ->
+internal class OpenMeteoLocationMapper {
+    fun map(payload: String): List<Location> {
+        val root = JSONObject(payload)
+        val results = root.optJSONArray("results") ?: return emptyList()
+
+        return List(results.length()) { index ->
             val item = results.getJSONObject(index)
             val countryCode = item.optString("country_code")
             Location(

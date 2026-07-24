@@ -1,0 +1,24 @@
+{
+  "results": [
+    {
+      "id": 658225,
+      "name": "Helsinki",
+      "admin1": "Uusimaa",
+      "country": "Finland",
+      "country_code": "FI",
+      "latitude": 60.1695,
+      "longitude": 24.9354,
+      "timezone": "Europe/Helsinki"
+    },
+    {
+      "id": "london-test",
+      "name": "London",
+      "admin1": "",
+      "country": "",
+      "country_code": "GB",
+      "latitude": 51.5085,
+      "longitude": -0.1257,
+      "timezone": "Europe/London"
+    }
+  ]
+}

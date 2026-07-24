@@ -1,8 +1,6 @@
 package com.pekomon.weatherly.data.repository
 
 import com.pekomon.weatherly.core.model.CurrentWeather
-import com.pekomon.weatherly.core.model.DailyForecast
-import com.pekomon.weatherly.core.model.HourlyForecast
 import com.pekomon.weatherly.core.model.Location
 import com.pekomon.weatherly.core.model.WeatherCondition
 import com.pekomon.weatherly.core.model.WeatherDetails
@@ -19,20 +17,25 @@ import java.time.ZoneId
 class OpenMeteoWeatherRepository(
     private val api: OpenMeteoWeatherApi = OpenMeteoWeatherApi(),
 ) : WeatherRepository {
+    private val mapper = OpenMeteoWeatherMapper()
+
     override suspend fun getWeatherDetails(location: Location): WeatherDetails = withContext(Dispatchers.IO) {
         val payload = api.getForecast(
             latitude = location.latitude,
             longitude = location.longitude,
             timezone = location.timezone,
         )
-        parseWeatherDetails(location, payload)
+        mapper.map(location, payload)
     }
 
     override suspend fun getCurrentLocationWeather(): WeatherDetails {
         return getWeatherDetails(currentLocation)
     }
 
-    private fun parseWeatherDetails(
+}
+
+internal class OpenMeteoWeatherMapper {
+    fun map(
         location: Location,
         payload: String,
     ): WeatherDetails {
@@ -64,7 +67,7 @@ class OpenMeteoWeatherRepository(
     private fun parseHourlyForecast(
         hourly: JSONObject,
         zoneId: ZoneId,
-    ): List<HourlyForecast> {
+    ): List<com.pekomon.weatherly.core.model.HourlyForecast> {
         val times = hourly.getJSONArray("time")
         val temperatures = hourly.getJSONArray("temperature_2m")
         val precipitationProbabilities = hourly.getJSONArray("precipitation_probability")
@@ -72,7 +75,7 @@ class OpenMeteoWeatherRepository(
 
         return List(times.length()) { index ->
             val weatherCode = weatherCodes.requireInt(index)
-            HourlyForecast(
+            com.pekomon.weatherly.core.model.HourlyForecast(
                 dateTime = LocalDateTime.parse(times.getString(index)).atZone(zoneId),
                 temperature = temperatures.requireDouble(index),
                 precipitationChance = precipitationProbabilities.requireDouble(index) / 100.0,
@@ -81,7 +84,7 @@ class OpenMeteoWeatherRepository(
         }
     }
 
-    private fun parseDailyForecast(daily: JSONObject): List<DailyForecast> {
+    private fun parseDailyForecast(daily: JSONObject): List<com.pekomon.weatherly.core.model.DailyForecast> {
         val dates = daily.getJSONArray("time")
         val weatherCodes = daily.getJSONArray("weather_code")
         val minTemperatures = daily.getJSONArray("temperature_2m_min")
@@ -90,7 +93,7 @@ class OpenMeteoWeatherRepository(
 
         return List(dates.length()) { index ->
             val weatherCode = weatherCodes.requireInt(index)
-            DailyForecast(
+            com.pekomon.weatherly.core.model.DailyForecast(
                 date = LocalDate.parse(dates.getString(index)),
                 minTemperature = minTemperatures.requireDouble(index),
                 maxTemperature = maxTemperatures.requireDouble(index),
@@ -100,7 +103,7 @@ class OpenMeteoWeatherRepository(
         }
     }
 
-    private fun weatherConditionForCode(code: Int): WeatherCondition = when (code) {
+    internal fun weatherConditionForCode(code: Int): WeatherCondition = when (code) {
         0 -> WeatherCondition.Clear
         1 -> WeatherCondition.MostlyClear
         2 -> WeatherCondition.PartlyCloudy
