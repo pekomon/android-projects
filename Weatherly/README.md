@@ -79,12 +79,30 @@ The app is organized around a small set of feature screens and repository-backed
 - `data/repository` for weather, search, favorites, and settings persistence
 - `core/model` and `core/ui` for shared models and formatting
 
+Open-Meteo response mapping is kept separate from network I/O so forecast and geocoding conversion can be tested without making API requests.
+
 The UI is intentionally phone-first but includes adaptive behavior for larger widths:
 
 - bottom navigation on compact widths
 - navigation rail on wider layouts
 - list/detail style splits for Search and Favorites
 - split forecast layout on Home
+
+## Verification
+
+Validated on `2026-07-24`:
+
+- `./gradlew :app:testDebugUnitTest :app:assembleDebug :app:compileDebugAndroidTestKotlin`
+- `./gradlew :app:connectedDebugAndroidTest`
+- `rg "com\\.example" . --glob '!**/build/**' --glob '!**/.gradle/**' --glob '!**/.idea/**'`
+- Debug APK launch on `emulator-5554` / `Medium_Phone_API_36.0`
+
+Coverage now includes:
+
+- weather formatting
+- Open-Meteo forecast and geocoding mapping
+- Home, Search, and Favorites ViewModel states
+- Home, Search, Favorites, Settings, and top-level navigation Compose coverage
 
 ## Notes
 
