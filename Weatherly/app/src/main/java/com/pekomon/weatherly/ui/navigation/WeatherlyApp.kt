@@ -6,6 +6,7 @@ import androidx.compose.material.icons.outlined.Home
 import androidx.compose.material.icons.outlined.Search
 import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.Icon
 import androidx.compose.material3.NavigationBar
@@ -34,7 +35,13 @@ import com.pekomon.weatherly.feature.search.SearchRoute
 import com.pekomon.weatherly.feature.settings.SettingsRoute
 
 @Composable
-fun WeatherlyApp(modifier: Modifier = Modifier) {
+fun WeatherlyApp(
+    modifier: Modifier = Modifier,
+    homeContent: @Composable (PaddingValues) -> Unit = { HomeRoute(contentPadding = it) },
+    searchContent: @Composable (PaddingValues) -> Unit = { SearchRoute(contentPadding = it) },
+    favoritesContent: @Composable (PaddingValues) -> Unit = { FavoritesRoute(contentPadding = it) },
+    settingsContent: @Composable (PaddingValues) -> Unit = { SettingsRoute(contentPadding = it) },
+) {
     val navController = rememberNavController()
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
@@ -79,16 +86,16 @@ fun WeatherlyApp(modifier: Modifier = Modifier) {
                     modifier = Modifier.fillMaxSize(),
                 ) {
                     composable(WeatherlyTopLevelDestination.Home.route) {
-                        HomeRoute(contentPadding = androidx.compose.foundation.layout.PaddingValues(0.dp))
+                        homeContent(PaddingValues(0.dp))
                     }
                     composable(WeatherlyTopLevelDestination.Search.route) {
-                        SearchRoute(contentPadding = androidx.compose.foundation.layout.PaddingValues(0.dp))
+                        searchContent(PaddingValues(0.dp))
                     }
                     composable(WeatherlyTopLevelDestination.Favorites.route) {
-                        FavoritesRoute(contentPadding = androidx.compose.foundation.layout.PaddingValues(0.dp))
+                        favoritesContent(PaddingValues(0.dp))
                     }
                     composable(WeatherlyTopLevelDestination.Settings.route) {
-                        SettingsRoute(contentPadding = androidx.compose.foundation.layout.PaddingValues(0.dp))
+                        settingsContent(PaddingValues(0.dp))
                     }
                 }
             }
@@ -133,16 +140,16 @@ fun WeatherlyApp(modifier: Modifier = Modifier) {
                 modifier = Modifier.padding(bottom = 0.dp),
             ) {
                 composable(WeatherlyTopLevelDestination.Home.route) {
-                    HomeRoute(contentPadding = innerPadding)
+                    homeContent(innerPadding)
                 }
                 composable(WeatherlyTopLevelDestination.Search.route) {
-                    SearchRoute(contentPadding = innerPadding)
+                    searchContent(innerPadding)
                 }
                 composable(WeatherlyTopLevelDestination.Favorites.route) {
-                    FavoritesRoute(contentPadding = innerPadding)
+                    favoritesContent(innerPadding)
                 }
                 composable(WeatherlyTopLevelDestination.Settings.route) {
-                    SettingsRoute(contentPadding = innerPadding)
+                    settingsContent(innerPadding)
                 }
             }
         }
