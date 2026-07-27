@@ -1,0 +1,42 @@
+name: SnapReceipt CI
+
+on:
+  push:
+    paths:
+      - 'SnapReceipt/**'
+      - '.github/workflows/snapreceipt-ci.yml'
+  pull_request:
+    paths:
+      - 'SnapReceipt/**'
+      - '.github/workflows/snapreceipt-ci.yml'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: SnapReceipt
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup JDK
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v4
+
+      - name: Grant execute permission for gradlew
+        run: chmod +x gradlew
+
+      - name: Build and run tests
+        run: ./gradlew :app:testDebugUnitTest :app:assembleDebug :app:compileDebugAndroidTestKotlin
+
+      - name: Upload debug APK
+        uses: actions/upload-artifact@v7
+        with:
+          name: snapreceipt-debug-apk
+          path: SnapReceipt/app/build/outputs/apk/debug/app-debug.apk
