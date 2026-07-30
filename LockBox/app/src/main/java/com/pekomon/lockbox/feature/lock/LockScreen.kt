@@ -16,11 +16,14 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import com.pekomon.lockbox.core.security.LockSession
 
 @Composable
-fun LockRoute() {
+fun LockRoute(
+    lockSession: LockSession,
+) {
     LockScreen(
-        onUnlockClick = {},
+        onUnlockClick = lockSession::unlock,
     )
 }
 

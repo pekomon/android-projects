@@ -7,7 +7,9 @@ import androidx.navigation.compose.rememberNavController
 import com.pekomon.lockbox.feature.lock.LockRoute
 
 @Composable
-fun LockBoxApp() {
+fun LockBoxApp(
+    appContainer: LockBoxAppContainer = LockBoxAppContainer.preview(),
+) {
     val navController = rememberNavController()
 
     NavHost(
@@ -15,7 +17,7 @@ fun LockBoxApp() {
         startDestination = LockBoxDestination.Lock.route,
     ) {
         composable(LockBoxDestination.Lock.route) {
-            LockRoute()
+            LockRoute(lockSession = appContainer.lockSession)
         }
     }
 }
