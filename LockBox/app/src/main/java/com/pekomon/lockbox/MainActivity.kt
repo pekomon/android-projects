@@ -9,7 +9,7 @@ import com.pekomon.lockbox.ui.theme.LockBoxTheme
 
 class MainActivity : ComponentActivity() {
     private val appContainer by lazy {
-        LockBoxAppContainer(applicationContext)
+        (application as LockBoxApplication).appContainer
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
