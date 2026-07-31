@@ -29,6 +29,20 @@ class LockBoxAppContainer private constructor(
     )
 
     companion object {
+        fun fake(
+            lockSession: LockSession = InMemoryLockSession(),
+            biometricAvailabilityReader: BiometricAvailabilityReader = FakeBiometricAvailabilityReader(),
+            biometricAuthenticator: BiometricAuthenticator = FakeBiometricAuthenticator(),
+            cryptoService: CryptoService = NoOpCryptoService(),
+            vaultRepository: VaultRepository = InMemoryVaultRepository(),
+        ): LockBoxAppContainer = LockBoxAppContainer(
+            lockSession = lockSession,
+            biometricAvailabilityReader = biometricAvailabilityReader,
+            biometricAuthenticator = biometricAuthenticator,
+            cryptoService = cryptoService,
+            vaultRepository = vaultRepository,
+        )
+
         fun preview(): LockBoxAppContainer = LockBoxAppContainer(
             lockSession = InMemoryLockSession(),
             biometricAvailabilityReader = FakeBiometricAvailabilityReader(),
