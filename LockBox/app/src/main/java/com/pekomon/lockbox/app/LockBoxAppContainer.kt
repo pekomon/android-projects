@@ -3,6 +3,7 @@ package com.pekomon.lockbox.app
 import android.content.Context
 import com.pekomon.lockbox.core.crypto.CryptoService
 import com.pekomon.lockbox.core.crypto.NoOpCryptoService
+import com.pekomon.lockbox.core.security.AndroidBiometricAvailabilityReader
 import com.pekomon.lockbox.core.security.BiometricAvailabilityReader
 import com.pekomon.lockbox.core.security.BiometricAuthenticator
 import com.pekomon.lockbox.core.security.FakeBiometricAvailabilityReader
@@ -12,18 +13,28 @@ import com.pekomon.lockbox.core.security.LockSession
 import com.pekomon.lockbox.data.repository.InMemoryVaultRepository
 import com.pekomon.lockbox.domain.repository.VaultRepository
 
-class LockBoxAppContainer(
-    @Suppress("UNUSED_PARAMETER") context: Context,
+class LockBoxAppContainer private constructor(
+    val lockSession: LockSession,
+    val biometricAvailabilityReader: BiometricAvailabilityReader,
+    val biometricAuthenticator: BiometricAuthenticator,
+    val cryptoService: CryptoService,
+    val vaultRepository: VaultRepository,
 ) {
-    val lockSession: LockSession = InMemoryLockSession()
-    val biometricAvailabilityReader: BiometricAvailabilityReader = FakeBiometricAvailabilityReader()
-    val biometricAuthenticator: BiometricAuthenticator = FakeBiometricAuthenticator()
-    val cryptoService: CryptoService = NoOpCryptoService()
-    val vaultRepository: VaultRepository = InMemoryVaultRepository()
+    constructor(context: Context) : this(
+        lockSession = InMemoryLockSession(),
+        biometricAvailabilityReader = AndroidBiometricAvailabilityReader(context),
+        biometricAuthenticator = FakeBiometricAuthenticator(),
+        cryptoService = NoOpCryptoService(),
+        vaultRepository = InMemoryVaultRepository(),
+    )
 
     companion object {
         fun preview(): LockBoxAppContainer = LockBoxAppContainer(
-            context = android.app.Application(),
+            lockSession = InMemoryLockSession(),
+            biometricAvailabilityReader = FakeBiometricAvailabilityReader(),
+            biometricAuthenticator = FakeBiometricAuthenticator(),
+            cryptoService = NoOpCryptoService(),
+            vaultRepository = InMemoryVaultRepository(),
         )
     }
 }
