@@ -117,7 +117,9 @@ private fun LockScreenContent(
         color = MaterialTheme.colorScheme.background,
     ) {
         Column(
-            modifier = Modifier.padding(28.dp),
+            modifier = Modifier
+                .padding(28.dp)
+                .then(if (stateTag != null) Modifier.testTag(stateTag) else Modifier),
             verticalArrangement = Arrangement.Center,
         ) {
             Text(
@@ -133,9 +135,7 @@ private fun LockScreenContent(
             Spacer(modifier = Modifier.height(8.dp))
             Text(
                 text = statusText,
-                modifier = Modifier
-                    .testTag("lock_status")
-                    .then(if (stateTag != null) Modifier.testTag(stateTag) else Modifier),
+                modifier = Modifier.testTag("lock_status"),
                 style = MaterialTheme.typography.bodyLarge,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 textAlign = TextAlign.Start,
