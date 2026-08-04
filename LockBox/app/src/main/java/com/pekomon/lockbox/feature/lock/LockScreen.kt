@@ -12,6 +12,8 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
@@ -22,8 +24,6 @@ import com.pekomon.lockbox.core.security.BiometricAuthenticator
 import com.pekomon.lockbox.core.security.BiometricAvailabilityReader
 import com.pekomon.lockbox.core.security.LockSession
 import com.pekomon.lockbox.domain.model.BiometricAvailability
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 
 @Composable
 fun LockRoute(
@@ -42,43 +42,10 @@ fun LockRoute(
     }
     val uiState by controller.uiState.collectAsStateWithLifecycle()
 
-    if (uiState.isUnlocked) {
-        UnlockedEmptyVault()
-    } else {
-        LockScreen(
-            uiState = uiState,
-            onUnlockClick = controller::requestUnlock,
-        )
-    }
-}
-
-@Composable
-private fun UnlockedEmptyVault(
-    modifier: Modifier = Modifier,
-) {
-    Surface(
-        modifier = modifier
-            .fillMaxSize()
-            .testTag("unlocked_empty_state"),
-        color = MaterialTheme.colorScheme.background,
-    ) {
-        Column(
-            modifier = Modifier.padding(28.dp),
-            verticalArrangement = Arrangement.Center,
-        ) {
-            Text(
-                text = "Vault is empty",
-                style = MaterialTheme.typography.headlineMedium,
-                fontWeight = FontWeight.SemiBold,
-            )
-            Spacer(modifier = Modifier.height(8.dp))
-            Text(
-                text = "Your private entries will appear here after you add them.",
-                style = MaterialTheme.typography.bodyLarge,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-        }
-    }
+    LockScreen(
+        uiState = uiState,
+        onUnlockClick = controller::requestUnlock,
+    )
 }
 
 @Composable
