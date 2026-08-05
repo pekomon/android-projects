@@ -6,6 +6,8 @@ import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollTo
+import androidx.compose.ui.test.performTextInput
 import com.pekomon.lockbox.core.security.AuthenticationResult
 import com.pekomon.lockbox.core.security.BiometricAuthenticator
 import com.pekomon.lockbox.core.security.BiometricAvailabilityReader
@@ -151,6 +153,42 @@ class LockBoxAppTest {
         composeRule.onNodeWithText("ada@example.com").assertDoesNotExist()
         composeRule.onNodeWithText("correct horse battery staple").assertDoesNotExist()
         composeRule.onNodeWithText("https://mail.example.test").assertDoesNotExist()
+    }
+
+    @Test
+    fun editorShowsFieldSpecificValidationErrors() {
+        val lockSession = InMemoryLockSession().apply { unlock() }
+        composeRule.setLockBoxContent(
+            appContainer = LockBoxAppContainer.fake(lockSession = lockSession),
+        )
+
+        composeRule.onNodeWithTag("add_entry_button").performClick()
+        composeRule.onNodeWithTag("save_entry_button").performScrollTo().performClick()
+
+        composeRule.onNodeWithTag("entry_editor_screen").assertIsDisplayed()
+        composeRule.onNodeWithText("Title is required.").assertIsDisplayed()
+        composeRule.onNodeWithText("Username is required.").assertIsDisplayed()
+        composeRule.onNodeWithText("Password is required.").assertIsDisplayed()
+    }
+
+    @Test
+    fun editorCreatesSecureNoteAndReturnsToRedactedList() {
+        val lockSession = InMemoryLockSession().apply { unlock() }
+        composeRule.setLockBoxContent(
+            appContainer = LockBoxAppContainer.fake(lockSession = lockSession),
+        )
+
+        composeRule.onNodeWithTag("add_entry_button").performClick()
+        composeRule.onNodeWithTag("kind_SecureNote").performClick()
+        composeRule.onNodeWithTag("editor_title").performTextInput("Passport")
+        composeRule.onNodeWithTag("editor_note_body").performTextInput("Number 123456789")
+        composeRule.onNodeWithTag("save_entry_button").performScrollTo().performClick()
+
+        composeRule.onNodeWithTag("vault_screen").assertIsDisplayed()
+        composeRule.onNodeWithText("Passport").assertIsDisplayed()
+        composeRule.onNodeWithText("Secure note").assertIsDisplayed()
+        composeRule.onNodeWithText("Secret hidden").assertIsDisplayed()
+        composeRule.onNodeWithText("Number 123456789").assertDoesNotExist()
     }
 
     private fun androidx.compose.ui.test.junit4.ComposeContentTestRule.setLockBoxContent(

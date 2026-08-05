@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Card
+import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -32,12 +33,14 @@ import java.time.format.DateTimeFormatter
 @Composable
 fun VaultRoute(
     vaultRepository: VaultRepository,
+    onAddClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val entries by vaultRepository.entries.collectAsStateWithLifecycle(emptyList())
 
     VaultScreen(
         entries = entries,
+        onAddClick = onAddClick,
         modifier = modifier,
     )
 }
@@ -45,6 +48,7 @@ fun VaultRoute(
 @Composable
 internal fun VaultScreen(
     entries: List<VaultEntryMetadata>,
+    onAddClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Surface(
@@ -56,11 +60,23 @@ internal fun VaultScreen(
         Column(
             modifier = Modifier.padding(24.dp),
         ) {
-            Text(
-                text = "Vault",
-                style = MaterialTheme.typography.headlineLarge,
-                fontWeight = FontWeight.SemiBold,
-            )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    text = "Vault",
+                    style = MaterialTheme.typography.headlineLarge,
+                    fontWeight = FontWeight.SemiBold,
+                )
+                FloatingActionButton(
+                    onClick = onAddClick,
+                    modifier = Modifier.testTag("add_entry_button"),
+                ) {
+                    Text("+")
+                }
+            }
             Spacer(modifier = Modifier.height(6.dp))
             Text(
                 text = "Private fields stay hidden until you open an entry.",
