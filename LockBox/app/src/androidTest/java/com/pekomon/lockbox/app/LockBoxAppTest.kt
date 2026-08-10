@@ -7,6 +7,7 @@ import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
+import androidx.compose.ui.test.performTextClearance
 import androidx.compose.ui.test.performTextInput
 import com.pekomon.lockbox.core.security.AuthenticationResult
 import com.pekomon.lockbox.core.security.BiometricAuthenticator
@@ -214,6 +215,34 @@ class LockBoxAppTest {
         composeRule.onNodeWithText("Secure note").assertIsDisplayed()
         composeRule.onNodeWithText("Secret hidden").assertIsDisplayed()
         composeRule.onNodeWithText("Number 123456789").assertDoesNotExist()
+    }
+
+    @Test
+    fun editorUpdatesExistingEntryAndReturnsToList() {
+        val lockSession = InMemoryLockSession().apply { unlock() }
+        val vaultRepository = InMemoryVaultRepository()
+        runBlocking {
+            vaultRepository.saveEntry(sampleLoginEntry())
+        }
+        composeRule.setLockBoxContent(
+            appContainer = LockBoxAppContainer.fake(
+                lockSession = lockSession,
+                vaultRepository = vaultRepository,
+            ),
+        )
+
+        composeRule.onNodeWithTag("vault_entry_row_personal-email").performClick()
+        composeRule.onNodeWithTag("edit_entry_button").performClick()
+        composeRule.onNodeWithTag("entry_editor_screen").assertIsDisplayed()
+        composeRule.onNodeWithText("Edit entry").assertIsDisplayed()
+        composeRule.onNodeWithTag("editor_title").performTextClearance()
+        composeRule.onNodeWithTag("editor_title").performTextInput("Work email")
+        composeRule.onNodeWithTag("save_entry_button").performScrollTo().performClick()
+
+        composeRule.onNodeWithTag("vault_screen").assertIsDisplayed()
+        composeRule.onNodeWithText("Work email").assertIsDisplayed()
+        composeRule.onNodeWithText("Personal email").assertDoesNotExist()
+        composeRule.onNodeWithText("correct horse battery staple").assertDoesNotExist()
     }
 
     private fun androidx.compose.ui.test.junit4.ComposeContentTestRule.setLockBoxContent(

@@ -50,7 +50,9 @@ fun LockBoxApp(
                     entryId = entryId,
                     vaultRepository = appContainer.vaultRepository,
                     onBack = { navController.popBackStack() },
-                    onEdit = {},
+                    onEdit = {
+                        navController.navigate(LockBoxDestination.Edit.createRoute(entryId))
+                    },
                 )
             } else {
                 LockRoute(
@@ -63,6 +65,31 @@ fun LockBoxApp(
         composable(LockBoxDestination.Editor.route) {
             if (isUnlocked) {
                 EntryEditorRoute(
+                    entryId = null,
+                    vaultRepository = appContainer.vaultRepository,
+                    onSaved = {
+                        navController.popBackStack(
+                            route = LockBoxDestination.Lock.route,
+                            inclusive = false,
+                        )
+                    },
+                    onCancel = {
+                        navController.popBackStack()
+                    },
+                )
+            } else {
+                LockRoute(
+                    lockSession = appContainer.lockSession,
+                    availabilityReader = appContainer.biometricAvailabilityReader,
+                    authenticator = biometricAuthenticator,
+                )
+            }
+        }
+        composable(LockBoxDestination.Edit.route) { backStackEntry ->
+            if (isUnlocked) {
+                val entryId = backStackEntry.arguments?.getString("entryId").orEmpty()
+                EntryEditorRoute(
+                    entryId = entryId,
                     vaultRepository = appContainer.vaultRepository,
                     onSaved = {
                         navController.popBackStack(
@@ -88,10 +115,12 @@ fun LockBoxApp(
 enum class LockBoxDestination(val route: String) {
     Lock("lock"),
     Editor("editor"),
-    Detail("detail/{entryId}");
+    Detail("detail/{entryId}"),
+    Edit("edit/{entryId}");
 
     fun createRoute(entryId: String): String = when (this) {
         Detail -> "detail/$entryId"
+        Edit -> "edit/$entryId"
         else -> route
     }
 }

@@ -18,6 +18,7 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -43,18 +44,45 @@ import kotlinx.coroutines.launch
 
 @Composable
 fun EntryEditorRoute(
+    entryId: String?,
     vaultRepository: VaultRepository,
     onSaved: () -> Unit,
     onCancel: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val scope = rememberCoroutineScope()
+    var existingEntry by remember(entryId) { mutableStateOf<VaultEntry?>(null) }
+    var isLoaded by remember(entryId) { mutableStateOf(entryId == null) }
+
+    LaunchedEffect(entryId, vaultRepository) {
+        if (entryId != null) {
+            existingEntry = vaultRepository.getEntry(VaultEntryId(entryId))
+            isLoaded = true
+        }
+    }
+
+    if (!isLoaded) {
+        EditorStatus(
+            text = "Loading entry",
+            modifier = modifier.testTag("entry_editor_loading"),
+        )
+        return
+    }
+
+    if (entryId != null && existingEntry == null) {
+        MissingEditor(
+            onCancel = onCancel,
+            modifier = modifier,
+        )
+        return
+    }
 
     EntryEditorScreen(
+        initialEntry = existingEntry,
         onCancel = onCancel,
         onSave = { draft ->
             scope.launch {
-                vaultRepository.saveEntry(draft.toNewEntry())
+                vaultRepository.saveEntry(draft.toEntry(existingEntry))
                 onSaved()
             }
         },
@@ -64,22 +92,24 @@ fun EntryEditorRoute(
 
 @Composable
 internal fun EntryEditorScreen(
+    initialEntry: VaultEntry?,
     onSave: (VaultEntryDraft) -> Unit,
     onCancel: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    var kind by remember { mutableStateOf(EntryKind.Login) }
-    var title by remember { mutableStateOf("") }
-    var username by remember { mutableStateOf("") }
-    var password by remember { mutableStateOf("") }
-    var url by remember { mutableStateOf("") }
-    var loginNotes by remember { mutableStateOf("") }
-    var noteBody by remember { mutableStateOf("") }
-    var cardholder by remember { mutableStateOf("") }
-    var cardNumber by remember { mutableStateOf("") }
-    var cardExpiry by remember { mutableStateOf("") }
-    var cardSecurityCode by remember { mutableStateOf("") }
-    var cardNotes by remember { mutableStateOf("") }
+    val initialDraft = remember(initialEntry?.metadata?.id) { initialEntry?.toDraft() }
+    var kind by remember(initialDraft) { mutableStateOf(initialDraft?.kind ?: EntryKind.Login) }
+    var title by remember(initialDraft) { mutableStateOf(initialDraft?.title.orEmpty()) }
+    var username by remember(initialDraft) { mutableStateOf((initialDraft as? VaultEntryDraft.Login)?.username.orEmpty()) }
+    var password by remember(initialDraft) { mutableStateOf((initialDraft as? VaultEntryDraft.Login)?.password.orEmpty()) }
+    var url by remember(initialDraft) { mutableStateOf((initialDraft as? VaultEntryDraft.Login)?.url.orEmpty()) }
+    var loginNotes by remember(initialDraft) { mutableStateOf((initialDraft as? VaultEntryDraft.Login)?.notes.orEmpty()) }
+    var noteBody by remember(initialDraft) { mutableStateOf((initialDraft as? VaultEntryDraft.SecureNote)?.body.orEmpty()) }
+    var cardholder by remember(initialDraft) { mutableStateOf((initialDraft as? VaultEntryDraft.Card)?.cardholder.orEmpty()) }
+    var cardNumber by remember(initialDraft) { mutableStateOf((initialDraft as? VaultEntryDraft.Card)?.number.orEmpty()) }
+    var cardExpiry by remember(initialDraft) { mutableStateOf((initialDraft as? VaultEntryDraft.Card)?.expiry.orEmpty()) }
+    var cardSecurityCode by remember(initialDraft) { mutableStateOf((initialDraft as? VaultEntryDraft.Card)?.securityCode.orEmpty()) }
+    var cardNotes by remember(initialDraft) { mutableStateOf((initialDraft as? VaultEntryDraft.Card)?.notes.orEmpty()) }
     var errors by remember { mutableStateOf(emptyMap<ValidationField, String>()) }
 
     fun currentDraft(): VaultEntryDraft = when (kind) {
@@ -118,13 +148,14 @@ internal fun EntryEditorScreen(
                 .padding(24.dp),
         ) {
             Text(
-                text = "New entry",
+                text = if (initialEntry == null) "New entry" else "Edit entry",
                 style = MaterialTheme.typography.headlineLarge,
                 fontWeight = FontWeight.SemiBold,
             )
             Spacer(modifier = Modifier.height(20.dp))
             EntryKindPicker(
                 selectedKind = kind,
+                isEnabled = initialEntry == null,
                 onKindSelected = {
                     kind = it
                     errors = emptyMap()
@@ -205,6 +236,7 @@ internal fun EntryEditorScreen(
 @Composable
 private fun EntryKindPicker(
     selectedKind: EntryKind,
+    isEnabled: Boolean,
     onKindSelected: (EntryKind) -> Unit,
 ) {
     Row(
@@ -214,6 +246,7 @@ private fun EntryKindPicker(
             FilterChip(
                 selected = selectedKind == kind,
                 onClick = { onKindSelected(kind) },
+                enabled = isEnabled,
                 label = { Text(kind.label) },
                 modifier = Modifier.testTag("kind_${kind.name}"),
             )
@@ -368,17 +401,97 @@ private fun EditorField(
     )
 }
 
-private fun VaultEntryDraft.toNewEntry(): VaultEntry {
+@Composable
+private fun MissingEditor(
+    onCancel: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Surface(
+        modifier = modifier
+            .fillMaxSize()
+            .testTag("entry_editor_missing"),
+        color = MaterialTheme.colorScheme.background,
+    ) {
+        Column(
+            modifier = Modifier.padding(24.dp),
+        ) {
+            Text(
+                text = "Entry not found",
+                style = MaterialTheme.typography.headlineMedium,
+                fontWeight = FontWeight.SemiBold,
+            )
+            Spacer(modifier = Modifier.height(12.dp))
+            Text(
+                text = "This vault entry is no longer available.",
+                style = MaterialTheme.typography.bodyLarge,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Spacer(modifier = Modifier.height(24.dp))
+            OutlinedButton(
+                onClick = onCancel,
+                modifier = Modifier.testTag("cancel_editor_button"),
+            ) {
+                Text("Back")
+            }
+        }
+    }
+}
+
+@Composable
+private fun EditorStatus(
+    text: String,
+    modifier: Modifier = Modifier,
+) {
+    Surface(
+        modifier = modifier.fillMaxSize(),
+        color = MaterialTheme.colorScheme.background,
+    ) {
+        Column(
+            modifier = Modifier.padding(24.dp),
+        ) {
+            Text(
+                text = text,
+                style = MaterialTheme.typography.bodyLarge,
+            )
+        }
+    }
+}
+
+private fun VaultEntryDraft.toEntry(existingEntry: VaultEntry?): VaultEntry {
     val now = Instant.now()
     return VaultEntry(
         metadata = VaultEntryMetadata(
-            id = VaultEntryId(UUID.randomUUID().toString()),
+            id = existingEntry?.metadata?.id ?: VaultEntryId(UUID.randomUUID().toString()),
             title = title.trim(),
             kind = kind,
-            createdAt = now,
+            createdAt = existingEntry?.metadata?.createdAt ?: now,
             updatedAt = now,
         ),
         payload = toPayload(),
+    )
+}
+
+private fun VaultEntry.toDraft(): VaultEntryDraft = when (val payload = payload) {
+    is SecretPayload.Login -> VaultEntryDraft.Login(
+        title = metadata.title,
+        username = payload.username,
+        password = payload.password,
+        url = payload.url,
+        notes = payload.notes,
+    )
+
+    is SecretPayload.SecureNote -> VaultEntryDraft.SecureNote(
+        title = metadata.title,
+        body = payload.body,
+    )
+
+    is SecretPayload.Card -> VaultEntryDraft.Card(
+        title = metadata.title,
+        cardholder = payload.cardholder,
+        number = payload.number,
+        expiry = payload.expiry,
+        securityCode = payload.securityCode,
+        notes = payload.notes,
     )
 }
 
