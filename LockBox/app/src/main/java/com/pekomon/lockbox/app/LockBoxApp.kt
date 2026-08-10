@@ -7,6 +7,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.pekomon.lockbox.core.security.BiometricAuthenticator
+import com.pekomon.lockbox.feature.detail.EntryDetailRoute
 import com.pekomon.lockbox.feature.editor.EntryEditorRoute
 import com.pekomon.lockbox.feature.lock.LockRoute
 import com.pekomon.lockbox.feature.vault.VaultRoute
@@ -30,6 +31,26 @@ fun LockBoxApp(
                     onAddClick = {
                         navController.navigate(LockBoxDestination.Editor.route)
                     },
+                    onEntryClick = { entryId ->
+                        navController.navigate(LockBoxDestination.Detail.createRoute(entryId))
+                    },
+                )
+            } else {
+                LockRoute(
+                    lockSession = appContainer.lockSession,
+                    availabilityReader = appContainer.biometricAvailabilityReader,
+                    authenticator = biometricAuthenticator,
+                )
+            }
+        }
+        composable(LockBoxDestination.Detail.route) { backStackEntry ->
+            if (isUnlocked) {
+                val entryId = backStackEntry.arguments?.getString("entryId").orEmpty()
+                EntryDetailRoute(
+                    entryId = entryId,
+                    vaultRepository = appContainer.vaultRepository,
+                    onBack = { navController.popBackStack() },
+                    onEdit = {},
                 )
             } else {
                 LockRoute(
@@ -67,4 +88,10 @@ fun LockBoxApp(
 enum class LockBoxDestination(val route: String) {
     Lock("lock"),
     Editor("editor"),
+    Detail("detail/{entryId}");
+
+    fun createRoute(entryId: String): String = when (this) {
+        Detail -> "detail/$entryId"
+        else -> route
+    }
 }

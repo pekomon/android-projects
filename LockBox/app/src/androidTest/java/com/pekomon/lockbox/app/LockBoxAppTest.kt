@@ -156,6 +156,31 @@ class LockBoxAppTest {
     }
 
     @Test
+    fun tappingVaultRowShowsEntryDetail() {
+        val lockSession = InMemoryLockSession().apply { unlock() }
+        val vaultRepository = InMemoryVaultRepository()
+        runBlocking {
+            vaultRepository.saveEntry(sampleLoginEntry())
+        }
+
+        composeRule.setLockBoxContent(
+            appContainer = LockBoxAppContainer.fake(
+                lockSession = lockSession,
+                vaultRepository = vaultRepository,
+            ),
+        )
+
+        composeRule.onNodeWithText("correct horse battery staple").assertDoesNotExist()
+        composeRule.onNodeWithTag("vault_entry_row_personal-email").performClick()
+
+        composeRule.onNodeWithTag("entry_detail_screen").assertIsDisplayed()
+        composeRule.onNodeWithText("Personal email").assertIsDisplayed()
+        composeRule.onNodeWithText("ada@example.com").assertIsDisplayed()
+        composeRule.onNodeWithText("correct horse battery staple").assertIsDisplayed()
+        composeRule.onNodeWithText("https://mail.example.test").assertIsDisplayed()
+    }
+
+    @Test
     fun editorShowsFieldSpecificValidationErrors() {
         val lockSession = InMemoryLockSession().apply { unlock() }
         composeRule.setLockBoxContent(

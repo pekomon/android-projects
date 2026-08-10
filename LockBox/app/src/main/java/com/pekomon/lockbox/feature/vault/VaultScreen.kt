@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.clickable
 import androidx.compose.material3.Card
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.MaterialTheme
@@ -34,6 +35,7 @@ import java.time.format.DateTimeFormatter
 fun VaultRoute(
     vaultRepository: VaultRepository,
     onAddClick: () -> Unit,
+    onEntryClick: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val entries by vaultRepository.entries.collectAsStateWithLifecycle(emptyList())
@@ -41,6 +43,7 @@ fun VaultRoute(
     VaultScreen(
         entries = entries,
         onAddClick = onAddClick,
+        onEntryClick = onEntryClick,
         modifier = modifier,
     )
 }
@@ -49,6 +52,7 @@ fun VaultRoute(
 internal fun VaultScreen(
     entries: List<VaultEntryMetadata>,
     onAddClick: () -> Unit,
+    onEntryClick: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Surface(
@@ -91,7 +95,10 @@ internal fun VaultScreen(
                         .testTag("vault_empty_state"),
                 )
             } else {
-                VaultEntryList(entries = entries)
+                VaultEntryList(
+                    entries = entries,
+                    onEntryClick = onEntryClick,
+                )
             }
         }
     }
@@ -122,6 +129,7 @@ private fun VaultEmptyState(
 @Composable
 private fun VaultEntryList(
     entries: List<VaultEntryMetadata>,
+    onEntryClick: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     LazyColumn(
@@ -133,7 +141,10 @@ private fun VaultEntryList(
             items = entries,
             key = { it.id.value },
         ) { entry ->
-            VaultEntryRow(entry = entry)
+            VaultEntryRow(
+                entry = entry,
+                onClick = { onEntryClick(entry.id.value) },
+            )
         }
     }
 }
@@ -141,11 +152,13 @@ private fun VaultEntryList(
 @Composable
 private fun VaultEntryRow(
     entry: VaultEntryMetadata,
+    onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Card(
         modifier = modifier
             .fillMaxWidth()
+            .clickable(onClick = onClick)
             .testTag("vault_entry_row_${entry.id.value}"),
     ) {
         Column(
