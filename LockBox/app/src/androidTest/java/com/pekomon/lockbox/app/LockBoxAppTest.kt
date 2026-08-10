@@ -245,6 +245,31 @@ class LockBoxAppTest {
         composeRule.onNodeWithText("correct horse battery staple").assertDoesNotExist()
     }
 
+    @Test
+    fun detailDeleteConfirmationRemovesEntryAndReturnsToList() {
+        val lockSession = InMemoryLockSession().apply { unlock() }
+        val vaultRepository = InMemoryVaultRepository()
+        runBlocking {
+            vaultRepository.saveEntry(sampleLoginEntry())
+        }
+        composeRule.setLockBoxContent(
+            appContainer = LockBoxAppContainer.fake(
+                lockSession = lockSession,
+                vaultRepository = vaultRepository,
+            ),
+        )
+
+        composeRule.onNodeWithTag("vault_entry_row_personal-email").performClick()
+        composeRule.onNodeWithTag("delete_entry_button").performClick()
+        composeRule.onNodeWithTag("delete_confirmation_dialog").assertIsDisplayed()
+        composeRule.onNodeWithTag("confirm_delete_button").performClick()
+
+        composeRule.onNodeWithTag("vault_screen").assertIsDisplayed()
+        composeRule.onNodeWithTag("vault_empty_state").assertIsDisplayed()
+        composeRule.onNodeWithText("Personal email").assertDoesNotExist()
+        composeRule.onNodeWithText("correct horse battery staple").assertDoesNotExist()
+    }
+
     private fun androidx.compose.ui.test.junit4.ComposeContentTestRule.setLockBoxContent(
         appContainer: LockBoxAppContainer,
     ) {

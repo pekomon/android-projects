@@ -53,6 +53,12 @@ fun LockBoxApp(
                     onEdit = {
                         navController.navigate(LockBoxDestination.Edit.createRoute(entryId))
                     },
+                    onDeleted = {
+                        navController.popBackStack(
+                            route = LockBoxDestination.Lock.route,
+                            inclusive = false,
+                        )
+                    },
                 )
             } else {
                 LockRoute(
