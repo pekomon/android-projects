@@ -3,8 +3,10 @@ package com.pekomon.lockbox.app
 import androidx.compose.runtime.getValue
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.pekomon.lockbox.core.security.BiometricAuthenticator
 import com.pekomon.lockbox.feature.detail.EntryDetailRoute
@@ -19,6 +21,19 @@ fun LockBoxApp(
 ) {
     val navController = rememberNavController()
     val isUnlocked by appContainer.lockSession.isUnlocked.collectAsStateWithLifecycle()
+    val currentBackStackEntry by navController.currentBackStackEntryAsState()
+    val currentRoute = currentBackStackEntry?.destination?.route
+
+    LaunchedEffect(isUnlocked, currentRoute) {
+        if (!isUnlocked && currentRoute != null && currentRoute != LockBoxDestination.Lock.route) {
+            navController.navigate(LockBoxDestination.Lock.route) {
+                popUpTo(LockBoxDestination.Lock.route) {
+                    inclusive = false
+                }
+                launchSingleTop = true
+            }
+        }
+    }
 
     NavHost(
         navController = navController,
