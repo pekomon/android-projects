@@ -270,6 +270,61 @@ class LockBoxAppTest {
         composeRule.onNodeWithText("correct horse battery staple").assertDoesNotExist()
     }
 
+    @Test
+    fun relockFromDetailReturnsToLockAndReunlockShowsVaultList() {
+        val lockSession = InMemoryLockSession().apply { unlock() }
+        val vaultRepository = InMemoryVaultRepository()
+        runBlocking {
+            vaultRepository.saveEntry(sampleLoginEntry())
+        }
+        composeRule.setLockBoxContent(
+            appContainer = LockBoxAppContainer.fake(
+                lockSession = lockSession,
+                vaultRepository = vaultRepository,
+                biometricAuthenticator = ResultAuthenticator(AuthenticationResult.Success),
+            ),
+        )
+
+        composeRule.onNodeWithTag("vault_entry_row_personal-email").performClick()
+        composeRule.onNodeWithText("correct horse battery staple").assertIsDisplayed()
+
+        lockSession.lock()
+
+        composeRule.onNodeWithTag("lock_screen").assertIsDisplayed()
+        composeRule.onNodeWithText("correct horse battery staple").assertDoesNotExist()
+        composeRule.onNodeWithTag("unlock_button").performClick()
+        composeRule.onNodeWithTag("vault_screen").assertIsDisplayed()
+        composeRule.onNodeWithTag("vault_entry_row_personal-email").assertIsDisplayed()
+        composeRule.onNodeWithText("correct horse battery staple").assertDoesNotExist()
+    }
+
+    @Test
+    fun relockFromEditorReturnsToLockAndClearsUnsavedInput() {
+        val lockSession = InMemoryLockSession().apply { unlock() }
+        composeRule.setLockBoxContent(
+            appContainer = LockBoxAppContainer.fake(
+                lockSession = lockSession,
+                biometricAuthenticator = ResultAuthenticator(AuthenticationResult.Success),
+            ),
+        )
+
+        composeRule.onNodeWithTag("add_entry_button").performClick()
+        composeRule.onNodeWithTag("kind_SecureNote").performClick()
+        composeRule.onNodeWithTag("editor_title").performTextInput("Temporary note")
+        composeRule.onNodeWithTag("editor_note_body").performTextInput("Discard me")
+
+        lockSession.lock()
+
+        composeRule.onNodeWithTag("lock_screen").assertIsDisplayed()
+        composeRule.onNodeWithText("Temporary note").assertDoesNotExist()
+        composeRule.onNodeWithText("Discard me").assertDoesNotExist()
+        composeRule.onNodeWithTag("unlock_button").performClick()
+        composeRule.onNodeWithTag("vault_screen").assertIsDisplayed()
+        composeRule.onNodeWithTag("vault_empty_state").assertIsDisplayed()
+        composeRule.onNodeWithText("Temporary note").assertDoesNotExist()
+        composeRule.onNodeWithText("Discard me").assertDoesNotExist()
+    }
+
     private fun androidx.compose.ui.test.junit4.ComposeContentTestRule.setLockBoxContent(
         appContainer: LockBoxAppContainer,
     ) {
