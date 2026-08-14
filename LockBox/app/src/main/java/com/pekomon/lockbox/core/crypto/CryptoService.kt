@@ -27,17 +27,20 @@ data class EncryptedPayload(
 data class EncryptSecretRequest(
     val plaintext: ByteArray,
     val associatedData: ByteArray,
+    val schemaVersion: Int = 1,
 ) {
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (other !is EncryptSecretRequest) return false
-        return plaintext.contentEquals(other.plaintext) &&
+        return schemaVersion == other.schemaVersion &&
+            plaintext.contentEquals(other.plaintext) &&
             associatedData.contentEquals(other.associatedData)
     }
 
     override fun hashCode(): Int {
         var result = plaintext.contentHashCode()
         result = 31 * result + associatedData.contentHashCode()
+        result = 31 * result + schemaVersion
         return result
     }
 }
@@ -101,7 +104,7 @@ class NoOpCryptoService : CryptoService {
         EncryptedPayload(
             iv = request.associatedData,
             ciphertext = request.plaintext,
-            schemaVersion = 1,
+            schemaVersion = request.schemaVersion,
         ),
     )
 
