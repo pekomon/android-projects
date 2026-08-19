@@ -78,3 +78,66 @@ dependencies {
     debugImplementation(libs.androidx.compose.ui.tooling)
     debugImplementation(libs.androidx.compose.ui.test.manifest)
 }
+
+tasks.register("checkConnectedAndroidUserUnlocked") {
+    group = "verification"
+    description = "Fails connected tests early when the selected Android device user is still credential-locked."
+
+    doLast {
+        val sdkRoot = providers
+            .environmentVariable("ANDROID_HOME")
+            .orElse(providers.environmentVariable("ANDROID_SDK_ROOT"))
+            .orElse("${System.getProperty("user.home")}/Library/Android/sdk")
+            .get()
+        val adbExecutable = file("$sdkRoot/platform-tools/adb")
+        val adbCommand = if (adbExecutable.exists()) adbExecutable.absolutePath else "adb"
+        val requestedSerial = providers.environmentVariable("ANDROID_SERIAL").orNull
+
+        fun runAdb(vararg args: String): String {
+            val process = ProcessBuilder(adbCommand, *args)
+                .redirectErrorStream(false)
+                .start()
+            val output = process.inputStream.use { it.readBytes().toString(Charsets.UTF_8) }
+            val error = process.errorStream.use { it.readBytes().toString(Charsets.UTF_8) }
+            val exitCode = process.waitFor()
+            if (exitCode != 0) {
+                throw GradleException(
+                    "Unable to run adb ${args.joinToString(" ")}.\n" +
+                        error.trim(),
+                )
+            }
+            return output
+        }
+
+        val devices = runAdb("devices")
+            .lineSequence()
+            .map { it.trim() }
+            .filter { it.endsWith("\tdevice") }
+            .map { it.substringBefore('\t') }
+            .toList()
+        val serial = requestedSerial ?: devices.singleOrNull()
+            ?: throw GradleException(
+                "Connected tests require exactly one unlocked Android device/emulator, or ANDROID_SERIAL must be set.\n" +
+                    "Connected devices: ${devices.ifEmpty { listOf("none") }.joinToString()}",
+            )
+
+        val userDump = runAdb("-s", serial, "shell", "dumpsys", "user")
+        val userState = Regex("""State: (\S+)""")
+            .find(userDump)
+            ?.groupValues
+            ?.get(1)
+            ?: "unknown"
+
+        if (userState != "RUNNING_UNLOCKED") {
+            throw GradleException(
+                "Connected tests require an unlocked Android user on $serial.\n" +
+                    "Current state: $userState\n" +
+                    "Unlock the emulator/device first. For the local AVD, wake it and enter PIN 1234 when configured.",
+            )
+        }
+    }
+}
+
+tasks.matching { it.name == "connectedDebugAndroidTest" }.configureEach {
+    dependsOn("checkConnectedAndroidUserUnlocked")
+}
