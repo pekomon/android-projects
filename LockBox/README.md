@@ -36,6 +36,7 @@ Use an emulator or device with a screen lock configured.
 Device test notes:
 
 - `./gradlew :app:connectedDebugAndroidTest` requires the emulator user to be unlocked after boot. If Android reports `RUNNING_LOCKED` from `adb shell dumpsys user`, wake and unlock the emulator before running the task.
+- Restart persistence QA passed on `2026-08-20` using `emulator-5554` / `Medium_Phone_API_36.0`: a login entry was saved, the app was force-stopped and relaunched to the lock screen, device credential unlock succeeded, and the redacted row plus decrypted detail payload were still available.
 
 ## Security Notes
 
