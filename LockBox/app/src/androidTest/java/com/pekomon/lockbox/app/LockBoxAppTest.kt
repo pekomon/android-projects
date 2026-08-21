@@ -131,6 +131,32 @@ class LockBoxAppTest {
     }
 
     @Test
+    fun settingsShowsSecurityAndStorageSummary() {
+        val lockSession = InMemoryLockSession().apply { unlock() }
+        composeRule.setLockBoxContent(
+            appContainer = LockBoxAppContainer.fake(
+                lockSession = lockSession,
+            ),
+        )
+
+        composeRule.onNodeWithTag("settings_button").performClick()
+
+        composeRule.onNodeWithTag("settings_screen").assertIsDisplayed()
+        composeRule.onNodeWithText("Settings").assertIsDisplayed()
+        composeRule.onNodeWithText("Unlock").assertIsDisplayed()
+        composeRule.onNodeWithText("Storage").assertIsDisplayed()
+        composeRule.onNodeWithText("Encryption").assertIsDisplayed()
+        composeRule.onNodeWithText("Relock").assertIsDisplayed()
+        composeRule.onNodeWithText("Backup").assertIsDisplayed()
+        composeRule.onNodeWithText("The key is not authentication-bound in V1", substring = true)
+            .assertIsDisplayed()
+
+        composeRule.onNodeWithTag("settings_back_button").performClick()
+
+        composeRule.onNodeWithTag("vault_screen").assertIsDisplayed()
+    }
+
+    @Test
     fun unlockedVaultListShowsMetadataOnly() {
         val lockSession = InMemoryLockSession().apply { unlock() }
         val vaultRepository = InMemoryVaultRepository()

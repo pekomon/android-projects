@@ -12,6 +12,7 @@ import com.pekomon.lockbox.core.security.BiometricAuthenticator
 import com.pekomon.lockbox.feature.detail.EntryDetailRoute
 import com.pekomon.lockbox.feature.editor.EntryEditorRoute
 import com.pekomon.lockbox.feature.lock.LockRoute
+import com.pekomon.lockbox.feature.settings.SettingsRoute
 import com.pekomon.lockbox.feature.vault.VaultRoute
 
 @Composable
@@ -45,6 +46,9 @@ fun LockBoxApp(
                     vaultRepository = appContainer.vaultRepository,
                     onAddClick = {
                         navController.navigate(LockBoxDestination.Editor.route)
+                    },
+                    onSettingsClick = {
+                        navController.navigate(LockBoxDestination.Settings.route)
                     },
                     onEntryClick = { entryId ->
                         navController.navigate(LockBoxDestination.Detail.createRoute(entryId))
@@ -130,6 +134,19 @@ fun LockBoxApp(
                 )
             }
         }
+        composable(LockBoxDestination.Settings.route) {
+            if (isUnlocked) {
+                SettingsRoute(
+                    onBack = { navController.popBackStack() },
+                )
+            } else {
+                LockRoute(
+                    lockSession = appContainer.lockSession,
+                    availabilityReader = appContainer.biometricAvailabilityReader,
+                    authenticator = biometricAuthenticator,
+                )
+            }
+        }
     }
 }
 
@@ -137,7 +154,8 @@ enum class LockBoxDestination(val route: String) {
     Lock("lock"),
     Editor("editor"),
     Detail("detail/{entryId}"),
-    Edit("edit/{entryId}");
+    Edit("edit/{entryId}"),
+    Settings("settings");
 
     fun createRoute(entryId: String): String = when (this) {
         Detail -> "detail/$entryId"

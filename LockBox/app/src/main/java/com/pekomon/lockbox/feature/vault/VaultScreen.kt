@@ -17,6 +17,7 @@ import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -35,6 +36,7 @@ import java.time.format.DateTimeFormatter
 fun VaultRoute(
     vaultRepository: VaultRepository,
     onAddClick: () -> Unit,
+    onSettingsClick: () -> Unit,
     onEntryClick: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -43,6 +45,7 @@ fun VaultRoute(
     VaultScreen(
         entries = entries,
         onAddClick = onAddClick,
+        onSettingsClick = onSettingsClick,
         onEntryClick = onEntryClick,
         modifier = modifier,
     )
@@ -52,6 +55,7 @@ fun VaultRoute(
 internal fun VaultScreen(
     entries: List<VaultEntryMetadata>,
     onAddClick: () -> Unit,
+    onSettingsClick: () -> Unit,
     onEntryClick: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -74,11 +78,22 @@ internal fun VaultScreen(
                     style = MaterialTheme.typography.headlineLarge,
                     fontWeight = FontWeight.SemiBold,
                 )
-                FloatingActionButton(
-                    onClick = onAddClick,
-                    modifier = Modifier.testTag("add_entry_button"),
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    Text("+")
+                    TextButton(
+                        onClick = onSettingsClick,
+                        modifier = Modifier.testTag("settings_button"),
+                    ) {
+                        Text("Settings")
+                    }
+                    FloatingActionButton(
+                        onClick = onAddClick,
+                        modifier = Modifier.testTag("add_entry_button"),
+                    ) {
+                        Text("+")
+                    }
                 }
             }
             Spacer(modifier = Modifier.height(6.dp))
