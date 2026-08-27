@@ -297,6 +297,34 @@ class LockBoxAppTest {
     }
 
     @Test
+    fun relockFromVaultListReturnsToLockAndReunlockShowsVaultList() {
+        val lockSession = InMemoryLockSession().apply { unlock() }
+        val vaultRepository = InMemoryVaultRepository()
+        runBlocking {
+            vaultRepository.saveEntry(sampleLoginEntry())
+        }
+        composeRule.setLockBoxContent(
+            appContainer = LockBoxAppContainer.fake(
+                lockSession = lockSession,
+                vaultRepository = vaultRepository,
+                biometricAuthenticator = ResultAuthenticator(AuthenticationResult.Success),
+            ),
+        )
+
+        composeRule.onNodeWithTag("vault_screen").assertIsDisplayed()
+        composeRule.onNodeWithTag("vault_entry_row_personal-email").assertIsDisplayed()
+
+        lockSession.lock()
+
+        composeRule.onNodeWithTag("lock_screen").assertIsDisplayed()
+        composeRule.onNodeWithText("Personal email").assertDoesNotExist()
+        composeRule.onNodeWithTag("unlock_button").performClick()
+        composeRule.onNodeWithTag("vault_screen").assertIsDisplayed()
+        composeRule.onNodeWithTag("vault_entry_row_personal-email").assertIsDisplayed()
+        composeRule.onNodeWithText("correct horse battery staple").assertDoesNotExist()
+    }
+
+    @Test
     fun relockFromDetailReturnsToLockAndReunlockShowsVaultList() {
         val lockSession = InMemoryLockSession().apply { unlock() }
         val vaultRepository = InMemoryVaultRepository()

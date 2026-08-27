@@ -29,7 +29,7 @@ fun LockBoxApp(
         if (!isUnlocked && currentRoute != null && currentRoute != LockBoxDestination.Lock.route) {
             navController.navigate(LockBoxDestination.Lock.route) {
                 popUpTo(LockBoxDestination.Lock.route) {
-                    inclusive = false
+                    inclusive = true
                 }
                 launchSingleTop = true
             }
