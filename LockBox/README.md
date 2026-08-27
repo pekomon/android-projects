@@ -45,4 +45,5 @@ Device test notes:
 - V1 uses `BIOMETRIC_STRONG | DEVICE_CREDENTIAL` for the unlock prompt.
 - The Android manifest intentionally declares no Internet permission.
 - Android backup and device-transfer extraction are disabled for vault data.
+- The activity applies `FLAG_SECURE` so vault screens are blocked from system screenshots and recents thumbnails.
 - This is a showcase local vault, not a certified password manager.

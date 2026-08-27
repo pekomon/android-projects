@@ -1,6 +1,7 @@
 package com.pekomon.lockbox
 
 import android.os.Bundle
+import android.view.WindowManager
 import androidx.activity.compose.setContent
 import androidx.fragment.app.FragmentActivity
 import com.pekomon.lockbox.core.security.AndroidBiometricAuthenticator
@@ -18,6 +19,10 @@ class MainActivity : FragmentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        window.setFlags(
+            WindowManager.LayoutParams.FLAG_SECURE,
+            WindowManager.LayoutParams.FLAG_SECURE,
+        )
         setContent {
             LockBoxTheme {
                 LockBoxApp(
