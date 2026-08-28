@@ -25,7 +25,11 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
@@ -51,13 +55,22 @@ fun EntryEditorRoute(
     modifier: Modifier = Modifier,
 ) {
     val scope = rememberCoroutineScope()
+    val haptics = LocalHapticFeedback.current
     var existingEntry by remember(entryId) { mutableStateOf<VaultEntry?>(null) }
     var isLoaded by remember(entryId) { mutableStateOf(entryId == null) }
+    var saveError by remember(entryId) { mutableStateOf<String?>(null) }
 
     LaunchedEffect(entryId, vaultRepository) {
         if (entryId != null) {
-            existingEntry = vaultRepository.getEntry(VaultEntryId(entryId))
-            isLoaded = true
+            runCatching {
+                vaultRepository.getEntry(VaultEntryId(entryId))
+            }.onSuccess { entry ->
+                existingEntry = entry
+                isLoaded = true
+            }.onFailure {
+                saveError = "LockBox could not open this entry for editing."
+                isLoaded = true
+            }
         }
     }
 
@@ -72,6 +85,7 @@ fun EntryEditorRoute(
     if (entryId != null && existingEntry == null) {
         MissingEditor(
             onCancel = onCancel,
+            message = saveError ?: "This vault entry is no longer available.",
             modifier = modifier,
         )
         return
@@ -79,11 +93,20 @@ fun EntryEditorRoute(
 
     EntryEditorScreen(
         initialEntry = existingEntry,
+        saveError = saveError,
         onCancel = onCancel,
         onSave = { draft ->
             scope.launch {
-                vaultRepository.saveEntry(draft.toEntry(existingEntry))
-                onSaved()
+                saveError = null
+                runCatching {
+                    vaultRepository.saveEntry(draft.toEntry(existingEntry))
+                }.onSuccess {
+                    haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+                    onSaved()
+                }.onFailure {
+                    haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                    saveError = "Save failed. LockBox did not store this entry."
+                }
             }
         },
         modifier = modifier,
@@ -93,10 +116,12 @@ fun EntryEditorRoute(
 @Composable
 internal fun EntryEditorScreen(
     initialEntry: VaultEntry?,
+    saveError: String? = null,
     onSave: (VaultEntryDraft) -> Unit,
     onCancel: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val haptics = LocalHapticFeedback.current
     val initialDraft = remember(initialEntry?.metadata?.id) { initialEntry?.toDraft() }
     var kind by remember(initialDraft) { mutableStateOf(initialDraft?.kind ?: EntryKind.Login) }
     var title by remember(initialDraft) { mutableStateOf(initialDraft?.title.orEmpty()) }
@@ -204,6 +229,15 @@ internal fun EntryEditorScreen(
                 )
             }
             Spacer(modifier = Modifier.height(24.dp))
+            if (saveError != null) {
+                Text(
+                    text = saveError,
+                    modifier = Modifier.testTag("editor_save_error_state"),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.error,
+                )
+                Spacer(modifier = Modifier.height(12.dp))
+            }
             Row(
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
             ) {
@@ -215,16 +249,25 @@ internal fun EntryEditorScreen(
                             errors = emptyMap()
                             onSave(draft)
                         } else {
+                            haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
                             errors = validation.errors.associate { it.field to it.message }
                         }
                     },
-                    modifier = Modifier.testTag("save_entry_button"),
+                    modifier = Modifier
+                        .testTag("save_entry_button")
+                        .semantics {
+                            contentDescription = "Save vault entry"
+                        },
                 ) {
                     Text("Save")
                 }
                 OutlinedButton(
                     onClick = onCancel,
-                    modifier = Modifier.testTag("cancel_editor_button"),
+                    modifier = Modifier
+                        .testTag("cancel_editor_button")
+                        .semantics {
+                            contentDescription = "Cancel editing"
+                        },
                 ) {
                     Text("Cancel")
                 }
@@ -385,7 +428,14 @@ private fun EditorField(
         onValueChange = onValueChange,
         modifier = modifier
             .fillMaxWidth()
-            .testTag(testTag),
+            .testTag(testTag)
+            .semantics {
+                contentDescription = if (isSecret) {
+                    "$label field, private"
+                } else {
+                    "$label field"
+                }
+            },
         label = { Text(label) },
         isError = error != null,
         supportingText = {
@@ -404,6 +454,7 @@ private fun EditorField(
 @Composable
 private fun MissingEditor(
     onCancel: () -> Unit,
+    message: String,
     modifier: Modifier = Modifier,
 ) {
     Surface(
@@ -422,14 +473,18 @@ private fun MissingEditor(
             )
             Spacer(modifier = Modifier.height(12.dp))
             Text(
-                text = "This vault entry is no longer available.",
+                text = message,
                 style = MaterialTheme.typography.bodyLarge,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
             Spacer(modifier = Modifier.height(24.dp))
             OutlinedButton(
                 onClick = onCancel,
-                modifier = Modifier.testTag("cancel_editor_button"),
+                modifier = Modifier
+                    .testTag("cancel_editor_button")
+                    .semantics {
+                        contentDescription = "Return to vault"
+                    },
             ) {
                 Text("Back")
             }

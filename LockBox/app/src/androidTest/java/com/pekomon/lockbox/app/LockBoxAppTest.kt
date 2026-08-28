@@ -23,6 +23,9 @@ import com.pekomon.lockbox.domain.model.VaultEntryMetadata
 import com.pekomon.lockbox.ui.theme.LockBoxTheme
 import java.time.Instant
 import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.runBlocking
 import org.junit.Rule
 import org.junit.Test
@@ -131,6 +134,22 @@ class LockBoxAppTest {
     }
 
     @Test
+    fun vaultFlowFailureShowsErrorState() {
+        val lockSession = InMemoryLockSession().apply { unlock() }
+        composeRule.setLockBoxContent(
+            appContainer = LockBoxAppContainer.fake(
+                lockSession = lockSession,
+                vaultRepository = ThrowingVaultRepository(
+                    entries = flow { throw IllegalStateException("database unavailable") },
+                ),
+            ),
+        )
+
+        composeRule.onNodeWithTag("vault_error_state").assertIsDisplayed()
+        composeRule.onNodeWithText("Vault unavailable").assertIsDisplayed()
+    }
+
+    @Test
     fun settingsShowsSecurityAndStorageSummary() {
         val lockSession = InMemoryLockSession().apply { unlock() }
         composeRule.setLockBoxContent(
@@ -208,6 +227,27 @@ class LockBoxAppTest {
     }
 
     @Test
+    fun corruptEntryShowsClosedErrorStateWithoutSecrets() {
+        val lockSession = InMemoryLockSession().apply { unlock() }
+        composeRule.setLockBoxContent(
+            appContainer = LockBoxAppContainer.fake(
+                lockSession = lockSession,
+                vaultRepository = ThrowingVaultRepository(
+                    entries = MutableStateFlow(listOf(sampleLoginEntry().metadata)),
+                    getFailure = IllegalStateException("decrypt failed"),
+                ),
+            ),
+        )
+
+        composeRule.onNodeWithTag("vault_entry_row_personal-email").performClick()
+
+        composeRule.onNodeWithTag("entry_detail_corrupt").assertIsDisplayed()
+        composeRule.onNodeWithText("Entry unavailable").assertIsDisplayed()
+        composeRule.onNodeWithText("correct horse battery staple").assertDoesNotExist()
+        composeRule.onNodeWithText("ada@example.com").assertDoesNotExist()
+    }
+
+    @Test
     fun editorShowsFieldSpecificValidationErrors() {
         val lockSession = InMemoryLockSession().apply { unlock() }
         composeRule.setLockBoxContent(
@@ -241,6 +281,30 @@ class LockBoxAppTest {
         composeRule.onNodeWithText("Secure note").assertIsDisplayed()
         composeRule.onNodeWithText("Secret hidden").assertIsDisplayed()
         composeRule.onNodeWithText("Number 123456789").assertDoesNotExist()
+    }
+
+    @Test
+    fun editorSaveFailureKeepsDraftAndShowsError() {
+        val lockSession = InMemoryLockSession().apply { unlock() }
+        composeRule.setLockBoxContent(
+            appContainer = LockBoxAppContainer.fake(
+                lockSession = lockSession,
+                vaultRepository = ThrowingVaultRepository(
+                    saveFailure = IllegalStateException("encrypt failed"),
+                ),
+            ),
+        )
+
+        composeRule.onNodeWithTag("add_entry_button").performClick()
+        composeRule.onNodeWithTag("editor_title").performTextInput("Email")
+        composeRule.onNodeWithTag("editor_username").performTextInput("ada@example.com")
+        composeRule.onNodeWithTag("editor_password").performTextInput("correct horse battery staple")
+        composeRule.onNodeWithTag("save_entry_button").performScrollTo().performClick()
+
+        composeRule.onNodeWithTag("entry_editor_screen").assertIsDisplayed()
+        composeRule.onNodeWithTag("editor_save_error_state").assertIsDisplayed()
+        composeRule.onNodeWithText("Save failed. LockBox did not store this entry.").assertIsDisplayed()
+        composeRule.onNodeWithText("Email").assertIsDisplayed()
     }
 
     @Test
@@ -294,6 +358,30 @@ class LockBoxAppTest {
         composeRule.onNodeWithTag("vault_empty_state").assertIsDisplayed()
         composeRule.onNodeWithText("Personal email").assertDoesNotExist()
         composeRule.onNodeWithText("correct horse battery staple").assertDoesNotExist()
+    }
+
+    @Test
+    fun deleteFailureKeepsEntryOpenAndShowsError() {
+        val lockSession = InMemoryLockSession().apply { unlock() }
+        val entry = sampleLoginEntry()
+        composeRule.setLockBoxContent(
+            appContainer = LockBoxAppContainer.fake(
+                lockSession = lockSession,
+                vaultRepository = ThrowingVaultRepository(
+                    entries = MutableStateFlow(listOf(entry.metadata)),
+                    entry = entry,
+                    deleteFailure = IllegalStateException("delete failed"),
+                ),
+            ),
+        )
+
+        composeRule.onNodeWithTag("vault_entry_row_personal-email").performClick()
+        composeRule.onNodeWithTag("delete_entry_button").performClick()
+        composeRule.onNodeWithTag("confirm_delete_button").performClick()
+
+        composeRule.onNodeWithTag("entry_detail_screen").assertIsDisplayed()
+        composeRule.onNodeWithTag("delete_error_state").assertIsDisplayed()
+        composeRule.onNodeWithText("Delete failed. LockBox kept the entry in place.").assertIsDisplayed()
     }
 
     @Test
@@ -405,6 +493,27 @@ class LockBoxAppTest {
         private val neverCompletes = CompletableDeferred<AuthenticationResult>()
 
         override suspend fun authenticate(): AuthenticationResult = neverCompletes.await()
+    }
+
+    private class ThrowingVaultRepository(
+        override val entries: Flow<List<VaultEntryMetadata>> = MutableStateFlow(emptyList()),
+        private val entry: VaultEntry? = null,
+        private val getFailure: Throwable? = null,
+        private val saveFailure: Throwable? = null,
+        private val deleteFailure: Throwable? = null,
+    ) : com.pekomon.lockbox.domain.repository.VaultRepository {
+        override suspend fun getEntry(id: VaultEntryId): VaultEntry? {
+            getFailure?.let { throw it }
+            return entry
+        }
+
+        override suspend fun saveEntry(entry: VaultEntry) {
+            saveFailure?.let { throw it }
+        }
+
+        override suspend fun deleteEntry(id: VaultEntryId) {
+            deleteFailure?.let { throw it }
+        }
     }
 
     private fun sampleLoginEntry(): VaultEntry = VaultEntry(

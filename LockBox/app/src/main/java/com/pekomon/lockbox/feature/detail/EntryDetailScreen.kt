@@ -25,7 +25,11 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.pekomon.lockbox.domain.model.EntryKind
@@ -45,25 +49,50 @@ fun EntryDetailRoute(
     modifier: Modifier = Modifier,
 ) {
     val scope = rememberCoroutineScope()
-    var entry by remember(entryId) { mutableStateOf<VaultEntry?>(null) }
-    var isLoaded by remember(entryId) { mutableStateOf(false) }
+    val haptics = LocalHapticFeedback.current
+    var detailState by remember(entryId) { mutableStateOf<EntryDetailState>(EntryDetailState.Loading) }
+    var deleteError by remember(entryId) { mutableStateOf<String?>(null) }
+    var isDeleting by remember(entryId) { mutableStateOf(false) }
 
     LaunchedEffect(entryId, vaultRepository) {
-        entry = vaultRepository.getEntry(VaultEntryId(entryId))
-        isLoaded = true
+        detailState = runCatching {
+            vaultRepository.getEntry(VaultEntryId(entryId))
+        }.fold(
+            onSuccess = { entry ->
+                if (entry == null) {
+                    EntryDetailState.Missing
+                } else {
+                    EntryDetailState.Content(entry)
+                }
+            },
+            onFailure = { EntryDetailState.Corrupt },
+        )
     }
 
-    when {
-        !isLoaded -> LoadingDetail(modifier = modifier)
-        entry == null -> MissingDetail(onBack = onBack, modifier = modifier)
-        else -> EntryDetailScreen(
-            entry = requireNotNull(entry),
+    when (val state = detailState) {
+        EntryDetailState.Loading -> LoadingDetail(modifier = modifier)
+        EntryDetailState.Missing -> MissingDetail(onBack = onBack, modifier = modifier)
+        EntryDetailState.Corrupt -> CorruptDetail(onBack = onBack, modifier = modifier)
+        is EntryDetailState.Content -> EntryDetailScreen(
+            entry = state.entry,
             onBack = onBack,
             onEdit = onEdit,
+            isDeleting = isDeleting,
+            deleteError = deleteError,
             onDelete = {
                 scope.launch {
-                    vaultRepository.deleteEntry(VaultEntryId(entryId))
-                    onDeleted()
+                    isDeleting = true
+                    deleteError = null
+                    runCatching {
+                        vaultRepository.deleteEntry(VaultEntryId(entryId))
+                    }.onSuccess {
+                        haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+                        onDeleted()
+                    }.onFailure {
+                        haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                        deleteError = "Delete failed. LockBox kept the entry in place."
+                    }
+                    isDeleting = false
                 }
             },
             modifier = modifier,
@@ -107,7 +136,44 @@ private fun MissingDetail(
         Spacer(modifier = Modifier.height(24.dp))
         OutlinedButton(
             onClick = onBack,
-            modifier = Modifier.testTag("detail_back_button"),
+            modifier = Modifier
+                .testTag("detail_back_button")
+                .semantics {
+                    contentDescription = "Return to vault"
+                },
+        ) {
+            Text("Back")
+        }
+    }
+}
+
+@Composable
+private fun CorruptDetail(
+    onBack: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    DetailSurface(
+        modifier = modifier.testTag("entry_detail_corrupt"),
+    ) {
+        Text(
+            text = "Entry unavailable",
+            style = MaterialTheme.typography.headlineMedium,
+            fontWeight = FontWeight.SemiBold,
+        )
+        Spacer(modifier = Modifier.height(12.dp))
+        Text(
+            text = "LockBox could not decrypt this entry. It has not been opened.",
+            style = MaterialTheme.typography.bodyLarge,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        Spacer(modifier = Modifier.height(24.dp))
+        OutlinedButton(
+            onClick = onBack,
+            modifier = Modifier
+                .testTag("detail_back_button")
+                .semantics {
+                    contentDescription = "Return to vault"
+                },
         ) {
             Text("Back")
         }
@@ -119,6 +185,8 @@ internal fun EntryDetailScreen(
     entry: VaultEntry,
     onBack: () -> Unit,
     onEdit: () -> Unit,
+    isDeleting: Boolean = false,
+    deleteError: String? = null,
     onDelete: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -146,13 +214,21 @@ internal fun EntryDetailScreen(
         ) {
             OutlinedButton(
                 onClick = onBack,
-                modifier = Modifier.testTag("detail_back_button"),
+                modifier = Modifier
+                    .testTag("detail_back_button")
+                    .semantics {
+                        contentDescription = "Return to vault"
+                    },
             ) {
                 Text("Back")
             }
             Button(
                 onClick = onEdit,
-                modifier = Modifier.testTag("edit_entry_button"),
+                modifier = Modifier
+                    .testTag("edit_entry_button")
+                    .semantics {
+                        contentDescription = "Edit ${entry.metadata.title}"
+                    },
             ) {
                 Text("Edit")
             }
@@ -160,9 +236,23 @@ internal fun EntryDetailScreen(
         Spacer(modifier = Modifier.height(12.dp))
         OutlinedButton(
             onClick = { isConfirmingDelete = true },
-            modifier = Modifier.testTag("delete_entry_button"),
+            enabled = !isDeleting,
+            modifier = Modifier
+                .testTag("delete_entry_button")
+                .semantics {
+                    contentDescription = "Delete ${entry.metadata.title}"
+                },
         ) {
             Text("Delete")
+        }
+        if (deleteError != null) {
+            Spacer(modifier = Modifier.height(12.dp))
+            Text(
+                text = deleteError,
+                modifier = Modifier.testTag("delete_error_state"),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.error,
+            )
         }
         Spacer(modifier = Modifier.height(20.dp))
         Text(
@@ -202,7 +292,11 @@ private fun DeleteConfirmationDialog(
         confirmButton = {
             Button(
                 onClick = onConfirm,
-                modifier = Modifier.testTag("confirm_delete_button"),
+                modifier = Modifier
+                    .testTag("confirm_delete_button")
+                    .semantics {
+                        contentDescription = "Confirm delete"
+                    },
             ) {
                 Text("Delete")
             }
@@ -210,7 +304,11 @@ private fun DeleteConfirmationDialog(
         dismissButton = {
             OutlinedButton(
                 onClick = onDismiss,
-                modifier = Modifier.testTag("cancel_delete_button"),
+                modifier = Modifier
+                    .testTag("cancel_delete_button")
+                    .semantics {
+                        contentDescription = "Cancel delete"
+                    },
             ) {
                 Text("Cancel")
             }
@@ -236,6 +334,18 @@ private fun DetailSurface(
             content = content,
         )
     }
+}
+
+private sealed interface EntryDetailState {
+    data object Loading : EntryDetailState
+
+    data object Missing : EntryDetailState
+
+    data object Corrupt : EntryDetailState
+
+    data class Content(
+        val entry: VaultEntry,
+    ) : EntryDetailState
 }
 
 @Composable
@@ -276,7 +386,11 @@ private fun SecretField(
     )
     Text(
         text = value,
-        modifier = Modifier.testTag(testTag),
+        modifier = Modifier
+            .testTag(testTag)
+            .semantics {
+                contentDescription = "$label, $value"
+            },
         style = MaterialTheme.typography.bodyLarge,
     )
     Spacer(modifier = Modifier.height(14.dp))

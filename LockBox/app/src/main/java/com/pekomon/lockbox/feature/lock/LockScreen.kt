@@ -15,7 +15,11 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -54,6 +58,7 @@ internal fun LockScreen(
     onUnlockClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val haptics = LocalHapticFeedback.current
     LockScreenContent(
         statusText = uiState.statusText(),
         buttonText = if (uiState.promptState == PromptState.Authenticating) {
@@ -63,7 +68,10 @@ internal fun LockScreen(
         },
         isUnlockEnabled = uiState.canRequestUnlock,
         stateTag = uiState.stateTag(),
-        onUnlockClick = onUnlockClick,
+        onUnlockClick = {
+            haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+            onUnlockClick()
+        },
         modifier = modifier,
     )
 }
@@ -111,7 +119,11 @@ private fun LockScreenContent(
             Button(
                 onClick = onUnlockClick,
                 enabled = isUnlockEnabled,
-                modifier = Modifier.testTag("unlock_button"),
+                modifier = Modifier
+                    .testTag("unlock_button")
+                    .semantics {
+                        contentDescription = "Unlock vault"
+                    },
             ) {
                 Text(buttonText)
             }

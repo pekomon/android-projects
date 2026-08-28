@@ -23,6 +23,8 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -31,6 +33,8 @@ import com.pekomon.lockbox.domain.model.VaultEntryMetadata
 import com.pekomon.lockbox.domain.repository.VaultRepository
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
+import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.map
 
 @Composable
 fun VaultRoute(
@@ -40,10 +44,13 @@ fun VaultRoute(
     onEntryClick: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val entries by vaultRepository.entries.collectAsStateWithLifecycle(emptyList())
+    val uiState by vaultRepository.entries
+        .map<List<VaultEntryMetadata>, VaultUiState> { VaultUiState.Content(it) }
+        .catch { emit(VaultUiState.Error) }
+        .collectAsStateWithLifecycle(VaultUiState.Loading)
 
     VaultScreen(
-        entries = entries,
+        uiState = uiState,
         onAddClick = onAddClick,
         onSettingsClick = onSettingsClick,
         onEntryClick = onEntryClick,
@@ -53,7 +60,7 @@ fun VaultRoute(
 
 @Composable
 internal fun VaultScreen(
-    entries: List<VaultEntryMetadata>,
+    uiState: VaultUiState,
     onAddClick: () -> Unit,
     onSettingsClick: () -> Unit,
     onEntryClick: (String) -> Unit,
@@ -84,13 +91,21 @@ internal fun VaultScreen(
                 ) {
                     TextButton(
                         onClick = onSettingsClick,
-                        modifier = Modifier.testTag("settings_button"),
+                        modifier = Modifier
+                            .testTag("settings_button")
+                            .semantics {
+                                contentDescription = "Open security settings"
+                            },
                     ) {
                         Text("Settings")
                     }
                     FloatingActionButton(
                         onClick = onAddClick,
-                        modifier = Modifier.testTag("add_entry_button"),
+                        modifier = Modifier
+                            .testTag("add_entry_button")
+                            .semantics {
+                                contentDescription = "Add vault entry"
+                            },
                     ) {
                         Text("+")
                     }
@@ -103,24 +118,46 @@ internal fun VaultScreen(
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
             Spacer(modifier = Modifier.height(24.dp))
-            if (entries.isEmpty()) {
-                VaultEmptyState(
+            when (uiState) {
+                VaultUiState.Loading -> VaultStatus(
+                    title = "Loading vault",
+                    body = "Preparing your local entries.",
                     modifier = Modifier
                         .fillMaxSize()
-                        .testTag("vault_empty_state"),
+                        .testTag("vault_loading_state"),
                 )
-            } else {
-                VaultEntryList(
-                    entries = entries,
-                    onEntryClick = onEntryClick,
+
+                VaultUiState.Error -> VaultStatus(
+                    title = "Vault unavailable",
+                    body = "LockBox could not read the local vault. Lock the app and try again.",
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .testTag("vault_error_state"),
                 )
+
+                is VaultUiState.Content -> {
+                    if (uiState.entries.isEmpty()) {
+                        VaultEmptyState(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .testTag("vault_empty_state"),
+                        )
+                    } else {
+                        VaultEntryList(
+                            entries = uiState.entries,
+                            onEntryClick = onEntryClick,
+                        )
+                    }
+                }
             }
         }
     }
 }
 
 @Composable
-private fun VaultEmptyState(
+private fun VaultStatus(
+    title: String,
+    body: String,
     modifier: Modifier = Modifier,
 ) {
     Column(
@@ -128,17 +165,28 @@ private fun VaultEmptyState(
         verticalArrangement = Arrangement.Center,
     ) {
         Text(
-            text = "Vault is empty",
+            text = title,
             style = MaterialTheme.typography.headlineMedium,
             fontWeight = FontWeight.SemiBold,
         )
         Spacer(modifier = Modifier.height(8.dp))
         Text(
-            text = "Your private entries will appear here after you add them.",
+            text = body,
             style = MaterialTheme.typography.bodyLarge,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
     }
+}
+
+@Composable
+private fun VaultEmptyState(
+    modifier: Modifier = Modifier,
+) {
+    VaultStatus(
+        title = "Vault is empty",
+        body = "Your private entries will appear here after you add them.",
+        modifier = modifier,
+    )
 }
 
 @Composable
@@ -174,6 +222,10 @@ private fun VaultEntryRow(
         modifier = modifier
             .fillMaxWidth()
             .clickable(onClick = onClick)
+            .semantics {
+                contentDescription = "${entry.title}, ${entry.kind.label}, secret hidden, updated " +
+                    entry.updatedAt.atZone(ZoneId.systemDefault()).format(DateFormatter)
+            }
             .testTag("vault_entry_row_${entry.id.value}"),
     ) {
         Column(
@@ -220,3 +272,13 @@ private val EntryKind.label: String
         EntryKind.SecureNote -> "Secure note"
         EntryKind.Card -> "Card"
     }
+
+internal sealed interface VaultUiState {
+    data object Loading : VaultUiState
+
+    data object Error : VaultUiState
+
+    data class Content(
+        val entries: List<VaultEntryMetadata>,
+    ) : VaultUiState
+}
