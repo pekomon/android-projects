@@ -98,3 +98,8 @@ Device test notes:
 
 - Restart persistence QA passed on `2026-08-20` using `emulator-5554` / `Medium_Phone_API_36.0`.
 - Connected Compose/instrumentation coverage passed 27/27 tests on `2026-08-28` using `emulator-5554` / `Medium_Phone_API_36.0`.
+- Final automated showcase verification passed on `2026-08-30` using `emulator-5554` / `Medium_Phone_API_36.0`:
+  - `./gradlew :app:testDebugUnitTest :app:assembleDebug :app:compileDebugAndroidTestKotlin`
+  - `./gradlew :app:connectedDebugAndroidTest`
+  - no `com.example` or `android.permission.INTERNET` matches outside build output
+  - merged debug manifest retained `android:allowBackup="false"` plus backup/data-extraction rule references
