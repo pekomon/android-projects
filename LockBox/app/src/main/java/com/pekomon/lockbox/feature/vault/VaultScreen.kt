@@ -13,6 +13,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.clickable
 import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -101,6 +102,8 @@ internal fun VaultScreen(
                     }
                     FloatingActionButton(
                         onClick = onAddClick,
+                        containerColor = MaterialTheme.colorScheme.primary,
+                        contentColor = MaterialTheme.colorScheme.onPrimary,
                         modifier = Modifier
                             .testTag("add_entry_button")
                             .semantics {
@@ -219,6 +222,9 @@ private fun VaultEntryRow(
     modifier: Modifier = Modifier,
 ) {
     Card(
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceVariant,
+        ),
         modifier = modifier
             .fillMaxWidth()
             .clickable(onClick = onClick)
