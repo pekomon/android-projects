@@ -4,6 +4,10 @@
 
 It demonstrates a privacy-focused Android architecture: biometric/device-credential unlock, an in-memory app session, Room-backed metadata, Android Keystore-backed AES-GCM encryption for secret payloads, relock-on-background behavior, and UI tests around the main security boundaries.
 
+## Showcase Status
+
+LockBox is ready for portfolio review as of `2026-08-30`. The app has a custom visual identity, debug-only demo screenshots, local encrypted persistence, relock hardening, accessibility labels, failure-state coverage, connected Compose/instrumentation tests, and documented security tradeoffs.
+
 ## Screenshots
 
 These screenshots use a debug-only in-memory demo vault. The normal app path uses the real Room/Keystore repository and applies `FLAG_SECURE`, so real vault content is blocked from screenshots and recents thumbnails.
