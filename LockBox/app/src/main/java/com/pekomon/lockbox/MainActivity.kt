@@ -23,11 +23,14 @@ class MainActivity : FragmentActivity() {
             WindowManager.LayoutParams.FLAG_SECURE,
             WindowManager.LayoutParams.FLAG_SECURE,
         )
+        val debugDemoContainer = DebugDemoContainerFactory.createOrNull(intent)
+        val contentContainer = debugDemoContainer ?: appContainer
+        val contentAuthenticator = debugDemoContainer?.biometricAuthenticator ?: biometricAuthenticator
         setContent {
             LockBoxTheme {
                 LockBoxApp(
-                    appContainer = appContainer,
-                    biometricAuthenticator = biometricAuthenticator,
+                    appContainer = contentContainer,
+                    biometricAuthenticator = contentAuthenticator,
                 )
             }
         }
