@@ -1,12 +1,17 @@
 # LockBox
 
-`LockBox` is a local-first Android vault showcase app built with Kotlin and Jetpack Compose.
+`LockBox` is a polished local-first Android vault showcase app built with Kotlin and Jetpack Compose.
 
-It demonstrates a privacy-focused Android architecture: biometric/device-credential unlock, an in-memory app session, Room-backed metadata, Android Keystore-backed AES-GCM encryption for secret payloads, relock-on-background behavior, and UI tests around the main security boundaries.
+It demonstrates security-sensitive Android product work: biometric and device-credential unlock, an in-memory app session, Room-backed metadata, Android Keystore-backed AES-GCM encryption for secret payloads, relock-on-background behavior, failure-state handling, and automated coverage around the main security boundaries.
 
-## Showcase Status
+## Why It Stands Out
 
-LockBox is ready for portfolio review as of `2026-08-30`. The app has a custom visual identity, debug-only demo screenshots, local encrypted persistence, relock hardening, accessibility labels, failure-state coverage, connected Compose/instrumentation tests, and documented security tradeoffs.
+LockBox is ready for portfolio review as of `2026-08-30`.
+
+- Sensitive fields are encrypted before storage and kept separate from display metadata.
+- The app cold-starts locked, relocks on background, and clears sensitive navigation state on relock.
+- Real vault content is protected from screenshots and recents thumbnails, while debug-only demo mode supports README screenshots safely.
+- The README, screenshots, and connected tests make the project easy to evaluate quickly in a portfolio setting.
 
 ## Screenshots
 
@@ -32,6 +37,13 @@ These screenshots use a debug-only in-memory demo vault. The normal app path use
 - Handles unavailable authentication, validation failures, corrupt payloads, save failures, and delete failures.
 - Applies haptics for meaningful unlock/save/delete/validation outcomes.
 - Adds accessibility labels for unlock, editor, detail, and destructive actions without exposing list secrets.
+
+## Technical Highlights
+
+- Android Keystore AES-GCM encryption with fresh IVs and entry/version associated data.
+- Room metadata and ciphertext separation with transactional save, update, and delete operations.
+- App-owned lock/session policy instead of relying on navigation state as an implicit security boundary.
+- Connected Compose and instrumentation coverage for lock, vault, editor, detail, persistence, and failure paths.
 
 ## Architecture
 
