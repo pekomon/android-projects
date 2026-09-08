@@ -37,8 +37,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.FlashlightOff
 import androidx.compose.material.icons.filled.FlashlightOn
-import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.QrCodeScanner
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -551,13 +551,21 @@ private fun ResultDetails(
                 contentDescription = "Copy result",
             )
         }
-        if (paused) {
-            IconButton(onClick = onResumeScanning) {
-                Icon(
-                    imageVector = Icons.Filled.PlayArrow,
-                    contentDescription = "Resume scanning",
-                )
-            }
+    }
+    if (paused) {
+        Spacer(modifier = Modifier.height(12.dp))
+        Button(
+            onClick = onResumeScanning,
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(8.dp),
+        ) {
+            Icon(
+                imageVector = Icons.Filled.Refresh,
+                contentDescription = null,
+                modifier = Modifier.size(18.dp),
+            )
+            Spacer(modifier = Modifier.size(8.dp))
+            Text("Scan next")
         }
     }
     Spacer(modifier = Modifier.height(10.dp))
@@ -567,6 +575,14 @@ private fun ResultDetails(
         maxLines = 4,
         overflow = TextOverflow.Ellipsis,
     )
+    if (paused) {
+        Spacer(modifier = Modifier.height(6.dp))
+        Text(
+            text = "Scanning is paused so the same code is not added repeatedly.",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+    }
     Spacer(modifier = Modifier.height(10.dp))
     Surface(
         color = result.validation.status.statusColor().copy(alpha = 0.12f),

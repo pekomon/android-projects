@@ -44,7 +44,7 @@ Implemented:
 - `Product`: EAN-13, EAN-8, UPC-A, UPC-E
 - `Logistics`: Code 128, Code 39, Code 93, Codabar, ITF
 - `All`: all supported 1D and 2D formats
-- result sheet with copy and resume actions
+- result sheet with copy and explicit `Scan next` actions
 - payload classifier and validator, including EAN/UPC check-digit validation
 - unit tests for validation, scanner mode grouping, and scanner state
 - CI workflow
