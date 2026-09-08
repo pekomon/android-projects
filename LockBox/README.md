@@ -6,7 +6,7 @@ It demonstrates security-sensitive Android product work: biometric and device-cr
 
 ## Why It Stands Out
 
-LockBox is ready for portfolio review as of `2026-08-30`.
+Status: portfolio-ready Android showcase.
 
 - Sensitive fields are encrypted before storage and kept separate from display metadata.
 - The app cold-starts locked, relocks on background, and clears sensitive navigation state on relock.
@@ -110,7 +110,7 @@ Use an emulator or device with a screen lock configured.
 9. Delete an entry from the detail screen, cancel once, then confirm deletion and verify the list updates.
 10. From both detail and editor, relock the app by backgrounding or ending the session; the app should return to the lock screen and discard unsaved editor input.
 
-Device test notes:
+Historical local verification records:
 
 - Restart persistence QA passed on `2026-08-20` using `emulator-5554` / `Medium_Phone_API_36.0`.
 - Connected Compose/instrumentation coverage passed 27/27 tests on `2026-08-28` using `emulator-5554` / `Medium_Phone_API_36.0`.

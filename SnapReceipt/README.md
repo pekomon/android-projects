@@ -1,10 +1,12 @@
 # SnapReceipt
 
-`SnapReceipt` is a local-first Android receipt capture app built as a showcase-quality sibling to the finished iOS version in this repository.
+`SnapReceipt` is a local-first Android receipt capture app built as a showcase-quality Android sibling to the [iOS SnapReceipt project](https://github.com/pekomon/ios-little-apps/tree/main/SnapReceipt).
 
 It scans or imports receipt images, runs on-device OCR with ML Kit, parses structured fields deterministically, lets the user correct the draft, and saves the final receipt locally with its stored image.
 
 ## Product Overview
+
+Status: portfolio-ready.
 
 The app is designed to demonstrate a complete Android workflow rather than a parser demo or UI mock:
 
@@ -109,4 +111,3 @@ Instrumentation status:
 ## Project Notes
 
 - The screenshot set lives in `docs/screenshots/`.
-- The local planning file is `../SNAPRECEIPT_ANDROID_PLAN.md` and is intentionally not committed.

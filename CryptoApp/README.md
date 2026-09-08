@@ -4,6 +4,8 @@
 
 It is intentionally product-sized rather than exchange-sized: the app prioritizes fast scanning, reliable state handling, and clear portfolio feedback over advanced trading or charting features.
 
+Status: portfolio-ready.
+
 ## Product Summary
 
 The app is built around four core screens:
@@ -106,11 +108,12 @@ Notable implementation choices:
 - Kotlinx Serialization
 - CoinGecko market data API
 
-## Build
+## Build And Test
 
 ```bash
 ./gradlew :app:compileDebugKotlin
 ./gradlew :app:assembleDebug
+./gradlew :app:testDebugUnitTest
 ```
 
 ### Optional CoinGecko Demo API Key
@@ -122,12 +125,6 @@ COINGECKO_DEMO_API_KEY=your_key_here
 ```
 
 `local.properties` is ignored by git, so API keys should never be committed.
-
-## Test
-
-```bash
-./gradlew :app:testDebugUnitTest
-```
 
 Compose screen-state coverage lives under `app/src/androidTest` and focuses on the primary empty, content, error, and destructive-action flows.
 

@@ -2,7 +2,9 @@
 
 Barcode Lab is an Android barcode-scanning showcase app.
 
-The MVP focuses on the core mobile work behind the role requirements:
+Status: active development. The scanner MVP is implemented; richer screenshots, manual camera QA notes, and case-study polish are planned as the app matures.
+
+The MVP focuses on a compact real-time scanning loop that makes the camera, analysis, and payload-validation behavior visible:
 
 - CameraX live preview
 - continuous `ImageAnalysis`

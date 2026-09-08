@@ -4,6 +4,8 @@
 
 It focuses on a polished single-activity Compose architecture, real weather data, adaptive layouts, persistent favorites and settings, and a Glance home screen widget.
 
+Status: portfolio-ready.
+
 ## Highlights
 
 - Current weather, hourly forecast, and daily forecast from Open-Meteo
@@ -39,7 +41,7 @@ It focuses on a polished single-activity Compose architecture, real weather data
 
 ### Home
 
-- Loads current weather for the app’s current home location
+- Loads current weather for the app's current home location
 - Shows current conditions, metrics, hourly forecast, and daily forecast
 - Reacts to settings changes for units and appearance
 
@@ -65,7 +67,7 @@ It focuses on a polished single-activity Compose architecture, real weather data
 ### Widget
 
 - Glance home screen widget for the current weather summary
-- Reuses the app’s weather data and unit formatting
+- Reuses the app's weather data and unit formatting
 
 ## Architecture Notes
 
