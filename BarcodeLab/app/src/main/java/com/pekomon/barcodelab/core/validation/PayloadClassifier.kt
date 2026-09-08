@@ -1,14 +1,23 @@
 package com.pekomon.barcodelab.core.validation
 
 import com.pekomon.barcodelab.domain.model.BarcodePayload
+import com.pekomon.barcodelab.domain.model.BarcodeFormat
 import com.pekomon.barcodelab.domain.model.PayloadKind
+import com.pekomon.barcodelab.domain.model.isLogisticsCode
+import com.pekomon.barcodelab.domain.model.isProductCode
 import java.util.Locale
 
 class PayloadClassifier {
-    fun classify(rawValue: String, displayValue: String = rawValue): BarcodePayload {
+    fun classify(
+        rawValue: String,
+        displayValue: String = rawValue,
+        sourceFormat: BarcodeFormat = BarcodeFormat.Unknown,
+    ): BarcodePayload {
         val trimmed = rawValue.trim()
         val lower = trimmed.lowercase(Locale.US)
         val kind = when {
+            sourceFormat.isProductCode -> PayloadKind.ProductCode
+            sourceFormat.isLogisticsCode -> PayloadKind.LogisticsCode
             lower.startsWith("http://") || lower.startsWith("https://") -> PayloadKind.Url
             lower.startsWith("mailto:") || looksLikeEmail(trimmed) -> PayloadKind.Email
             lower.startsWith("tel:") -> PayloadKind.Phone
@@ -24,6 +33,7 @@ class PayloadClassifier {
             rawValue = rawValue,
             displayValue = displayValue.ifBlank { rawValue },
             kind = kind,
+            sourceFormat = sourceFormat,
         )
     }
 

@@ -1,11 +1,9 @@
 package com.pekomon.barcodelab.feature.scanner
 
 import android.Manifest
-import android.app.Activity
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
-import android.content.ContextWrapper
 import android.content.pm.PackageManager
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -17,6 +15,7 @@ import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.view.PreviewView
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -41,6 +40,7 @@ import androidx.compose.material.icons.filled.FlashlightOn
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.QrCodeScanner
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -78,7 +78,9 @@ import androidx.core.content.ContextCompat
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.pekomon.barcodelab.core.barcode.MlKitBarcodeAnalyzer
+import com.pekomon.barcodelab.domain.model.DetectedBarcode
 import com.pekomon.barcodelab.domain.model.ScanResult
+import com.pekomon.barcodelab.domain.model.ScannerMode
 import com.pekomon.barcodelab.domain.model.ValidationStatus
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
@@ -102,6 +104,7 @@ fun ScannerScreen(viewModel: ScannerViewModel) {
             onBarcodeDetected = viewModel::onBarcodeDetected,
             onAnalyzerError = viewModel::onAnalyzerError,
             onResumeScanning = viewModel::resumeScanning,
+            onModeSelected = viewModel::selectMode,
         )
     } else {
         PermissionContent(
@@ -115,9 +118,10 @@ fun ScannerScreen(viewModel: ScannerViewModel) {
 @Composable
 private fun ScannerContent(
     uiState: ScannerUiState,
-    onBarcodeDetected: (com.pekomon.barcodelab.domain.model.DetectedBarcode) -> Unit,
+    onBarcodeDetected: (DetectedBarcode) -> Unit,
     onAnalyzerError: (Throwable) -> Unit,
     onResumeScanning: () -> Unit,
+    onModeSelected: (ScannerMode) -> Unit,
 ) {
     val context = LocalContext.current
     var camera by remember { mutableStateOf<Camera?>(null) }
@@ -134,6 +138,7 @@ private fun ScannerContent(
         ) {
             CameraPreview(
                 scanningEnabled = !uiState.isPaused,
+                scannerMode = uiState.scannerMode,
                 onBarcodeDetected = onBarcodeDetected,
                 onAnalyzerError = onAnalyzerError,
                 onCameraReady = { camera = it },
@@ -144,6 +149,7 @@ private fun ScannerContent(
                     .padding(horizontal = 32.dp, vertical = 120.dp),
             )
             HeaderBar(
+                scannerMode = uiState.scannerMode,
                 analyzerError = uiState.analyzerError,
                 modifier = Modifier
                     .align(Alignment.TopCenter)
@@ -165,9 +171,11 @@ private fun ScannerContent(
             }
             ResultSheet(
                 result = uiState.lastResult,
+                scannerMode = uiState.scannerMode,
                 paused = uiState.isPaused,
                 recentScans = uiState.recentScans,
                 onResumeScanning = onResumeScanning,
+                onModeSelected = onModeSelected,
                 onCopy = { result ->
                     context.copyToClipboard(result.payload.rawValue)
                 },
@@ -219,7 +227,8 @@ private fun PermissionContent(onRequestPermission: () -> Unit) {
 @Composable
 private fun CameraPreview(
     scanningEnabled: Boolean,
-    onBarcodeDetected: (com.pekomon.barcodelab.domain.model.DetectedBarcode) -> Unit,
+    scannerMode: ScannerMode,
+    onBarcodeDetected: (DetectedBarcode) -> Unit,
     onAnalyzerError: (Throwable) -> Unit,
     onCameraReady: (Camera) -> Unit,
 ) {
@@ -231,11 +240,13 @@ private fun CameraPreview(
         }
     }
     val latestScanningEnabled by rememberUpdatedState(scanningEnabled)
+    val latestScannerMode by rememberUpdatedState(scannerMode)
     val latestBarcodeDetected by rememberUpdatedState(onBarcodeDetected)
     val latestAnalyzerError by rememberUpdatedState(onAnalyzerError)
     val analyzer = remember {
         MlKitBarcodeAnalyzer(
             isScanningEnabled = { latestScanningEnabled },
+            scannerMode = { latestScannerMode },
             onBarcodeDetected = { latestBarcodeDetected(it) },
             onAnalyzerError = { latestAnalyzerError(it) },
         )
@@ -302,6 +313,7 @@ private fun bindCamera(
 
 @Composable
 private fun HeaderBar(
+    scannerMode: ScannerMode,
     analyzerError: String?,
     modifier: Modifier = Modifier,
 ) {
@@ -318,7 +330,7 @@ private fun HeaderBar(
                 fontWeight = FontWeight.SemiBold,
             )
             Text(
-                text = analyzerError ?: "QR, PDF417, Aztec, Data Matrix",
+                text = analyzerError ?: scannerMode.helperText,
                 style = MaterialTheme.typography.bodySmall,
                 color = if (analyzerError == null) Color.White.copy(alpha = 0.74f) else Color(0xFFFFC4B8),
                 maxLines = 1,
@@ -401,9 +413,11 @@ private fun ScannerReticle(modifier: Modifier = Modifier) {
 @Composable
 private fun ResultSheet(
     result: ScanResult?,
+    scannerMode: ScannerMode,
     paused: Boolean,
     recentScans: List<ScanResult>,
     onResumeScanning: () -> Unit,
+    onModeSelected: (ScannerMode) -> Unit,
     onCopy: (ScanResult) -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -423,6 +437,11 @@ private fun ResultSheet(
                 .verticalScroll(rememberScrollState())
                 .padding(16.dp),
         ) {
+            ScannerModeSelector(
+                selectedMode = scannerMode,
+                onModeSelected = onModeSelected,
+            )
+            Spacer(modifier = Modifier.height(14.dp))
             if (result == null) {
                 Text(
                     text = "Scanning",
@@ -430,7 +449,7 @@ private fun ResultSheet(
                     fontWeight = FontWeight.SemiBold,
                 )
                 Text(
-                    text = "No supported 2D barcode detected yet.",
+                    text = "No ${scannerMode.label.lowercase()} barcode detected yet. ${scannerMode.helperText}.",
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -457,6 +476,45 @@ private fun ResultSheet(
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
                     )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun ScannerModeSelector(
+    selectedMode: ScannerMode,
+    onModeSelected: (ScannerMode) -> Unit,
+) {
+    Column {
+        Text(
+            text = "Scanner mode",
+            style = MaterialTheme.typography.labelLarge,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        Spacer(modifier = Modifier.height(8.dp))
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .horizontalScroll(rememberScrollState()),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            ScannerMode.entries.forEach { mode ->
+                val selected = mode == selectedMode
+                Button(
+                    onClick = { onModeSelected(mode) },
+                    colors = if (selected) {
+                        ButtonDefaults.buttonColors()
+                    } else {
+                        ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                            contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    },
+                    shape = RoundedCornerShape(8.dp),
+                ) {
+                    Text(mode.label)
                 }
             }
         }
@@ -545,10 +603,3 @@ private fun Context.copyToClipboard(value: String) {
     val clipboard = getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
     clipboard.setPrimaryClip(ClipData.newPlainText("Barcode result", value))
 }
-
-private tailrec fun Context.findActivity(): Activity? =
-    when (this) {
-        is Activity -> this
-        is ContextWrapper -> baseContext.findActivity()
-        else -> null
-    }

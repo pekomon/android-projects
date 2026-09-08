@@ -3,8 +3,10 @@ package com.pekomon.barcodelab.core.validation
 import com.pekomon.barcodelab.domain.model.BarcodeFormat
 import com.pekomon.barcodelab.domain.model.DetectedBarcode
 import com.pekomon.barcodelab.domain.model.PayloadKind
+import com.pekomon.barcodelab.domain.model.ScannerMode
 import com.pekomon.barcodelab.feature.scanner.ScannerViewModel
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -46,5 +48,18 @@ class ScannerViewModelTest {
 
         assertEquals("https://second.example", viewModel.uiState.value.lastResult?.payload?.rawValue)
         assertEquals(2, viewModel.uiState.value.recentScans.size)
+    }
+
+    @Test
+    fun selectingModeResumesScannerAndClearsPreviousResult() {
+        val viewModel = ScannerViewModel(clockMillis = { 1L })
+        viewModel.onBarcodeDetected(DetectedBarcode(BarcodeFormat.QrCode, "https://first.example"))
+
+        viewModel.selectMode(ScannerMode.Product)
+
+        val state = viewModel.uiState.value
+        assertEquals(ScannerMode.Product, state.scannerMode)
+        assertFalse(state.isPaused)
+        assertEquals(null, state.lastResult)
     }
 }

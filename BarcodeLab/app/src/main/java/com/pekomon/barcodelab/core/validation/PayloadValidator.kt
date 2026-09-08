@@ -1,6 +1,7 @@
 package com.pekomon.barcodelab.core.validation
 
 import com.pekomon.barcodelab.domain.model.BarcodePayload
+import com.pekomon.barcodelab.domain.model.BarcodeFormat
 import com.pekomon.barcodelab.domain.model.PayloadKind
 import com.pekomon.barcodelab.domain.model.ValidationResult
 import com.pekomon.barcodelab.domain.model.ValidationStatus
@@ -10,6 +11,8 @@ import java.util.Locale
 class PayloadValidator {
     fun validate(payload: BarcodePayload): ValidationResult =
         when (payload.kind) {
+            PayloadKind.ProductCode -> validateProductCode(payload)
+            PayloadKind.LogisticsCode -> validateLogisticsCode(payload)
             PayloadKind.Url -> validateUrl(payload.rawValue)
             PayloadKind.Email -> validateEmail(payload.rawValue)
             PayloadKind.Phone -> validatePhone(payload.rawValue)
@@ -28,6 +31,41 @@ class PayloadValidator {
                 title = "Unsupported structured payload",
                 detail = "The code looks structured, but Barcode Lab does not validate this format yet.",
             )
+        }
+
+    private fun validateProductCode(payload: BarcodePayload): ValidationResult {
+        val digits = payload.rawValue.filter(Char::isDigit)
+        val supportedLength = digits.length in setOf(8, 12, 13)
+        return when {
+            payload.sourceFormat == BarcodeFormat.UpcE && digits.length == 8 -> ValidationResult(
+                status = ValidationStatus.Warning,
+                title = "UPC-E product code",
+                detail = "UPC-E was detected. Full checksum validation requires UPC-E expansion rules.",
+            )
+            supportedLength && hasValidGtinCheckDigit(digits) -> valid(
+                title = "Valid product code",
+                detail = "The EAN/UPC check digit is structurally valid.",
+            )
+            supportedLength -> invalid(
+                title = "Invalid product code",
+                detail = "The barcode was detected, but the EAN/UPC check digit does not match.",
+            )
+            else -> invalid(
+                title = "Invalid product code",
+                detail = "Expected an EAN-8, UPC-A, or EAN-13 length numeric product code.",
+            )
+        }
+    }
+
+    private fun validateLogisticsCode(payload: BarcodePayload): ValidationResult =
+        if (payload.rawValue.isNotBlank()) {
+            ValidationResult(
+                status = ValidationStatus.Warning,
+                title = "Readable logistics code",
+                detail = "The code was decoded. Format-specific GS1 or carrier validation is not enabled yet.",
+            )
+        } else {
+            invalid("Invalid logistics code", "Expected a non-empty logistics barcode payload.")
         }
 
     private fun validateUrl(value: String): ValidationResult {
@@ -129,6 +167,19 @@ class PayloadValidator {
 
     private fun invalid(title: String, detail: String) =
         ValidationResult(ValidationStatus.Invalid, title, detail)
+
+    private fun hasValidGtinCheckDigit(digits: String): Boolean {
+        val expected = digits.last().digitToIntOrNull() ?: return false
+        val sum = digits.dropLast(1)
+            .reversed()
+            .mapIndexed { index, char ->
+                val digit = char.digitToIntOrNull() ?: return false
+                if (index % 2 == 0) digit * 3 else digit
+            }
+            .sum()
+        val actual = (10 - (sum % 10)) % 10
+        return actual == expected
+    }
 
     private fun String.removePrefixIgnoreCase(prefix: String): String =
         if (startsWith(prefix, ignoreCase = true)) drop(prefix.length) else this

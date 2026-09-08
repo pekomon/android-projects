@@ -1,6 +1,7 @@
 package com.pekomon.barcodelab.core.validation
 
 import com.pekomon.barcodelab.domain.model.PayloadKind
+import com.pekomon.barcodelab.domain.model.BarcodeFormat
 import com.pekomon.barcodelab.domain.model.ValidationStatus
 import org.junit.Assert.assertEquals
 import org.junit.Test
@@ -15,6 +16,39 @@ class PayloadClassifierValidatorTest {
 
         assertEquals(PayloadKind.Url, payload.kind)
         assertEquals(ValidationStatus.Valid, validator.validate(payload).status)
+    }
+
+    @Test
+    fun classifiesAndValidatesEan13ProductCode() {
+        val payload = classifier.classify(
+            rawValue = "6423800161605",
+            sourceFormat = BarcodeFormat.Ean13,
+        )
+
+        assertEquals(PayloadKind.ProductCode, payload.kind)
+        assertEquals(ValidationStatus.Valid, validator.validate(payload).status)
+    }
+
+    @Test
+    fun rejectsProductCodeWithInvalidCheckDigit() {
+        val payload = classifier.classify(
+            rawValue = "6423800161600",
+            sourceFormat = BarcodeFormat.Ean13,
+        )
+
+        assertEquals(PayloadKind.ProductCode, payload.kind)
+        assertEquals(ValidationStatus.Invalid, validator.validate(payload).status)
+    }
+
+    @Test
+    fun classifiesLogisticsCodeAsReadableWarning() {
+        val payload = classifier.classify(
+            rawValue = "660002597000030000329320260610191817",
+            sourceFormat = BarcodeFormat.Code128,
+        )
+
+        assertEquals(PayloadKind.LogisticsCode, payload.kind)
+        assertEquals(ValidationStatus.Warning, validator.validate(payload).status)
     }
 
     @Test

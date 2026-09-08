@@ -5,6 +5,7 @@ import com.pekomon.barcodelab.core.validation.PayloadClassifier
 import com.pekomon.barcodelab.core.validation.PayloadValidator
 import com.pekomon.barcodelab.domain.model.DetectedBarcode
 import com.pekomon.barcodelab.domain.model.ScanResult
+import com.pekomon.barcodelab.domain.model.ScannerMode
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.update
@@ -25,6 +26,7 @@ class ScannerViewModel(
                 val payload = classifier.classify(
                     rawValue = barcode.rawValue,
                     displayValue = barcode.displayValue,
+                    sourceFormat = barcode.format,
                 )
                 val result = ScanResult(
                     detectedBarcode = barcode,
@@ -48,6 +50,21 @@ class ScannerViewModel(
         _uiState.update { it.copy(isPaused = false, analyzerError = null) }
     }
 
+    fun selectMode(mode: ScannerMode) {
+        _uiState.update {
+            if (it.scannerMode == mode) {
+                it
+            } else {
+                it.copy(
+                    scannerMode = mode,
+                    isPaused = false,
+                    lastResult = null,
+                    analyzerError = null,
+                )
+            }
+        }
+    }
+
     fun onAnalyzerError(throwable: Throwable) {
         _uiState.update {
             it.copy(analyzerError = throwable.message ?: "Scanner analysis failed")
@@ -60,6 +77,7 @@ class ScannerViewModel(
 }
 
 data class ScannerUiState(
+    val scannerMode: ScannerMode = ScannerMode.TwoDimensional,
     val isPaused: Boolean = false,
     val lastResult: ScanResult? = null,
     val recentScans: List<ScanResult> = emptyList(),

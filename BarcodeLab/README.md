@@ -7,7 +7,7 @@ The MVP focuses on the core mobile work behind the role requirements:
 - CameraX live preview
 - continuous `ImageAnalysis`
 - ML Kit Barcode Scanning
-- QR Code, PDF417, Aztec, and Data Matrix recognition
+- scanner modes for 2D, product, logistics, and all supported formats
 - pause/resume behavior after detection
 - deterministic local payload classification and validation
 - offline-first behavior with no backend dependency
@@ -39,10 +39,14 @@ Implemented:
 - app shell under `com.pekomon.barcodelab`
 - camera permission flow
 - CameraX preview and real-time `ImageAnalysis`
-- ML Kit barcode analyzer with explicit 2D formats
+- ML Kit barcode analyzer with explicit scanner modes
+- `2D Codes`: QR Code, PDF417, Aztec, Data Matrix
+- `Product`: EAN-13, EAN-8, UPC-A, UPC-E
+- `Logistics`: Code 128, Code 39, Code 93, Codabar, ITF
+- `All`: all supported 1D and 2D formats
 - result sheet with copy and resume actions
-- payload classifier and validator
-- unit tests for validation and scanner state
+- payload classifier and validator, including EAN/UPC check-digit validation
+- unit tests for validation, scanner mode grouping, and scanner state
 - CI workflow
 
 Planned:
