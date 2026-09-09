@@ -61,3 +61,7 @@ Connected-device and emulator checks are documented in the individual project RE
 ## Related Work
 
 Some Android apps have sibling iOS versions or product references in [ios-little-apps](https://github.com/pekomon/ios-little-apps). This repository is focused on the Android implementations and their platform-specific architecture, tradeoffs, and verification.
+
+## License
+
+Licensed under the [Apache License 2.0](LICENSE).
